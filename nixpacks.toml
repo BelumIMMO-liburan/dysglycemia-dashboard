@@ -1,3 +1,7 @@
 [variables]
 MISE_PYTHON_GITHUB_ATTESTATIONS = "false"
 NIXPACKS_PYTHON_VERSION = "3.10"
+
+[phases.build]
+cmds = ["python dashboard/manage.py collectstatic --noinput"]
+
