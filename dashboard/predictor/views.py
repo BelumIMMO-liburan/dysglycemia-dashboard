@@ -71,20 +71,33 @@ def _log_eval_event(request, event_name, event_data=None):
         logger.warning(f"Could not log evaluation event {event_name}: {e}")
 
 
+def check_evaluation_onboarding(request):
+    """
+    Enforces evaluation protocol prerequisite gates (Consent -> Practice P0).
+    Returns an HttpResponse redirect if a prerequisite is unfulfilled, or None.
+    """
+    if getattr(settings, 'APP_MODE', 'feedback_lab').lower() != 'evaluation':
+        return None
+    token = request.session.get('evaluation_session_token')
+    session = EvaluationSession.objects.filter(session_token=token).first() if token else None
+    if not session:
+        return redirect('predictor:evaluation_consent')
+    if not session.practice_completed:
+        return redirect('predictor:evaluation_practice')
+    if session.questionnaire_completed:
+        return redirect('predictor:evaluation_complete')
+    return None
+
+
 def overview_view(request):
     """
     Research screening overview — primary orientation page (Phase D2.9).
     Consumes persisted ScreeningRecord entities and derived lifecycle states.
     Zero ML/XAI execution, zero database writes.
     """
-    current_mode = getattr(settings, 'APP_MODE', 'feedback_lab').lower()
-    if current_mode == 'evaluation':
-        token = request.session.get('evaluation_session_token')
-        session = EvaluationSession.objects.filter(session_token=token).first() if token else None
-        if not session:
-            return redirect('predictor:evaluation_consent')
-        if session.questionnaire_completed:
-            return redirect('predictor:evaluation_complete')
+    gate_redirect = check_evaluation_onboarding(request)
+    if gate_redirect:
+        return gate_redirect
 
     records = list(
         ScreeningRecord.objects.select_related('explanation', 'human_review__stage2_assessment')
@@ -140,6 +153,10 @@ def new_screening_view(request):
     Validates the 7 locked predictors and presents an Input Review State.
     Does NOT execute model inference or persist prediction records in Phase D2.2.
     """
+    gate_redirect = check_evaluation_onboarding(request)
+    if gate_redirect:
+        return gate_redirect
+
     is_validated = False
     sanitized_summary = None
     error_count = 0
@@ -1636,7 +1653,7 @@ def evaluation_consent_view(request):
             if existing_session.questionnaire_completed:
                 return redirect('predictor:evaluation_complete')
             elif existing_session.practice_completed:
-                return redirect('predictor:new_screening')
+                return redirect('predictor:overview')
             else:
                 return redirect('predictor:evaluation_practice')
 
@@ -1748,7 +1765,7 @@ def evaluation_practice_view(request):
         session.practice_completed = True
         session.save(update_fields=['practice_completed'])
         EvaluationEvent.objects.create(session=session, event_name='practice_completed')
-        return redirect('predictor:new_screening')
+        return redirect('predictor:overview')
 
     context = {
         'session': session,

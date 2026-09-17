@@ -1105,16 +1105,27 @@ document.addEventListener('DOMContentLoaded', function() {
         <a href="{% url 'predictor:evaluation_practice' %}" class="ui-btn ui-btn-outline">
             ← Kembali ke Panduan P0
         </a>
-        <a href="{% url 'predictor:new_screening' %}" class="ui-btn ui-btn-primary" style="font-weight: 600;">
-            Selesai Latihan &amp; Mulai Screening Mandiri →
-        </a>
+        <form method="post" action="{% url 'predictor:evaluation_practice' %}" style="display: inline;">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="finish_practice">
+            <button type="submit" class="ui-btn ui-btn-primary" style="font-weight: 600;">
+                Selesai Latihan &amp; Masuk ke Dashboard →
+            </button>
+        </form>
         {% else %}
-        <a href="{% url 'predictor:new_screening' %}" class="ui-btn ui-btn-outline">
-            Screening Baru
+        <a href="{% url 'predictor:overview' %}" class="ui-btn ui-btn-outline" id="return-overview-btn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
+            Return to Overview
         </a>
-        <a href="{% url 'predictor:evaluation_questionnaire' %}" class="ui-btn ui-btn-primary" style="font-weight: 600;">
-            Lanjutkan ke Kuesioner Evaluasi →
-        </a>
+        <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+            <a href="{% url 'predictor:new_screening' %}" class="ui-btn ui-btn-outline" id="start-new-screening-btn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Start New Screening
+            </a>
+            <a href="{% url 'predictor:evaluation_questionnaire' %}" class="ui-btn ui-btn-primary" style="font-weight: 600;">
+                Evaluation Questionnaire →
+            </a>
+        </div>
         {% endif %}
     {% else %}
     <a href="{% url 'predictor:overview' %}" class="ui-btn ui-btn-outline" id="return-overview-btn">

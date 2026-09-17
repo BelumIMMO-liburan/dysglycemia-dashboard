@@ -60,17 +60,17 @@
 
                 <div style="padding: 1rem; border: 1px solid hsl(var(--border)); border-radius: var(--radius); background-color: hsl(var(--card));">
                     <div style="display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 9999px; background-color: hsl(var(--primary)/0.1); color: hsl(var(--primary)); font-weight: 700; font-size: 0.875rem; margin-bottom: 0.75rem;">3</div>
-                    <h3 style="font-size: 0.9375rem; font-weight: 600; margin-bottom: 0.25rem;">Human Review</h3>
+                    <h3 style="font-size: 0.9375rem; font-weight: 600; margin-bottom: 0.25rem;">Human Review &amp; Override</h3>
                     <p style="font-size: 0.8125rem; color: hsl(var(--muted-foreground)); line-height: 1.4;">
-                        Manusia memiliki kendali penuh: dapat menerima rekomendasi AI atau melakukan Override dengan alasan spesifik.
+                        Tenaga kesehatan memegang kendali penuh: menerima rekomendasi atau melakukan Override dengan alasan klinis terstruktur.
                     </p>
                 </div>
 
                 <div style="padding: 1rem; border: 1px solid hsl(var(--border)); border-radius: var(--radius); background-color: hsl(var(--card));">
                     <div style="display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 9999px; background-color: hsl(var(--primary)/0.1); color: hsl(var(--primary)); font-weight: 700; font-size: 0.875rem; margin-bottom: 0.75rem;">4</div>
-                    <h3 style="font-size: 0.9375rem; font-weight: 600; margin-bottom: 0.25rem;">Feedback Terstruktur</h3>
+                    <h3 style="font-size: 0.9375rem; font-weight: 600; margin-bottom: 0.25rem;">Stage-2 Konfirmasi Lab</h3>
                     <p style="font-size: 0.8125rem; color: hsl(var(--muted-foreground)); line-height: 1.4;">
-                        Pengguna dapat memberikan taksonomi umpan balik yang dapat digunakan dalam proses adaptation penelitian.
+                        Kasus terindikasi dirujuk untuk pemeriksaan biomarker HbA1c standar guna konfirmasi klinis diagnostik.
                     </p>
                 </div>
             </div>
@@ -124,7 +124,7 @@
                     {% csrf_token %}
                     <input type="hidden" name="action" value="finish_practice">
                     <button type="submit" class="ui-btn ui-btn-outline">
-                        Lewati Latihan & Langsung Mulai Screening Utama →
+                        Selesai Latihan &amp; Masuk ke Dashboard →
                     </button>
                 </form>
             </div>

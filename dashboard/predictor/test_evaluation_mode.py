@@ -220,11 +220,25 @@ class EvaluationParticipantWorkflowTests(TestCase):
         self.assertIsNotNone(p0_record)
         self.assertEqual(p0_record.age, PRACTICE_CASE_P0['features']['age'])
 
-        # Finish practice
+        # Finish practice -> Returns to normal dashboard overview
         p_finish_res = self.client.post(practice_url, {'action': 'finish_practice'})
-        self.assertRedirects(p_finish_res, reverse('predictor:new_screening'))
+        self.assertRedirects(p_finish_res, reverse('predictor:overview'))
         session.refresh_from_db()
         self.assertTrue(session.practice_completed)
+
+        # Verify normal dashboard is accessible and displays standard navigation + additive research
+        overview_res = self.client.get(reverse('predictor:overview'))
+        self.assertEqual(overview_res.status_code, 200)
+        self.assertContains(overview_res, "Screening Overview")
+        self.assertContains(overview_res, "New Screening")
+        self.assertContains(overview_res, "Review Queue")
+        self.assertContains(overview_res, "History")
+        self.assertContains(overview_res, "Analytics")
+        self.assertContains(overview_res, "About the Model")
+        self.assertContains(overview_res, "Research Evaluation")
+        self.assertContains(overview_res, "Informed Consent")
+        self.assertContains(overview_res, "Practice Case P0")
+        self.assertContains(overview_res, "Questionnaire")
 
         # Step 3: Run a screening case
         run_url = reverse('predictor:run_screening')
