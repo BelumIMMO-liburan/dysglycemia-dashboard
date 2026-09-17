@@ -60,25 +60,52 @@ class Stage1ScreeningForm(forms.Form):
         }
     )
 
-    bmi = forms.FloatField(
-        label=STAGE1_INPUT_SCHEMA['bmi']['label'],
-        min_value=STAGE1_INPUT_SCHEMA['bmi']['min_value'],
-        max_value=STAGE1_INPUT_SCHEMA['bmi']['max_value'],
-        required=True,
+    height_cm = forms.FloatField(
+        label='Height',
+        min_value=50.0,
+        max_value=250.0,
+        required=False,
         widget=forms.NumberInput(attrs={
             'class': 'ui-input tabular-nums',
-            'placeholder': STAGE1_INPUT_SCHEMA['bmi']['placeholder'],
-            'min': STAGE1_INPUT_SCHEMA['bmi']['min_value'],
-            'max': STAGE1_INPUT_SCHEMA['bmi']['max_value'],
+            'placeholder': 'e.g., 170',
+            'min': '50.0',
+            'max': '250.0',
             'step': '0.1',
-            'aria-describedby': 'id_bmi_help',
+            'aria-describedby': 'id_height_cm_help',
         }),
         error_messages={
-            'required': 'Body mass index is required. Enter a value between 11.1 and 69.9 kg/m².',
-            'min_value': 'BMI is below the range supported by the research model (minimum: 11.1 kg/m²).',
-            'max_value': 'BMI is above the range supported by the research model (maximum: 69.9 kg/m²).',
-            'invalid': 'Enter a valid numeric value for BMI (e.g., 28.4).',
+            'min_value': 'Height is below the valid range (minimum: 50.0 cm).',
+            'max_value': 'Height is above the valid range (maximum: 250.0 cm).',
+            'invalid': 'Enter a valid numeric height in centimeters.',
         }
+    )
+
+    weight_kg = forms.FloatField(
+        label='Weight',
+        min_value=20.0,
+        max_value=350.0,
+        required=False,
+        widget=forms.NumberInput(attrs={
+            'class': 'ui-input tabular-nums',
+            'placeholder': 'e.g., 70',
+            'min': '20.0',
+            'max': '350.0',
+            'step': '0.1',
+            'aria-describedby': 'id_weight_kg_help',
+        }),
+        error_messages={
+            'min_value': 'Weight is below the valid range (minimum: 20.0 kg).',
+            'max_value': 'Weight is above the valid range (maximum: 350.0 kg).',
+            'invalid': 'Enter a valid numeric weight in kilograms.',
+        }
+    )
+
+    bmi = forms.FloatField(
+        label=STAGE1_INPUT_SCHEMA['bmi']['label'],
+        required=False,
+        widget=forms.HiddenInput(attrs={
+            'id': 'id_bmi',
+        }),
     )
 
     waist_cm = forms.FloatField(
@@ -151,18 +178,55 @@ class Stage1ScreeningForm(forms.Form):
         }
     )
 
-    def clean_bmi(self):
-        """Round BMI to 1 decimal place and re-verify bounds."""
-        val = self.cleaned_data.get('bmi')
-        if val is not None:
-            val = round(val, 1)
-            min_val = STAGE1_INPUT_SCHEMA['bmi']['min_value']
-            max_val = STAGE1_INPUT_SCHEMA['bmi']['max_value']
-            if val < min_val or val > max_val:
-                raise forms.ValidationError(
-                    f'This value ({val}) is outside the range supported by the current research model ({min_val} to {max_val} kg/m²).'
+    def clean(self):
+        cleaned_data = super().clean()
+        height_cm = cleaned_data.get('height_cm')
+        weight_kg = cleaned_data.get('weight_kg')
+        submitted_bmi = cleaned_data.get('bmi')
+
+        min_bmi = Decimal(str(STAGE1_INPUT_SCHEMA['bmi']['min_value']))
+        max_bmi = Decimal(str(STAGE1_INPUT_SCHEMA['bmi']['max_value']))
+
+        # Path 1: Participant intake with height and weight
+        if height_cm is not None or weight_kg is not None:
+            if height_cm is None:
+                self.add_error('height_cm', 'Height is required. Enter height in centimeters.')
+            if weight_kg is None:
+                self.add_error('weight_kg', 'Weight is required. Enter weight in kilograms.')
+
+            if height_cm is not None and weight_kg is not None:
+                if height_cm <= 0:
+                    self.add_error('height_cm', 'Height must be greater than zero.')
+                elif weight_kg <= 0:
+                    self.add_error('weight_kg', 'Weight must be greater than zero.')
+                else:
+                    # Authoritative independent backend BMI calculation: BMI = weight_kg / (height_m ^ 2)
+                    h_m = float(height_cm) / 100.0
+                    w_kg = float(weight_kg)
+                    calculated_bmi = Decimal(str(round(w_kg / (h_m ** 2), 2)))
+
+                    if calculated_bmi < min_bmi or calculated_bmi > max_bmi:
+                        self.add_error(
+                            'weight_kg',
+                            f'Calculated BMI ({calculated_bmi:.2f} kg/m²) is outside the model-supported research range ({min_bmi} to {max_bmi} kg/m²). Please verify height and weight inputs.'
+                        )
+
+                    # Authoritative override: never trust client-submitted BMI
+                    cleaned_data['bmi'] = calculated_bmi
+
+        # Path 2: Direct BMI submission (backward compatibility for existing automated test payloads)
+        elif submitted_bmi is not None:
+            rounded_bmi = Decimal(str(round(float(submitted_bmi), 2)))
+            if rounded_bmi < min_bmi or rounded_bmi > max_bmi:
+                self.add_error(
+                    'bmi',
+                    f'This value ({rounded_bmi}) is outside the range supported by the current research model ({min_bmi} to {max_bmi} kg/m²).'
                 )
-        return val
+            cleaned_data['bmi'] = rounded_bmi
+        else:
+            self.add_error('bmi', 'Height and weight are required to calculate BMI.')
+
+        return cleaned_data
 
     def clean_waist_cm(self):
         """Round waist circumference to 1 decimal place and re-verify bounds."""
@@ -204,7 +268,7 @@ class Stage1ScreeningForm(forms.Form):
         hyp_display = dict(HYPERTENSION_CHOICES).get(cd['hypertension_history'], cd['hypertension_history'])
         smk_display = dict(SMOKING_CHOICES).get(cd['smoking_history'], cd['smoking_history'])
 
-        return [
+        summary = [
             {
                 'canonical_name': 'age',
                 'label': STAGE1_INPUT_SCHEMA['age']['label'],
@@ -221,11 +285,39 @@ class Stage1ScreeningForm(forms.Form):
                 'unit': None,
                 'section': STAGE1_INPUT_SCHEMA['sex']['section_title'],
             },
+        ]
+        if cd.get('height_cm') is not None:
+            summary.append({
+                'canonical_name': 'height_cm',
+                'label': 'Height',
+                'value': cd['height_cm'],
+                'display_value': f"{cd['height_cm']:.1f} cm",
+                'unit': 'cm',
+                'section': '2. Body Measurements',
+            })
+        if cd.get('weight_kg') is not None:
+            summary.append({
+                'canonical_name': 'weight_kg',
+                'label': 'Weight',
+                'value': cd['weight_kg'],
+                'display_value': f"{cd['weight_kg']:.1f} kg",
+                'unit': 'kg',
+                'section': '2. Body Measurements',
+            })
+
+        # When height_cm is present, display calculated BMI formatted to 2 decimal places
+        # For legacy direct-BMI payloads, preserve the original value format
+        if cd.get('height_cm') is not None:
+            bmi_display_str = f"{cd['bmi']:.2f} kg/m²"
+        else:
+            bmi_display_str = f"{cd['bmi']} kg/m²"
+
+        summary.extend([
             {
                 'canonical_name': 'bmi',
                 'label': STAGE1_INPUT_SCHEMA['bmi']['label'],
                 'value': cd['bmi'],
-                'display_value': f"{cd['bmi']:.1f} kg/m²",
+                'display_value': bmi_display_str,
                 'unit': STAGE1_INPUT_SCHEMA['bmi']['unit'],
                 'section': STAGE1_INPUT_SCHEMA['bmi']['section_title'],
             },
@@ -261,7 +353,8 @@ class Stage1ScreeningForm(forms.Form):
                 'unit': STAGE1_INPUT_SCHEMA['sedentary_minutes_day']['unit'],
                 'section': STAGE1_INPUT_SCHEMA['sedentary_minutes_day']['section_title'],
             },
-        ]
+        ])
+        return summary
 
 
 import re

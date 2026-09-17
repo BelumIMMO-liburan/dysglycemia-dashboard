@@ -206,6 +206,8 @@
                 <input type="hidden" name="idempotency_token" value="{{ idempotency_token|default:'' }}">
                 <input type="hidden" name="age" value="{{ form.age.value }}">
                 <input type="hidden" name="sex" value="{{ form.sex.value }}">
+                <input type="hidden" name="height_cm" value="{{ form.height_cm.value|default:'' }}">
+                <input type="hidden" name="weight_kg" value="{{ form.weight_kg.value|default:'' }}">
                 <input type="hidden" name="bmi" value="{{ form.bmi.value }}">
                 <input type="hidden" name="waist_cm" value="{{ form.waist_cm.value }}">
                 <input type="hidden" name="hypertension_history" value="{{ form.hypertension_history.value }}">
@@ -349,25 +351,77 @@
                 </div>
 
                 <div class="ui-form-grid">
-                    <!-- Field 3: BMI -->
+                    <!-- Field 3a: Height -->
                     <div class="ui-form-group">
-                        <label class="ui-label required" for="id_bmi">Body Mass Index (BMI)</label>
+                        <label class="ui-label required" for="id_height_cm">Height</label>
                         <div class="ui-input-group">
                             <input type="number" 
-                                   name="bmi" 
-                                   id="id_bmi" 
-                                   value="{{ form.bmi.value|default:'' }}" 
+                                   name="height_cm" 
+                                   id="id_height_cm" 
+                                   value="{{ form.height_cm.value|default:'' }}" 
                                    class="ui-input tabular-nums" 
-                                   placeholder="e.g., 28.4" 
-                                   min="11.1" 
-                                   max="69.9" 
+                                   placeholder="e.g., 170.0" 
+                                   min="100.0" 
+                                   max="250.0" 
                                    step="0.1" 
                                    required 
-                                   aria-describedby="id_bmi_help{% if form.bmi.errors %} id_bmi_error{% endif %}"
+                                   aria-describedby="id_height_cm_help{% if form.height_cm.errors %} id_height_cm_error{% endif %}"
+                                   {% if form.height_cm.errors %}aria-invalid="true"{% endif %}>
+                            <span class="ui-input-unit">cm</span>
+                        </div>
+                        <span class="ui-form-help" id="id_height_cm_help">Standing height in centimeters (100.0 to 250.0 cm).</span>
+                        {% if form.height_cm.errors %}
+                        <span class="ui-form-error" id="id_height_cm_error" role="alert">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                            {{ form.height_cm.errors.0 }}
+                        </span>
+                        {% endif %}
+                    </div>
+
+                    <!-- Field 3b: Weight -->
+                    <div class="ui-form-group">
+                        <label class="ui-label required" for="id_weight_kg">Weight</label>
+                        <div class="ui-input-group">
+                            <input type="number" 
+                                   name="weight_kg" 
+                                   id="id_weight_kg" 
+                                   value="{{ form.weight_kg.value|default:'' }}" 
+                                   class="ui-input tabular-nums" 
+                                   placeholder="e.g., 70.0" 
+                                   min="25.0" 
+                                   max="300.0" 
+                                   step="0.1" 
+                                   required 
+                                   aria-describedby="id_weight_kg_help{% if form.weight_kg.errors %} id_weight_kg_error{% endif %}"
+                                   {% if form.weight_kg.errors %}aria-invalid="true"{% endif %}>
+                            <span class="ui-input-unit">kg</span>
+                        </div>
+                        <span class="ui-form-help" id="id_weight_kg_help">Body weight in kilograms (25.0 to 300.0 kg).</span>
+                        {% if form.weight_kg.errors %}
+                        <span class="ui-form-error" id="id_weight_kg_error" role="alert">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                            {{ form.weight_kg.errors.0 }}
+                        </span>
+                        {% endif %}
+                    </div>
+
+                    <!-- Field 3c: Calculated BMI -->
+                    <div class="ui-form-group">
+                        <label class="ui-label" for="id_bmi_display">BMI</label>
+                        <div class="ui-input-group">
+                            <input type="text" 
+                                   id="id_bmi_display" 
+                                   value="{{ form.bmi.value|default:'' }}" 
+                                   class="ui-input tabular-nums" 
+                                   placeholder="Auto-calculated" 
+                                   readonly
+                                   style="background-color: hsl(var(--muted) / 0.5); cursor: default;" 
+                                   aria-describedby="id_bmi_display_help{% if form.bmi.errors %} id_bmi_error{% endif %}"
                                    {% if form.bmi.errors %}aria-invalid="true"{% endif %}>
                             <span class="ui-input-unit">kg/m²</span>
+                            <input type="hidden" name="bmi" id="id_bmi" value="{{ form.bmi.value|default:'' }}">
                         </div>
-                        <span class="ui-form-help" id="id_bmi_help">Model-supported research range: 11.1 to 69.9 kg/m² (1 decimal place).</span>
+                        <span class="ui-form-help" id="id_bmi_display_help">Body Mass Index (BMI) calculated automatically as weight (kg) / [height (m)]² to 2 decimal places.</span>
                         {% if form.bmi.errors %}
                         <span class="ui-form-error" id="id_bmi_error" role="alert">
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
@@ -550,4 +604,61 @@
     </div>
 </div>
 {% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const heightInput = document.getElementById('id_height_cm');
+    const weightInput = document.getElementById('id_weight_kg');
+    const bmiDisplay = document.getElementById('id_bmi_display');
+    const bmiHidden = document.getElementById('id_bmi');
+    const form = document.getElementById('stage1-screening-form');
+
+    function calculateAndRenderBMI() {
+        if (!heightInput || !weightInput || !bmiDisplay) return;
+        const h = parseFloat(heightInput.value);
+        const w = parseFloat(weightInput.value);
+
+        if (!isNaN(h) && !isNaN(w) && h > 0 && w > 0) {
+            const hMeters = h / 100.0;
+            const bmi = w / (hMeters * hMeters);
+            const formatted = bmi.toFixed(2);
+            bmiDisplay.value = formatted;
+            if (bmiHidden) {
+                bmiHidden.value = formatted;
+            }
+        } else {
+            bmiDisplay.value = '';
+            if (bmiHidden) {
+                bmiHidden.value = '';
+            }
+        }
+    }
+
+    if (heightInput && weightInput) {
+        heightInput.addEventListener('input', calculateAndRenderBMI);
+        weightInput.addEventListener('input', calculateAndRenderBMI);
+
+        // Initial run for prefilled / re-rendered values
+        if (heightInput.value && weightInput.value) {
+            calculateAndRenderBMI();
+        } else if (bmiHidden && bmiHidden.value && bmiDisplay) {
+            const existingBmi = parseFloat(bmiHidden.value);
+            if (!isNaN(existingBmi)) {
+                bmiDisplay.value = existingBmi.toFixed(2);
+            }
+        }
+    }
+
+    if (form) {
+        form.addEventListener('reset', function() {
+            setTimeout(function() {
+                if (bmiDisplay) bmiDisplay.value = '';
+                if (bmiHidden) bmiHidden.value = '';
+            }, 10);
+        });
+    }
+});
+</script>
 {% endblock %}

@@ -91,7 +91,7 @@ class ScreeningExplanationResult:
 FEATURE_DISPLAY_METADATA = {
     'age': ('Age', lambda v: f"{v} years"),
     'sex': ('Biological Sex', lambda v: 'Male' if str(v).lower() in ['male', '1', '1.0'] else 'Female'),
-    'bmi': ('Body Mass Index (BMI)', lambda v: f"{float(v):.1f} kg/m²"),
+    'bmi': ('Body Mass Index (BMI)', lambda v: f"{float(v):.2f} kg/m²"),
     'waist_cm': ('Waist Circumference', lambda v: f"{float(v):.1f} cm"),
     'hypertension_history': ('History of Hypertension', lambda v: 'Yes' if str(v).lower() in ['yes', '1', '1.0'] else 'No'),
     'smoking_history': ('Smoking History', lambda v: 'Yes (≥100 cigarettes)' if str(v).lower() in ['yes', '1', '1.0'] else 'No'),

@@ -168,8 +168,8 @@ class ScreeningRecord(models.Model):
         help_text="Biological sex (male or female)"
     )
     bmi = models.DecimalField(
-        max_digits=4,
-        decimal_places=1,
+        max_digits=5,
+        decimal_places=2,
         help_text="Body Mass Index in kg/m² (11.1 to 69.9)"
     )
     waist_cm = models.DecimalField(
