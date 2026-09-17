@@ -1,22 +1,22 @@
 # CRISP-DM Notebook Suite — Validation Report
 
-**Execution Date:** 2026-09-17 19:20:16
-**Total Suite Execution Time:** 6.67 seconds
+**Execution Date:** 2026-09-17 22:31:20
+**Total Suite Execution Time:** 6.91 seconds
 **Status:** PASS — All Notebooks Clean
 
 ## Notebook Execution Results
 
 | # | Notebook | Status | Code Cells | Runtime (s) | Cell Errors |
 |:--|:---------|:-------|:-----------|:------------|:------------|
-| 00 | `00_README_CRISP_DM.ipynb` | **PASS** | 1 | 1.98 | 0 |
+| 00 | `00_README_CRISP_DM.ipynb` | **PASS** | 1 | 2.18 | 0 |
 | 01 | `01_BUSINESS_UNDERSTANDING.ipynb` | **PASS** | 0 | 0.00 | 0 |
-| 02 | `02_DATA_UNDERSTANDING.ipynb` | **PASS** | 8 | 0.83 | 0 |
-| 03 | `03_DATA_PREPARATION.ipynb` | **PASS** | 8 | 0.20 | 0 |
-| 04 | `04_MODELING.ipynb` | **PASS** | 6 | 0.07 | 0 |
-| 05 | `05_THRESHOLD_SELECTION.ipynb` | **PASS** | 6 | 1.29 | 0 |
-| 06 | `06_FINAL_EVALUATION.ipynb` | **PASS** | 8 | 0.25 | 0 |
-| 07 | `07_XAI_HUMAN_REVIEW.ipynb` | **PASS** | 5 | 2.05 | 0 |
-| 08 | `08_STAGE2_USER_EVALUATION.ipynb` | **PASS** | 1 | 0.00 | 0 |
+| 02 | `02_DATA_UNDERSTANDING.ipynb` | **PASS** | 8 | 1.00 | 0 |
+| 03 | `03_DATA_PREPARATION.ipynb` | **PASS** | 8 | 0.21 | 0 |
+| 04 | `04_MODELING.ipynb` | **PASS** | 6 | 0.08 | 0 |
+| 05 | `05_THRESHOLD_SELECTION.ipynb` | **PASS** | 6 | 1.31 | 0 |
+| 06 | `06_FINAL_EVALUATION.ipynb` | **PASS** | 8 | 0.21 | 0 |
+| 07 | `07_XAI_HUMAN_REVIEW.ipynb` | **PASS** | 5 | 1.90 | 0 |
+| 08 | `08_STAGE2_USER_EVALUATION.ipynb` | **PASS** | 1 | 0.01 | 0 |
 
 ## Immutable Artifact Integrity Checks
 

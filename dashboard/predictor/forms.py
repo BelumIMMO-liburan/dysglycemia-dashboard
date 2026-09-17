@@ -403,6 +403,100 @@ class HumanReviewOverrideForm(forms.Form):
         return cleaned_data
 
 
+class UnifiedHumanReviewForm(forms.Form):
+    """
+    Unified form for submitting a human review decision (Accept or Override).
+    Captures the decision, reviewer code, structured override factor / learning signal,
+    and optional contextual rationale in a single, unified review action.
+
+    The Human Override itself is the intervention that generates the learning feedback.
+    """
+    reviewer_code = forms.CharField(
+        max_length=32,
+        min_length=1,
+        strip=True,
+        required=True,
+        widget=forms.TextInput(attrs={
+            'class': 'ui-input',
+            'placeholder': 'e.g. R001, HP-03',
+            'id': 'unified-reviewer-code-input',
+            'maxlength': '32',
+            'autocomplete': 'off',
+            'aria-describedby': 'unified-reviewer-code-help',
+        }),
+        error_messages={
+            'required': 'Enter your reviewer code before submitting this review.',
+            'max_length': 'Reviewer code must be 32 characters or fewer.',
+        }
+    )
+    human_decision = forms.ChoiceField(
+        choices=[
+            ('accept', 'Accept AI Recommendation'),
+            ('override', 'Override AI Recommendation'),
+        ],
+        required=True,
+        widget=forms.RadioSelect(attrs={'class': 'ui-radio-input'}),
+        error_messages={
+            'required': 'Select whether to accept or override the AI recommendation.',
+        }
+    )
+    override_factor = forms.ChoiceField(
+        required=False,
+        widget=forms.Select(attrs={
+            'class': 'ui-select',
+            'id': 'unified-override-factor-select',
+        }),
+    )
+    rationale = forms.CharField(
+        max_length=500,
+        required=False,
+        widget=forms.Textarea(attrs={
+            'class': 'ui-input',
+            'id': 'unified-rationale-input',
+            'rows': 3,
+            'maxlength': '500',
+            'placeholder': 'Optional brief contextual rationale (max 500 characters)...',
+            'aria-describedby': 'unified-rationale-help',
+        }),
+        error_messages={
+            'max_length': 'Rationale must be 500 characters or fewer.',
+        }
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        from .services.feedback_taxonomy import OVERRIDE_FACTOR_CHOICES
+        self.fields['override_factor'].choices = [
+            ('', '-- Select Override Factor / Learning Signal --')
+        ] + list(OVERRIDE_FACTOR_CHOICES)
+
+    def clean_reviewer_code(self):
+        code = self.cleaned_data.get('reviewer_code', '').strip()
+        if not code:
+            raise forms.ValidationError('Enter your reviewer code before submitting this review.')
+        if not re.match(r'^[a-zA-Z0-9_-]+$', code):
+            raise forms.ValidationError('Reviewer code may contain only letters, numbers, hyphens, and underscores.')
+        return code
+
+    def clean(self):
+        cleaned_data = super().clean()
+        decision = cleaned_data.get('human_decision')
+        factor = cleaned_data.get('override_factor')
+        rationale = (cleaned_data.get('rationale') or '').strip()
+        cleaned_data['rationale'] = rationale
+
+        if decision == 'override':
+            if not factor:
+                self.add_error('override_factor', 'Please select an override factor / learning signal.')
+            elif factor == 'other' and not rationale:
+                self.add_error('rationale', 'Provide a brief explanation when selecting Other.')
+        elif decision == 'accept':
+            if not factor:
+                cleaned_data['override_factor'] = 'no_learning_signal'
+
+        return cleaned_data
+
+
 class Stage2EntryForm(forms.Form):
     """
     Initial input form for Stage-2 HbA1c laboratory assessment.

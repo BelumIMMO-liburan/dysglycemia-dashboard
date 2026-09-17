@@ -464,10 +464,8 @@ class HumanReview(models.Model):
         if self.review_action == 'accepted':
             if self.final_referral_recommended != ai_rec:
                 raise ValidationError("Accepted review must have final decision matching AI recommendation.")
-            if self.override_reason_code:
+            if self.override_reason_code and self.override_reason_code != 'no_learning_signal':
                 raise ValidationError("Accepted review must not specify an override reason.")
-            if self.override_note:
-                raise ValidationError("Accepted review must not specify an override note.")
 
         elif self.review_action == 'overridden':
             if self.final_referral_recommended == ai_rec:
@@ -475,15 +473,14 @@ class HumanReview(models.Model):
             if not self.override_reason_code:
                 raise ValidationError("Overridden review requires a structured override reason code.")
 
-            # Branch-specific reason check
+            learning_codes = [c[0] for c in OVERRIDE_LEARNING_FACTORS]
             if ai_rec:
-                valid_codes = [c[0] for c in OVERRIDE_REASONS_REFER_TO_NO_REFER]
-                if self.override_reason_code not in valid_codes:
-                    raise ValidationError(f"Invalid reason code '{self.override_reason_code}' for REFER -> NO REFER override.")
+                valid_codes = [c[0] for c in OVERRIDE_REASONS_REFER_TO_NO_REFER] + learning_codes
             else:
-                valid_codes = [c[0] for c in OVERRIDE_REASONS_NO_REFER_TO_REFER]
-                if self.override_reason_code not in valid_codes:
-                    raise ValidationError(f"Invalid reason code '{self.override_reason_code}' for NO REFER -> REFER override.")
+                valid_codes = [c[0] for c in OVERRIDE_REASONS_NO_REFER_TO_REFER] + learning_codes
+
+            if self.override_reason_code not in valid_codes:
+                raise ValidationError(f"Invalid reason code '{self.override_reason_code}' for override.")
 
             if self.override_reason_code == 'other':
                 if not self.override_note or not self.override_note.strip():
@@ -505,9 +502,22 @@ OVERRIDE_REASONS_NO_REFER_TO_REFER = [
     ('other', 'Other reason'),
 ]
 
+OVERRIDE_LEARNING_FACTORS = [
+    ('bmi_overweighted', 'BMI was over-weighted'),
+    ('age_overweighted', 'Age was over-weighted'),
+    ('waist_overweighted', 'Waist circumference was over-weighted'),
+    ('hypertension_overweighted', 'Hypertension was over-weighted'),
+    ('smoking_overweighted', 'Smoking history was over-weighted'),
+    ('sedentary_overweighted', 'Sedentary time was over-weighted'),
+    ('multiple_factors_overweighted', 'Multiple factors were over-weighted'),
+    ('other', 'Other'),
+    ('no_learning_signal', 'No learning signal'),
+]
+
 ALL_OVERRIDE_REASONS_DICT = {
     **dict(OVERRIDE_REASONS_REFER_TO_NO_REFER),
     **dict(OVERRIDE_REASONS_NO_REFER_TO_REFER),
+    **dict(OVERRIDE_LEARNING_FACTORS),
 }
 
 

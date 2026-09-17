@@ -71,29 +71,79 @@ STAGE1_FEATURES: Tuple[str, ...] = (
 # ---------------------------------------------------------------------------
 FEEDBACK_CATEGORIES: Dict[str, FeedbackCategory] = {}
 
-_RAW_CATEGORIES = [
-    # --- Feature-specific: BMI ---
+_RAW_CATEGORIES: List[FeedbackCategory] = [
+    # --- Canonical Override Factors / Learning Signals (Section 2 Specification) ---
     FeedbackCategory(
         category_id="bmi_overweighted",
-        category_name="BMI weighted too strongly",
+        category_name="BMI was over-weighted",
         description="The reviewer believes BMI had too much influence on the screening result for this case.",
         relevant_features=["bmi"],
         learning_direction=DIR_REDUCE_INFLUENCE,
     ),
+    FeedbackCategory(
+        category_id="age_overweighted",
+        category_name="Age was over-weighted",
+        description="The reviewer believes age had too much influence on the screening result for this case.",
+        relevant_features=["age"],
+        learning_direction=DIR_REDUCE_INFLUENCE,
+    ),
+    FeedbackCategory(
+        category_id="waist_overweighted",
+        category_name="Waist circumference was over-weighted",
+        description="The reviewer believes waist circumference had too much influence on the screening result.",
+        relevant_features=["waist_cm"],
+        learning_direction=DIR_REDUCE_INFLUENCE,
+    ),
+    FeedbackCategory(
+        category_id="hypertension_overweighted",
+        category_name="Hypertension was over-weighted",
+        description="The reviewer believes hypertension had too much influence on the screening result.",
+        relevant_features=["hypertension_history"],
+        learning_direction=DIR_REDUCE_INFLUENCE,
+    ),
+    FeedbackCategory(
+        category_id="smoking_overweighted",
+        category_name="Smoking history was over-weighted",
+        description="The reviewer believes smoking history had too much influence on the screening result.",
+        relevant_features=["smoking_history"],
+        learning_direction=DIR_REDUCE_INFLUENCE,
+    ),
+    FeedbackCategory(
+        category_id="sedentary_overweighted",
+        category_name="Sedentary time was over-weighted",
+        description="The reviewer believes sedentary time had too much influence on the screening result.",
+        relevant_features=["sedentary_minutes_day"],
+        learning_direction=DIR_REDUCE_INFLUENCE,
+    ),
+    FeedbackCategory(
+        category_id="multiple_factors_overweighted",
+        category_name="Multiple factors were over-weighted",
+        description="The reviewer believes multiple factors were collectively over-weighted, pushing probability too high.",
+        relevant_features=[],
+        learning_direction=DIR_REDUCE_GLOBAL,
+    ),
+    FeedbackCategory(
+        category_id="other",
+        category_name="Other",
+        description="Contextual or idiosyncratic reason not mapped to a specific feature. Does not create automatic adaptation.",
+        relevant_features=[],
+        learning_direction=DIR_NO_LEARNING,
+    ),
+    FeedbackCategory(
+        category_id="no_learning_signal",
+        category_name="No learning signal",
+        description="Decision does not convey a directional correction signal.",
+        relevant_features=[],
+        learning_direction=DIR_NO_LEARNING,
+    ),
+
+    # --- Supplementary / Compatibility Categories ---
     FeedbackCategory(
         category_id="bmi_underweighted",
         category_name="BMI weighted too weakly",
         description="The reviewer believes BMI should have had more influence on the screening result.",
         relevant_features=["bmi"],
         learning_direction=DIR_INCREASE_INFLUENCE,
-    ),
-    # --- Feature-specific: Age ---
-    FeedbackCategory(
-        category_id="age_overweighted",
-        category_name="Age weighted too strongly",
-        description="The reviewer believes age had too much influence on the screening result for this case.",
-        relevant_features=["age"],
-        learning_direction=DIR_REDUCE_INFLUENCE,
     ),
     FeedbackCategory(
         category_id="age_underweighted",
@@ -102,28 +152,12 @@ _RAW_CATEGORIES = [
         relevant_features=["age"],
         learning_direction=DIR_INCREASE_INFLUENCE,
     ),
-    # --- Feature-specific: Waist ---
-    FeedbackCategory(
-        category_id="waist_overweighted",
-        category_name="Waist circumference weighted too strongly",
-        description="The reviewer believes waist circumference had too much influence on the screening result.",
-        relevant_features=["waist_cm"],
-        learning_direction=DIR_REDUCE_INFLUENCE,
-    ),
     FeedbackCategory(
         category_id="waist_underweighted",
         category_name="Waist circumference weighted too weakly",
         description="The reviewer believes waist circumference should have had more influence.",
         relevant_features=["waist_cm"],
         learning_direction=DIR_INCREASE_INFLUENCE,
-    ),
-    # --- Feature-specific: Sedentary ---
-    FeedbackCategory(
-        category_id="sedentary_overweighted",
-        category_name="Sedentary time weighted too strongly",
-        description="The reviewer believes sedentary time had too much influence on the screening result.",
-        relevant_features=["sedentary_minutes_day"],
-        learning_direction=DIR_REDUCE_INFLUENCE,
     ),
     FeedbackCategory(
         category_id="sedentary_underweighted",
@@ -132,7 +166,6 @@ _RAW_CATEGORIES = [
         relevant_features=["sedentary_minutes_day"],
         learning_direction=DIR_INCREASE_INFLUENCE,
     ),
-    # --- Feature-specific: Contextual (binary predictors) ---
     FeedbackCategory(
         category_id="hypertension_context",
         category_name="Hypertension context differs from model assumption",
@@ -154,7 +187,6 @@ _RAW_CATEGORIES = [
         relevant_features=["sex"],
         learning_direction=DIR_CONTEXTUAL,
     ),
-    # --- Global direction ---
     FeedbackCategory(
         category_id="general_risk_too_high",
         category_name="Overall risk assessment too high",
@@ -169,20 +201,50 @@ _RAW_CATEGORIES = [
         relevant_features=[],
         learning_direction=DIR_INCREASE_GLOBAL,
     ),
-    # --- Unmapped (no learning) ---
     FeedbackCategory(
         category_id="unmapped",
         category_name="Could not map to a specific feedback category",
         description="The feedback could not be reliably mapped to any structured category. No learning signal is generated.",
         relevant_features=[],
         learning_direction=DIR_NO_LEARNING,
-        active=True,  # Always available as fallback
+        active=True,
     ),
 ]
 
 # Build the lookup dictionary
 for _cat in _RAW_CATEGORIES:
     FEEDBACK_CATEGORIES[_cat.category_id] = _cat
+
+# ---------------------------------------------------------------------------
+# Canonical Override Factor Categories for Unified Human Review UI
+# ---------------------------------------------------------------------------
+OVERRIDE_FACTOR_CHOICES: List[Tuple[str, str]] = [
+    ("bmi_overweighted", "BMI was over-weighted"),
+    ("age_overweighted", "Age was over-weighted"),
+    ("waist_overweighted", "Waist circumference was over-weighted"),
+    ("hypertension_overweighted", "Hypertension was over-weighted"),
+    ("smoking_overweighted", "Smoking history was over-weighted"),
+    ("sedentary_overweighted", "Sedentary time was over-weighted"),
+    ("multiple_factors_overweighted", "Multiple factors were over-weighted"),
+    ("other", "Other"),
+    ("no_learning_signal", "No learning signal"),
+]
+
+CORRECTIVE_LEARNING_FACTORS: Tuple[str, ...] = (
+    "bmi_overweighted",
+    "age_overweighted",
+    "waist_overweighted",
+    "hypertension_overweighted",
+    "smoking_overweighted",
+    "sedentary_overweighted",
+    "multiple_factors_overweighted",
+)
+
+
+def is_corrective_learning_factor(factor_code: str) -> bool:
+    """Return True if the factor represents an actionable model adaptation signal."""
+    return factor_code in CORRECTIVE_LEARNING_FACTORS
+
 
 
 # ---------------------------------------------------------------------------

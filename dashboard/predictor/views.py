@@ -378,6 +378,8 @@ def screening_result_view(request, screening_id):
     open_override_dialog = request.session.pop('open_override_dialog', False)
     review_form = HumanReviewAcceptForm()
     override_form = HumanReviewOverrideForm(ai_referral_recommended=record.ai_referral_recommended)
+    from .forms import UnifiedHumanReviewForm
+    unified_form = UnifiedHumanReviewForm()
 
     # Branch-specific reason taxonomy & opposite decision for UI presentation
     if record.ai_referral_recommended:
@@ -393,9 +395,22 @@ def screening_result_view(request, screening_id):
     human_feedback = getattr(human_review, 'feedback', None) if human_review else None
     feedback_error = request.session.pop('feedback_error', None)
     experiment_message = request.session.pop('experiment_message', None)
-    from .services.feedback_taxonomy import get_active_categories
+    from .services.feedback_taxonomy import (
+        get_active_categories,
+        OVERRIDE_FACTOR_CHOICES,
+        is_corrective_learning_factor,
+    )
     feedback_categories = get_active_categories()
-    feedback_form = HumanFeedbackForm() if human_review and not human_feedback else None
+    feedback_form = None  # Standalone feedback form deprecated in favor of unified review
+
+    override_factor_display = None
+    is_corrective_signal = False
+    if human_review and human_review.review_action == 'overridden':
+        reason = human_review.override_reason_code
+        override_factor_display = ALL_OVERRIDE_REASONS_DICT.get(reason, reason)
+        is_corrective_signal = is_corrective_learning_factor(reason)
+
+    is_feedback_lab = (getattr(settings, 'APP_MODE', 'feedback_lab').lower() == 'feedback_lab')
 
     from .models import SimilarCaseComparison
     similar_comparisons = list(
@@ -421,6 +436,11 @@ def screening_result_view(request, screening_id):
         'open_override_dialog': open_override_dialog,
         'review_form': review_form,
         'override_form': override_form,
+        'unified_form': unified_form,
+        'override_factor_choices': OVERRIDE_FACTOR_CHOICES,
+        'override_factor_display': override_factor_display,
+        'is_corrective_signal': is_corrective_signal,
+        'is_feedback_lab': is_feedback_lab,
         'branch_override_reasons': branch_override_reasons,
         'opposite_decision_text': opposite_decision_text,
         'opposite_decision_badge': opposite_decision_badge,
@@ -432,6 +452,69 @@ def screening_result_view(request, screening_id):
         'similar_comparisons': similar_comparisons,
     }
     return render(request, 'predictor/screening_result.html', context)
+
+
+def unified_review_view(request, screening_id):
+    """
+    Finalize a human review in a single, unified action (Accept or Override).
+    Captures the decision, reviewer code, override factor / learning signal,
+    and optional rationale without a secondary feedback submission step.
+    """
+    if request.method != 'POST':
+        return redirect('predictor:screening_result', screening_id=screening_id)
+
+    screening_record = get_object_or_404(ScreeningRecord, id=screening_id)
+
+    # 1. Duplicate Review Protection
+    if hasattr(screening_record, 'human_review') and screening_record.human_review is not None:
+        return redirect('predictor:screening_result', screening_id=screening_record.id)
+
+    # 2. Explanation Prerequisite Enforcement
+    explanation = getattr(screening_record, 'explanation', None)
+    if not explanation or explanation.status != 'generated':
+        request.session['review_error'] = (
+            "Human review is unavailable because the model explanation for this screening could not be generated."
+        )
+        return redirect('predictor:screening_result', screening_id=screening_record.id)
+
+    # 3. Validate Unified Form
+    from .forms import UnifiedHumanReviewForm
+    form = UnifiedHumanReviewForm(request.POST)
+    if not form.is_valid():
+        first_err = None
+        for field, errs in form.errors.items():
+            if errs:
+                first_err = errs[0]
+                break
+        request.session['review_error'] = first_err or "Invalid review submission."
+        return redirect('predictor:screening_result', screening_id=screening_record.id)
+
+    reviewer_code = form.cleaned_data['reviewer_code']
+    human_decision = form.cleaned_data['human_decision']
+    override_factor = form.cleaned_data.get('override_factor')
+    rationale = form.cleaned_data.get('rationale', '')
+
+    try:
+        from .services.feedback_learning import record_review_with_learning_signal
+        review, feedback = record_review_with_learning_signal(
+            screening_record=screening_record,
+            reviewer_code=reviewer_code,
+            human_decision=human_decision,
+            override_factor=override_factor,
+            rationale=rationale,
+        )
+        _log_eval_event(request, 'unified_review_submitted', {
+            'record_id': str(screening_record.id),
+            'action': review.review_action,
+            'factor': override_factor,
+            'has_feedback': feedback is not None,
+            'is_eligible': feedback.is_eligible_for_learning if feedback else False,
+        })
+    except Exception as e:
+        logger.error(f"Failed to record unified review for {screening_record.id}: {e}", exc_info=True)
+        request.session['review_error'] = f"The review could not be saved: {e}"
+
+    return redirect('predictor:screening_result', screening_id=screening_record.id)
 
 
 def accept_review_view(request, screening_id):
@@ -471,21 +554,14 @@ def accept_review_view(request, screening_id):
 
     cleaned_reviewer_code = form.cleaned_data['reviewer_code']
 
-    # 4. Derive final decision strictly from immutable AI recommendation
-    derived_final_referral = screening_record.ai_referral_recommended
-
-    # 5. Persist HumanReview with atomic duplicate / race-condition protection
+    # 4. Delegate to unified service helper
     try:
-        with transaction.atomic():
-            if not HumanReview.objects.filter(screening_record=screening_record).exists():
-                review = HumanReview(
-                    screening_record=screening_record,
-                    reviewer_code=cleaned_reviewer_code,
-                    review_action='accepted',
-                    final_referral_recommended=derived_final_referral,
-                )
-                review.full_clean()
-                review.save()
+        from .services.feedback_learning import record_review_with_learning_signal
+        record_review_with_learning_signal(
+            screening_record=screening_record,
+            reviewer_code=cleaned_reviewer_code,
+            human_decision='accept',
+        )
     except Exception as e:
         logger.error(f"Failed to persist HumanReview for {screening_record.id}: {e}", exc_info=True)
         request.session['review_error'] = "The review could not be saved. Please try again."
@@ -540,23 +616,16 @@ def override_review_view(request, screening_id):
     cleaned_reason_code = form.cleaned_data['override_reason_code']
     cleaned_note = form.cleaned_data.get('override_note', '')
 
-    # 4. Derive final decision strictly as opposite of AI recommendation
-    derived_final_referral = not screening_record.ai_referral_recommended
-
-    # 5. Persist HumanReview with atomic duplicate / race-condition protection
+    # 4. Delegate to unified service helper
     try:
-        with transaction.atomic():
-            if not HumanReview.objects.filter(screening_record=screening_record).exists():
-                review = HumanReview(
-                    screening_record=screening_record,
-                    reviewer_code=cleaned_reviewer_code,
-                    review_action='overridden',
-                    final_referral_recommended=derived_final_referral,
-                    override_reason_code=cleaned_reason_code,
-                    override_note=cleaned_note if cleaned_note else None,
-                )
-                review.full_clean()
-                review.save()
+        from .services.feedback_learning import record_review_with_learning_signal
+        record_review_with_learning_signal(
+            screening_record=screening_record,
+            reviewer_code=cleaned_reviewer_code,
+            human_decision='override',
+            override_factor=cleaned_reason_code,
+            rationale=cleaned_note,
+        )
     except Exception as e:
         logger.error(f"Failed to persist HumanReview override for {screening_record.id}: {e}", exc_info=True)
         request.session['override_error'] = "The override could not be saved. Please try again."

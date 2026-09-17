@@ -11,6 +11,7 @@ urlpatterns = [
     path('screening/<uuid:screening_id>/result/', views.screening_result_view, name='screening_result'),
     path('screening/<uuid:screening_id>/review/accept/', views.accept_review_view, name='accept_review'),
     path('screening/<uuid:screening_id>/review/override/', views.override_review_view, name='override_review'),
+    path('screening/<uuid:screening_id>/review/unified/', views.unified_review_view, name='unified_review'),
     path('screening/<uuid:screening_id>/stage2/', views.stage2_view, name='stage2'),
     path('screening/<uuid:screening_id>/stage2/confirm/', views.stage2_confirm_view, name='stage2_confirm'),
     path('review/', views.review_queue_view, name='review_queue'),

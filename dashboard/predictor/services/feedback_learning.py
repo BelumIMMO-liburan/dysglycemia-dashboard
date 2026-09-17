@@ -686,3 +686,161 @@ def activate_learning_batch(batch_id: str) -> Dict[str, Any]:
         result["error"] = str(e)
 
     return result
+
+
+def record_review_with_learning_signal(
+    screening_record,
+    reviewer_code: str,
+    human_decision: str,  # 'accept' or 'override'
+    override_factor: Optional[str] = None,
+    rationale: str = "",
+) -> Tuple[Any, Optional[Any]]:
+    """
+    Unified entry point for recording human review and capturing its structured learning signal.
+
+    In the unified workflow, the Human Override itself is the intervention that generates
+    the learning feedback. No secondary feedback submission step exists.
+
+    GOVERNANCE RULES:
+    1. Explanation prerequisite: ScreeningExplanation.status == 'generated' required.
+    2. Reviewer code must be alphanumeric + hyphens/underscores (max 32 chars).
+    3. Final decision derived server-side:
+       - 'accept' -> screening_record.ai_referral_recommended
+       - 'override' -> not screening_record.ai_referral_recommended
+    4. One review per screening (idempotent / duplicate protection).
+    5. Override reason code maps directly to the canonical 9 override factors / learning signals.
+    6. For overrides, canonical HumanFeedback is created atomically.
+    7. Eligibility:
+       - Only eligible if APP_MODE == 'feedback_lab', not a practice record, and factor is corrective.
+       - In evaluation mode or for practice records: is_eligible_for_learning=False, learning_status='excluded'.
+    8. Free-text rationale is analyzed with NLP for auditability, but the selected factor is canonical.
+    """
+    from django.conf import settings
+    from django.db import transaction
+    from ..models import HumanReview, HumanFeedback
+    from . import model_versioning
+    from .feedback_taxonomy import (
+        get_category,
+        get_taxonomy_version,
+        is_corrective_learning_factor,
+        DIR_NO_LEARNING,
+    )
+    from .feedback_nlp import interpret_feedback_text
+
+    # 1. Idempotency / Duplicate Check
+    if hasattr(screening_record, 'human_review') and screening_record.human_review is not None:
+        existing_review = screening_record.human_review
+        existing_feedback = getattr(existing_review, 'feedback', None)
+        return existing_review, existing_feedback
+
+    # 2. Explanation Prerequisite Enforcement
+    explanation = getattr(screening_record, 'explanation', None)
+    if not explanation or explanation.status != 'generated':
+        raise ValueError("Human review requires a verified, generated model explanation.")
+
+    # 3. Validate Reviewer Code
+    cleaned_code = (reviewer_code or "").strip()
+    if not cleaned_code:
+        raise ValueError("Reviewer code is required.")
+    if len(cleaned_code) > 32:
+        raise ValueError("Reviewer code must be 32 characters or fewer.")
+
+    # 4. Derive Decision and Action
+    decision_norm = (human_decision or "").strip().lower()
+    if decision_norm not in ("accept", "override"):
+        raise ValueError(f"Invalid human decision '{human_decision}'. Must be 'accept' or 'override'.")
+
+    if decision_norm == "accept":
+        review_action = "accepted"
+        final_referral = screening_record.ai_referral_recommended
+        reason_code = None
+    else:
+        review_action = "overridden"
+        final_referral = not screening_record.ai_referral_recommended
+        factor = (override_factor or "").strip()
+        if not factor:
+            raise ValueError("An override factor must be selected when overriding the AI recommendation.")
+        reason_code = factor
+
+    cleaned_note = (rationale or "").strip() or None
+
+    # 5. NLP Analysis on Rationale (if provided)
+    nlp_confidence = None
+    nlp_raw_output = None
+    if cleaned_note:
+        try:
+            nlp_res = interpret_feedback_text(cleaned_note)
+            nlp_confidence = nlp_res.confidence
+            nlp_raw_output = nlp_res.to_dict()
+        except Exception as nlp_err:
+            logger.warning(f"NLP interpretation failed on review note: {nlp_err}")
+            nlp_raw_output = {"error": str(nlp_err)}
+
+    # 6. Atomic Persistence of Review & Feedback
+    active_version = model_versioning.get_active_version()
+    current_mode = getattr(settings, 'APP_MODE', 'feedback_lab').lower()
+    is_practice = getattr(screening_record, 'is_practice', False)
+
+    with transaction.atomic():
+        # Double check inside transaction
+        if HumanReview.objects.filter(screening_record=screening_record).exists():
+            existing_review = HumanReview.objects.get(screening_record=screening_record)
+            return existing_review, getattr(existing_review, 'feedback', None)
+
+        review = HumanReview(
+            screening_record=screening_record,
+            reviewer_code=cleaned_code,
+            review_action=review_action,
+            final_referral_recommended=final_referral,
+            override_reason_code=reason_code,
+            override_note=cleaned_note,
+        )
+        review.full_clean()
+        review.save()
+
+        feedback = None
+        if review_action == "overridden":
+            cat = get_category(reason_code)
+            direction = cat.learning_direction if cat else DIR_NO_LEARNING
+            rel_feature = cat.relevant_features[0] if (cat and cat.relevant_features) else None
+
+            # Mode guard and eligibility
+            is_corrective = is_corrective_learning_factor(reason_code)
+            is_eligible = (
+                current_mode == "feedback_lab"
+                and not is_practice
+                and is_corrective
+                and direction != DIR_NO_LEARNING
+            )
+
+            feedback = HumanFeedback.objects.create(
+                human_review=review,
+                structured_category=reason_code,
+                relevant_feature=rel_feature,
+                feedback_direction=direction,
+                feedback_text=cleaned_note or "",
+                nlp_confidence=nlp_confidence,
+                nlp_raw_output=nlp_raw_output,
+                is_eligible_for_learning=is_eligible,
+                learning_status="pending" if is_eligible else "excluded",
+                model_version_at_feedback=active_version.version_label if active_version else "GAM-v1-baseline",
+                taxonomy_version=get_taxonomy_version(),
+            )
+        elif cleaned_note:
+            # Audit feedback for accepted review with note
+            feedback = HumanFeedback.objects.create(
+                human_review=review,
+                structured_category="no_learning_signal",
+                relevant_feature=None,
+                feedback_direction=DIR_NO_LEARNING,
+                feedback_text=cleaned_note,
+                nlp_confidence=nlp_confidence,
+                nlp_raw_output=nlp_raw_output,
+                is_eligible_for_learning=False,
+                learning_status="excluded",
+                model_version_at_feedback=active_version.version_label if active_version else "GAM-v1-baseline",
+                taxonomy_version=get_taxonomy_version(),
+            )
+
+    return review, feedback
+

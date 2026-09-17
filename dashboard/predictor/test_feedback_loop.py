@@ -76,6 +76,7 @@ from predictor.services.feedback_learning import (
     MINIMUM_FEEDBACK_FOR_BATCH,
     MAX_DELTA_LOG_ODDS,
     ADAPTATION_FEATURE_NAMES,
+    record_review_with_learning_signal,
 )
 from predictor.services.adapted_inference import (
     predict_adapted,
@@ -809,3 +810,178 @@ class AuditTrailImmutabilityTests(TestCase):
         self.assertEqual(rec_a.ai_referral_recommended, orig_rec)
         self.assertEqual(rec_a.decision_threshold, orig_thresh)
         self.assertEqual(rec_a.model_sha256, orig_sha)
+
+
+class UnifiedHumanReviewAndLearningTests(TestCase):
+    """
+    Tests for the Unified Human Review & Feedback Architecture.
+    Verifies:
+    1. Human override itself is the intervention that generates the feedback.
+    2. Single-step submission captures review decision, factor, and rationale.
+    3. Eligible feedback is generated automatically in Feedback Lab mode.
+    4. Evaluation mode participant data is strictly isolated (is_eligible=False).
+    5. Practice records are strictly isolated (is_eligible=False).
+    6. Non-corrective factors produce non-eligible feedback.
+    7. No standalone feedback form or secondary submission step.
+    """
+
+    def setUp(self):
+        self.client = Client()
+        self.record = ScreeningRecord.objects.create(
+            age=52,
+            sex='male',
+            bmi=Decimal('31.5'),
+            waist_cm=Decimal('102.0'),
+            hypertension_history='yes',
+            smoking_history='no',
+            sedentary_minutes_day=450,
+            screening_probability=0.28,
+            ai_referral_recommended=True,
+            decision_threshold=Decimal('0.1389'),
+            model_name="Phase-5 GAM",
+            model_sha256=EXPECTED_GAM_SHA256,
+            preprocessor_sha256="test_sha",
+        )
+        self.explanation = ScreeningExplanation.objects.create(
+            screening_record=self.record,
+            status='generated',
+            intercept=-2.0,
+            reconstructed_linear_predictor=-1.15,
+            reconstructed_probability=0.24,
+            contributions_json=[
+                {"feature_name": "bmi", "display_name": "BMI", "formatted_value": "31.5", "contribution": 0.85, "direction": "higher"},
+            ],
+            reconstruction_error=0.001,
+            model_sha256=EXPECTED_GAM_SHA256,
+        )
+
+    def test_override_creates_review_and_feedback_single_action(self):
+        """Human override atomically generates both HumanReview and canonical HumanFeedback."""
+        review, feedback = record_review_with_learning_signal(
+            screening_record=self.record,
+            reviewer_code="CLINICIAN_01",
+            human_decision="override",
+            override_factor="bmi_overweighted",
+            rationale="BMI is elevated due to muscular build, not adiposity.",
+        )
+
+        self.assertIsNotNone(review)
+        self.assertEqual(review.review_action, "overridden")
+        # Final decision is opposite of AI recommendation (True -> False)
+        self.assertFalse(review.final_referral_recommended)
+        self.assertEqual(review.override_reason_code, "bmi_overweighted")
+        self.assertEqual(review.override_note, "BMI is elevated due to muscular build, not adiposity.")
+
+        self.assertIsNotNone(feedback)
+        self.assertEqual(feedback.human_review, review)
+        self.assertEqual(feedback.structured_category, "bmi_overweighted")
+        self.assertEqual(feedback.relevant_feature, "bmi")
+        self.assertEqual(feedback.feedback_direction, DIR_REDUCE_INFLUENCE)
+        self.assertTrue(feedback.is_eligible_for_learning)
+        self.assertEqual(feedback.learning_status, "pending")
+        self.assertEqual(feedback.feedback_text, "BMI is elevated due to muscular build, not adiposity.")
+        self.assertIsNotNone(feedback.nlp_raw_output)
+
+    def test_accept_derives_decision_and_no_corrective_signal(self):
+        """Accepting AI recommendation derives decision from AI output and produces no corrective learning signal."""
+        review, feedback = record_review_with_learning_signal(
+            screening_record=self.record,
+            reviewer_code="CLINICIAN_02",
+            human_decision="accept",
+        )
+
+        self.assertIsNotNone(review)
+        self.assertEqual(review.review_action, "accepted")
+        # Final decision matches AI recommendation (True -> True)
+        self.assertTrue(review.final_referral_recommended)
+        self.assertIsNone(review.override_reason_code)
+
+        # No corrective feedback generated
+        if feedback is not None:
+            self.assertFalse(feedback.is_eligible_for_learning)
+            self.assertEqual(feedback.learning_status, "excluded")
+
+    def test_evaluation_mode_participant_isolation(self):
+        """In evaluation mode, overrides never generate active learning signals."""
+        from django.conf import settings
+        original_mode = getattr(settings, 'APP_MODE', 'feedback_lab')
+        try:
+            settings.APP_MODE = 'evaluation'
+            review, feedback = record_review_with_learning_signal(
+                screening_record=self.record,
+                reviewer_code="PARTICIPANT_99",
+                human_decision="override",
+                override_factor="bmi_overweighted",
+                rationale="Evaluation override test",
+            )
+            self.assertIsNotNone(feedback)
+            self.assertFalse(feedback.is_eligible_for_learning)
+            self.assertEqual(feedback.learning_status, "excluded")
+        finally:
+            settings.APP_MODE = original_mode
+
+    def test_practice_record_isolation(self):
+        """Practice cases (P0) never generate active learning signals."""
+        self.record.is_practice = True
+        self.record.save()
+
+        review, feedback = record_review_with_learning_signal(
+            screening_record=self.record,
+            reviewer_code="TRAINEE_01",
+            human_decision="override",
+            override_factor="waist_overweighted",
+            rationale="Practice exercise",
+        )
+        self.assertIsNotNone(feedback)
+        self.assertFalse(feedback.is_eligible_for_learning)
+        self.assertEqual(feedback.learning_status, "excluded")
+
+    def test_non_corrective_factor_not_eligible(self):
+        """Non-learning signal overrides are excluded from candidate adaptation training."""
+        review, feedback = record_review_with_learning_signal(
+            screening_record=self.record,
+            reviewer_code="CLINICIAN_03",
+            human_decision="override",
+            override_factor="no_learning_signal",
+            rationale="Disagreement without directional feature guidance",
+        )
+        self.assertIsNotNone(feedback)
+        self.assertFalse(feedback.is_eligible_for_learning)
+        self.assertEqual(feedback.learning_status, "excluded")
+
+    def test_unified_review_view_post_and_template_render(self):
+        """Test POST to unified_review_view and verify template renders finalized state without standalone feedback card."""
+        url = reverse('predictor:unified_review', kwargs={'screening_id': self.record.id})
+        response = self.client.post(url, {
+            'reviewer_code': 'DOC_UNIFIED',
+            'human_decision': 'override',
+            'override_factor': 'bmi_overweighted',
+            'rationale': 'Unified workflow test note',
+        })
+        self.assertEqual(response.status_code, 302)
+
+        # Refresh and check review
+        self.record.refresh_from_db()
+        self.assertTrue(hasattr(self.record, 'human_review'))
+        rev = self.record.human_review
+        self.assertEqual(rev.review_action, 'overridden')
+        self.assertEqual(rev.reviewer_code, 'DOC_UNIFIED')
+        self.assertTrue(hasattr(rev, 'feedback'))
+        self.assertTrue(rev.feedback.is_eligible_for_learning)
+
+        # Follow redirect to screening_result page
+        result_url = reverse('predictor:screening_result', kwargs={'screening_id': self.record.id})
+        get_response = self.client.get(result_url)
+        self.assertEqual(get_response.status_code, 200)
+
+        content = get_response.content.decode('utf-8')
+        # Finalized review card must be present
+        self.assertIn('id="human-review-card-finalized"', content)
+        # Status badge for feedback signal must be present
+        self.assertIn('Feedback Signal Recorded (Eligible for Learning)', content)
+        # Link to experiment must be present
+        self.assertIn('View in Feedback Lab Experiment', content)
+        # Standalone feedback submission card must NOT be present
+        self.assertNotIn('id="feedback-submission-card"', content)
+        self.assertNotIn('Provide Feedback for Learning Loop (Optional)', content)
+
