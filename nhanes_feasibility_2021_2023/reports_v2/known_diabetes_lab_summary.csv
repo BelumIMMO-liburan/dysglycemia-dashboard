@@ -1,0 +1,4 @@
+group,total_n,hba1c_valid,hba1c_normal,hba1c_prediab_range,hba1c_diab_range,hba1c_missing,fpg_valid,fpg_normal,fpg_prediab_range,fpg_diab_range,fpg_missing
+known_diabetes (DIQ010=1),1073,820,65,186,569,253,409,29,123,257,664
+no_known_diabetes (DIQ010!=1),7080,5182,3626,1404,152,1898,2654,1340,1188,126,4426
+no_known_dysglycemia (DIQ010=2 & DIQ160=2),5907,4260,3277,916,67,1647,2167,1211,902,54,3740

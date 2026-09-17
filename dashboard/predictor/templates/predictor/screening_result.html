@@ -1,0 +1,1234 @@
+{% extends 'predictor/base.html' %}
+
+{% block title %}Screening Result — Dysglycemia Screening Dashboard{% endblock %}
+{% block breadcrumb %}Screening Result{% endblock %}
+
+{% block content %}
+<div class="ui-page-header">
+    <div class="ui-page-header-row">
+        <div>
+            <h1 class="ui-page-title">Stage-1 Screening Result</h1>
+            <p class="ui-page-description">
+                Non-laboratory risk screening evaluated by the frozen research model.
+            </p>
+        </div>
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span class="ui-badge ui-badge-outline" id="record-id-badge" title="Full UUID: {{ record.id }}">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                ID: {{ record.id|stringformat:"s"|slice:":8" }}...
+            </span>
+            <span class="ui-badge ui-badge-outline">
+                Phase D2.4 Persisted Record
+            </span>
+        </div>
+    </div>
+</div>
+
+{% if record.is_practice %}
+<div class="ui-alert ui-alert-info" style="margin-bottom: 1.5rem;" id="practice-record-banner">
+    <svg class="ui-alert-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" x2="12.01" y1="8" y2="8"/>
+    </svg>
+    <div class="ui-alert-content">
+        <p class="ui-alert-title">Kasus Latihan P0 (Orientasi Alur Kerja)</p>
+        <p class="ui-alert-body">
+            Ini adalah kasus latihan orientasi. Anda dapat memeriksa prediksi probabilitas model, menelaah grafik kontribusi fitur (XAI), mencoba tombol Setuju (Accept) atau Ubah Keputusan (Override), dan mengisi umpan balik terstruktur. Kasus ini dikecualikan dari data analisis riset.
+        </p>
+    </div>
+</div>
+{% endif %}
+
+{% if stage2_error %}
+
+<div class="ui-alert ui-alert-destructive" style="margin-bottom: 1.5rem; padding: 0.75rem 1rem; border-radius: var(--radius); display: flex; align-items: center; gap: 0.5rem; background: hsl(var(--destructive-muted)); border: 1px solid hsl(var(--destructive)/0.3); color: hsl(var(--destructive));" id="stage2-error-alert" role="alert">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    <span style="font-size: 0.8125rem; font-weight: 500;">{{ stage2_error }}</span>
+</div>
+{% endif %}
+
+<!-- Two-Stage Screening Workflow Timeline -->
+<div class="ui-card" style="margin-bottom: 1.5rem; padding: 1rem 1.25rem;" id="two-stage-timeline">
+    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+        <!-- Step 1: Stage-1 Screening -->
+        <div style="display: flex; align-items: center; gap: 0.6rem;">
+            <div style="width: 28px; height: 28px; border-radius: 50%; background: hsl(var(--success)/0.15); color: hsl(var(--success)); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.8125rem;">
+                ✓
+            </div>
+            <div>
+                <span style="font-size: 0.8125rem; font-weight: 600; color: hsl(var(--foreground)); display: block;">Stage 1: Non-Lab Screening</span>
+                <span style="font-size: 0.6875rem; color: hsl(var(--muted-foreground));">GAM Inference Evaluated</span>
+            </div>
+        </div>
+
+        <div style="flex: 1; height: 2px; background: hsl(var(--border)); min-width: 20px; margin: 0 0.5rem;" class="timeline-connector"></div>
+
+        <!-- Step 2: Human Review -->
+        <div style="display: flex; align-items: center; gap: 0.6rem;">
+            {% if human_review %}
+            <div style="width: 28px; height: 28px; border-radius: 50%; background: hsl(var(--success)/0.15); color: hsl(var(--success)); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.8125rem;">
+                ✓
+            </div>
+            <div>
+                <span style="font-size: 0.8125rem; font-weight: 600; color: hsl(var(--foreground)); display: block;">Human Review</span>
+                <span style="font-size: 0.6875rem; color: hsl(var(--muted-foreground));">{{ human_review.action_display }}</span>
+            </div>
+            {% else %}
+            <div style="width: 28px; height: 28px; border-radius: 50%; background: hsl(var(--warning)/0.2); color: hsl(var(--warning)); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.8125rem;">
+                ●
+            </div>
+            <div>
+                <span style="font-size: 0.8125rem; font-weight: 600; color: hsl(var(--foreground)); display: block;">Human Review</span>
+                <span style="font-size: 0.6875rem; color: hsl(var(--muted-foreground));">Action Pending</span>
+            </div>
+            {% endif %}
+        </div>
+
+        <div style="flex: 1; height: 2px; background: hsl(var(--border)); min-width: 20px; margin: 0 0.5rem;" class="timeline-connector"></div>
+
+        <!-- Step 3: Stage-2 HbA1c -->
+        <div style="display: flex; align-items: center; gap: 0.6rem;">
+            {% if stage2_assessment %}
+            <div style="width: 28px; height: 28px; border-radius: 50%; background: hsl(var(--success)/0.15); color: hsl(var(--success)); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.8125rem;">
+                ✓
+            </div>
+            <div>
+                <span style="font-size: 0.8125rem; font-weight: 600; color: hsl(var(--foreground)); display: block;">Stage 2: HbA1c Lab Assessment</span>
+                <span style="font-size: 0.6875rem; color: hsl(var(--muted-foreground));">Completed ({{ stage2_assessment.range_display }})</span>
+            </div>
+            {% elif human_review and human_review.final_referral_recommended %}
+            <div style="width: 28px; height: 28px; border-radius: 50%; background: hsl(var(--primary)/0.15); color: hsl(var(--primary)); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.8125rem;">
+                ●
+            </div>
+            <div>
+                <span style="font-size: 0.8125rem; font-weight: 600; color: hsl(var(--foreground)); display: block;">Stage 2: HbA1c Lab Assessment</span>
+                <span style="font-size: 0.6875rem; color: hsl(var(--primary));">Eligible for Assessment</span>
+            </div>
+            {% elif human_review and not human_review.final_referral_recommended %}
+            <div style="width: 28px; height: 28px; border-radius: 50%; background: hsl(var(--muted)); color: hsl(var(--muted-foreground)); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.8125rem;">
+                &mdash;
+            </div>
+            <div>
+                <span style="font-size: 0.8125rem; font-weight: 600; color: hsl(var(--muted-foreground)); display: block;">Stage 2: HbA1c Lab Assessment</span>
+                <span style="font-size: 0.6875rem; color: hsl(var(--muted-foreground));">Unavailable (No Referral)</span>
+            </div>
+            {% else %}
+            <div style="width: 28px; height: 28px; border-radius: 50%; background: hsl(var(--muted)); color: hsl(var(--muted-foreground)); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.8125rem;">
+                ○
+            </div>
+            <div>
+                <span style="font-size: 0.8125rem; font-weight: 600; color: hsl(var(--muted-foreground)); display: block;">Stage 2: HbA1c Lab Assessment</span>
+                <span style="font-size: 0.6875rem; color: hsl(var(--muted-foreground));">Awaiting Review Decision</span>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- ======================================================================
+     PRIMARY RESULT CARD (Evidence-First Architecture)
+     Adheres strictly to Phase D2.4 language and layout rules.
+     ====================================================================== -->
+<div class="ui-card" style="margin-bottom: 1.5rem;" id="primary-result-card">
+    <div class="ui-card-header with-actions">
+        <div>
+            <h2 class="ui-card-title">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                </svg>
+                Decision-Support Assessment
+            </h2>
+            <p class="ui-card-description">
+                Evaluated against the frozen Phase-5 GAM research model at pre-specified operating point.
+            </p>
+        </div>
+        <div>
+            {% if record.ai_referral_recommended %}
+            <!-- Elevated Signal: Amber / Attention status (No alarmist red) -->
+            <span class="ui-badge ui-badge-warning" id="status-badge-elevated" style="font-size: 0.875rem; padding: 0.4rem 0.85rem; display: inline-flex; align-items: center; gap: 0.4rem;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                <span>Elevated screening signal</span>
+            </span>
+            {% else %}
+            <!-- Lower Signal: Neutral / Calm status (No false negative claim) -->
+            <span class="ui-badge ui-badge-secondary" id="status-badge-lower" style="font-size: 0.875rem; padding: 0.4rem 0.85rem; display: inline-flex; align-items: center; gap: 0.4rem; background: hsl(var(--muted)); color: hsl(var(--foreground)); border: 1px solid hsl(var(--border));">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                <span>Lower screening signal</span>
+            </span>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="ui-card-content">
+        <!-- Main Quantitative & Recommendation Display (Restrained numeric value, NO large progress bar) -->
+        <div style="display: grid; grid-template-columns: minmax(220px, 1fr) 2fr; gap: 1.5rem; margin-bottom: 1.5rem; background: hsl(var(--muted)/0.5); padding: 1.5rem; border-radius: var(--radius); border: 1px solid hsl(var(--border));">
+            <!-- Screening Probability -->
+            <div>
+                <span style="font-size: 0.75rem; font-weight: 600; color: hsl(var(--muted-foreground)); text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 0.25rem;">
+                    Screening probability
+                </span>
+                <div style="font-size: 2.75rem; font-weight: 700; color: hsl(var(--foreground)); font-variant-numeric: tabular-nums; line-height: 1.1;" id="result-probability-display">
+                    {{ record.formatted_probability }}
+                </div>
+                <span style="font-size: 0.75rem; color: hsl(var(--muted-foreground)); display: block; margin-top: 0.35rem;">
+                    Calculated non-laboratory probability
+                </span>
+            </div>
+
+            <!-- Recommendation Summary -->
+            <div style="display: flex; flex-direction: column; justify-content: center; border-left: 1px solid hsl(var(--border)); padding-left: 1.5rem;">
+                <span style="font-size: 0.75rem; font-weight: 600; color: hsl(var(--muted-foreground)); text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 0.35rem;">
+                    AI Recommendation
+                </span>
+                <p style="font-size: 1.125rem; font-weight: 600; color: hsl(var(--foreground)); margin: 0; line-height: 1.4;" id="result-recommendation-display">
+                    {{ record.ai_recommendation_text }}
+                </p>
+                <span style="font-size: 0.8125rem; color: hsl(var(--muted-foreground)); margin-top: 0.35rem;">
+                    This screening result is not a diagnosis.
+                </span>
+            </div>
+        </div>
+
+        <!-- Interpretation Section (Concise research-safe language) -->
+        <div style="margin-bottom: 1.5rem; padding: 1rem 1.25rem; background: hsl(var(--card)); border-radius: var(--radius); border: 1px solid hsl(var(--border));">
+            <h3 style="font-size: 0.875rem; font-weight: 600; color: hsl(var(--foreground)); margin: 0 0 0.35rem 0; display: flex; align-items: center; gap: 0.4rem;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                Clinical Interpretation
+            </h3>
+            <p style="font-size: 0.875rem; color: hsl(var(--foreground)/0.9); margin: 0 0 0.5rem 0; line-height: 1.5;" id="result-interpretation-display">
+                {{ record.interpretation_text }}
+            </p>
+            <span style="font-size: 0.75rem; color: hsl(var(--muted-foreground)); font-weight: 500;">
+                This is a screening recommendation, not a diagnosis.
+            </span>
+        </div>
+
+        <!-- Persistent Research Prototype Disclaimer -->
+        <div class="ui-disclaimer" style="margin-top: 0; margin-bottom: 0;">
+            <svg class="ui-disclaimer-icon" width="16" height="16" style="width: 16px; height: 16px; min-width: 16px; flex-shrink: 0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/>
+            </svg>
+            <div class="ui-disclaimer-text">
+                <strong>Research prototype — not a diagnostic tool.</strong>
+                This software is an investigational research decision-support prototype. It does not provide medical diagnosis, clinical treatment orders, or disease confirmation.
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ======================================================================
+     WHY THIS RESULT? — GAM-NATIVE ADDITIVE EXPLANATION (Phase D2.5)
+     Answers: "Why did the frozen GAM produce this screening result?"
+     Non-causal mathematical link decomposition directly from fitted splines.
+     ====================================================================== -->
+{% if explanation_status == 'generated' %}
+<div class="ui-card" style="margin-bottom: 1.5rem;" id="why-this-result-card">
+    <div class="ui-card-header with-actions">
+        <div>
+            <h2 class="ui-card-title" style="display: flex; align-items: center; gap: 0.5rem;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
+                </svg>
+                Why this result?
+            </h2>
+            <p class="ui-card-description">
+                GAM-native additive factor decomposition on the model link scale (logit).
+            </p>
+        </div>
+        <div>
+            <span class="ui-badge ui-badge-outline" id="explanation-method-badge" style="font-size: 0.75rem;">
+                GAM-Native Additive v1.0
+            </span>
+        </div>
+    </div>
+
+    <div class="ui-card-content">
+        <!-- Explicit Non-Causal Research Notice -->
+        <div style="margin-bottom: 1.25rem; padding: 0.75rem 1rem; background: hsl(var(--muted)/0.4); border-radius: var(--radius); border-left: 3px solid hsl(var(--primary)); font-size: 0.8125rem; color: hsl(var(--foreground)/0.9); line-height: 1.45;">
+            <strong>How to interpret these factors:</strong> These values represent the mathematical term contributions of the frozen GAM model on the logit scale. They explain how the statistical model formed its screening score, not biological causation. A factor pushing the score higher or lower does not constitute personalized medical advice.
+        </div>
+
+        <!-- Factor Contributions List -->
+        <div style="display: flex; flex-direction: column; gap: 0.875rem;" id="explanation-factors-list">
+            {% for factor in explanation_factors %}
+            <div class="explanation-factor-item {% if forloop.counter > 3 %}explanation-factor-secondary{% endif %}" 
+                 id="factor-item-{{ factor.feature_name }}"
+                 style="background: hsl(var(--background)); border: 1px solid hsl(var(--border)); border-radius: var(--radius); padding: 0.875rem 1rem; {% if forloop.counter > 3 %}display: none;{% endif %}">
+                <div style="display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.5rem;">
+                    <div>
+                        <span style="font-weight: 600; font-size: 0.9375rem; color: hsl(var(--foreground));">
+                            {{ factor.display_name }}
+                        </span>
+                        <span style="font-size: 0.8125rem; color: hsl(var(--muted-foreground)); margin-left: 0.35rem;">
+                            ({{ factor.formatted_value }})
+                        </span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        {% if factor.direction == 'higher' %}
+                        <span class="ui-badge" style="background: hsl(38 92% 50% / 0.15); color: hsl(38 92% 35%); border: 1px solid hsl(38 92% 50% / 0.3); font-size: 0.75rem; font-weight: 600;" id="factor-dir-{{ factor.feature_name }}">
+                            Pushes screening score higher (+{{ factor.abs_contribution|floatformat:3 }})
+                        </span>
+                        {% else %}
+                        <span class="ui-badge" style="background: hsl(215 25% 45% / 0.12); color: hsl(215 25% 30%); border: 1px solid hsl(215 25% 45% / 0.25); font-size: 0.75rem; font-weight: 600;" id="factor-dir-{{ factor.feature_name }}">
+                            Pushes screening score lower (&minus;{{ factor.abs_contribution|floatformat:3 }})
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Diverging Visual Strength Bar -->
+                <div style="height: 8px; background: hsl(var(--muted)); border-radius: 4px; overflow: hidden; position: relative;">
+                    <div id="factor-bar-{{ factor.feature_name }}"
+                         style="height: 100%; width: {{ factor.relative_width_percent }}%; border-radius: 4px; {% if factor.direction == 'higher' %}background: hsl(38 92% 50%);{% else %}background: hsl(215 25% 50%);{% endif %}">
+                    </div>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.35rem; font-size: 0.75rem; color: hsl(var(--muted-foreground));">
+                    <span>Relative model impact: {{ factor.relative_width_percent }}% of max observed factor</span>
+                    <span class="tabular-nums" style="font-family: monospace;">link contribution: {% if factor.contribution >= 0 %}+{% endif %}{{ factor.contribution|floatformat:4 }}</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Progressive Disclosure Toggle for Remaining 4 Factors -->
+        <div style="margin-top: 1rem; text-align: center;">
+            <button type="button" 
+                    id="toggle-all-factors-btn" 
+                    class="ui-btn ui-btn-outline" 
+                    style="font-size: 0.8125rem; padding: 0.4rem 1rem;"
+                    onclick="toggleAllFactors()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" id="toggle-factors-icon"><polyline points="6 9 12 15 18 9"/></svg>
+                <span id="toggle-factors-text">Show all 7 factors</span>
+            </button>
+        </div>
+
+        <!-- Additive Reconstruction & Audit Details -->
+        <div style="margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid hsl(var(--border)); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem; font-size: 0.75rem; color: hsl(var(--muted-foreground));">
+            <div>
+                <span>Model Baseline (Intercept &beta;<sub>0</sub>): </span>
+                <strong class="tabular-nums" style="font-family: monospace; color: hsl(var(--foreground));">{{ intercept|floatformat:4 }}</strong>
+            </div>
+            <div style="display: flex; align-items: center; gap: 0.35rem;" title="Exact machine precision agreement between additive terms and model inference">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="hsl(var(--success))" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+                <span>Fidelity verified (reconstruction error &le; 10<sup>&minus;10</sup>)</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleAllFactors() {
+    const secondaryItems = document.querySelectorAll('.explanation-factor-secondary');
+    const btnText = document.getElementById('toggle-factors-text');
+    const btnIcon = document.getElementById('toggle-factors-icon');
+    let isShowing = false;
+
+    secondaryItems.forEach(item => {
+        if (item.style.display === 'none' || item.style.display === '') {
+            item.style.display = 'block';
+            isShowing = true;
+        } else {
+            item.style.display = 'none';
+        }
+    });
+
+    if (isShowing) {
+        btnText.textContent = 'Hide additional factors';
+        btnIcon.innerHTML = '<polyline points="18 15 12 9 6 15"/>';
+    } else {
+        btnText.textContent = 'Show all 7 factors';
+        btnIcon.innerHTML = '<polyline points="6 9 12 15 18 9"/>';
+    }
+}
+</script>
+
+{% elif explanation_status == 'failed' %}
+<!-- Explanation Failure Card: Dignified fallback without breaking screening result -->
+<div class="ui-card" style="margin-bottom: 1.5rem; border-left: 4px solid hsl(var(--warning));" id="explanation-failure-card">
+    <div class="ui-card-header">
+        <h2 class="ui-card-title" style="display: flex; align-items: center; gap: 0.5rem; color: hsl(var(--foreground));">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            Model explanation temporarily unavailable
+        </h2>
+        <p class="ui-card-description">
+            The additive model explanation could not be computed for this screening session.
+        </p>
+    </div>
+    <div class="ui-card-content">
+        <p style="font-size: 0.875rem; color: hsl(var(--foreground)/0.85); margin: 0 0 0.5rem 0;">
+            The screening result and recommendation above remain fully valid and verified. Explanation generation encountered a temporary processing error.
+        </p>
+        {% if explanation and explanation.failure_reason %}
+        <details style="font-size: 0.75rem; color: hsl(var(--muted-foreground)); margin-top: 0.5rem;">
+            <summary style="cursor: pointer;">Technical Diagnostics</summary>
+            <pre style="margin-top: 0.5rem; padding: 0.5rem; background: hsl(var(--muted)); border-radius: var(--radius); overflow-x: auto;">{{ explanation.failure_reason }}</pre>
+        </details>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+<!-- ======================================================================
+     HUMAN REVIEW — ACCEPT OR OVERRIDE WORKFLOW (Phase D2.6 + D2.7)
+     Auditable, separate decision layer for Stage-1 screening recommendation.
+     Acceptance records decision concordance; Override records decision disagreement.
+     Neither establishes biological ground truth or alters frozen AI output.
+     ====================================================================== -->
+{% if human_review %}
+<!-- STATE A: FINALIZED / REVIEWED STATE (Accepted or Overridden) -->
+<div class="ui-card" style="margin-bottom: 1.5rem;" id="human-review-card-finalized">
+    <div class="ui-card-header with-actions">
+        <div>
+            <h2 class="ui-card-title" style="display: flex; align-items: center; gap: 0.5rem;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><polyline points="17 11 19 13 23 9"/>
+                </svg>
+                Human Review
+            </h2>
+            <p class="ui-card-description">
+                {% if human_review.review_action == 'accepted' %}
+                Persisted decision agreement recorded by reviewer.
+                {% else %}
+                Persisted decision disagreement with structured rationale recorded by reviewer.
+                {% endif %}
+            </p>
+        </div>
+        <div>
+            {% if human_review.review_action == 'accepted' %}
+            <span class="ui-badge ui-badge-success" id="review-status-badge" style="display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.8125rem; padding: 0.35rem 0.75rem;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+                <span>Recommendation Accepted</span>
+            </span>
+            {% else %}
+            <span class="ui-badge" id="review-status-badge" style="display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.8125rem; padding: 0.35rem 0.75rem; background: hsl(var(--muted)); color: hsl(var(--foreground)); border: 1px solid hsl(var(--border)); font-weight: 600;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+                <span>Recommendation Overridden</span>
+            </span>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="ui-card-content">
+        <div class="ui-review-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); margin-bottom: 1rem;">
+            <div class="ui-review-item">
+                <span class="ui-review-item-label">Original AI Recommendation</span>
+                <span class="ui-review-item-value" id="reviewed-ai-rec">
+                    {% if record.ai_referral_recommended %}
+                    Refer for Stage-2 HbA1c assessment
+                    {% else %}
+                    No referral recommended at current operating point
+                    {% endif %}
+                </span>
+            </div>
+            <div class="ui-review-item">
+                <span class="ui-review-item-label">Final Human Decision</span>
+                <span class="ui-review-item-value" id="reviewed-final-decision" style="font-weight: 600;">
+                    {{ human_review.final_decision_text }}
+                    {% if human_review.review_action == 'overridden' %}
+                    <span style="font-size: 0.75rem; font-weight: 500; color: hsl(var(--muted-foreground)); display: block;">(Overridden)</span>
+                    {% else %}
+                    <span style="font-size: 0.75rem; font-weight: 500; color: hsl(var(--muted-foreground)); display: block;">(Accepted)</span>
+                    {% endif %}
+                </span>
+            </div>
+            {% if human_review.review_action == 'overridden' %}
+            <div class="ui-review-item" style="grid-column: 1 / -1;">
+                <span class="ui-review-item-label">Override Reason</span>
+                <span class="ui-review-item-value" id="override-reason-display" style="font-weight: 500;">
+                    {{ human_review.override_reason_display }}
+                </span>
+            </div>
+            {% if human_review.override_note %}
+            <div class="ui-review-item" style="grid-column: 1 / -1;">
+                <span class="ui-review-item-label">Additional Context Note</span>
+                <div class="ui-review-item-value" id="override-note-display" style="font-size: 0.8125rem; font-style: italic; background: hsl(var(--muted)/0.3); padding: 0.5rem 0.75rem; border-radius: var(--radius); border-left: 2px solid hsl(var(--border)); margin-top: 0.25rem;">
+                    &ldquo;{{ human_review.override_note }}&rdquo;
+                </div>
+            </div>
+            {% endif %}
+            {% endif %}
+            <div class="ui-review-item">
+                <span class="ui-review-item-label">Reviewer Code</span>
+                <span class="ui-review-item-value tabular-nums" id="reviewed-reviewer-code" style="font-family: monospace; font-weight: 600;">
+                    {{ human_review.reviewer_code }}
+                </span>
+            </div>
+            <div class="ui-review-item">
+                <span class="ui-review-item-label">Reviewed Timestamp</span>
+                <span class="ui-review-item-value tabular-nums" id="reviewed-timestamp">
+                    {{ human_review.created_at|date:"d F Y · H:i" }} UTC
+                </span>
+            </div>
+        </div>
+
+        <div style="padding: 0.75rem 1rem; background: hsl(var(--muted)/0.4); border-radius: var(--radius); border-left: 3px solid hsl(var(--primary)); font-size: 0.75rem; color: hsl(var(--muted-foreground)); line-height: 1.45;" id="review-immutable-notice">
+            {% if human_review.review_action == 'accepted' %}
+            <strong>Research Audit Guarantee:</strong> Human review acceptance records decision agreement with the AI referral recommendation. It does not establish model accuracy, disease diagnosis, or clinical truth. Original AI model output remains permanently recorded and immutable.
+            {% else %}
+            <strong>Research Audit Guarantee:</strong> Human override records an explicit reviewer decision differing from the AI referral recommendation along with structured rationale. It does not alter the underlying model probability or establish biological truth. Original AI model output remains permanently recorded and immutable.
+            {% endif %}
+        </div>
+
+        <!-- Stage-2 Eligibility & Progression Actions -->
+        {% if human_review.final_referral_recommended %}
+        <div style="margin-top: 1.25rem; padding-top: 1.25rem; border-top: 1px solid hsl(var(--border)); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;" id="stage2-progression-banner">
+            <div>
+                <span style="font-size: 0.8125rem; font-weight: 600; color: hsl(var(--foreground)); display: block;">
+                    Stage-2 HbA1c Laboratory Assessment Available
+                </span>
+                <span style="font-size: 0.75rem; color: hsl(var(--muted-foreground));">
+                    Final human decision recommends referral. Participant is eligible for Stage-2 laboratory assessment.
+                </span>
+            </div>
+            <div>
+                {% if stage2_assessment %}
+                <a href="{% url 'predictor:stage2' record.id %}" class="ui-btn ui-btn-outline" id="view-stage2-btn" style="display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 600;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                    <span>View Stage-2 Assessment ({{ stage2_assessment.hba1c_percent }}%)</span>
+                </a>
+                {% else %}
+                <a href="{% url 'predictor:stage2' record.id %}" class="ui-btn ui-btn-primary" id="enter-stage2-btn" style="display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 600;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+                    <span>Proceed to Stage-2 HbA1c Assessment</span>
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        {% else %}
+        <div style="margin-top: 1.25rem; padding-top: 1.25rem; border-top: 1px solid hsl(var(--border));" id="stage2-blocked-banner">
+            <div style="padding: 0.75rem 1rem; background: hsl(var(--muted)/0.3); border-radius: var(--radius); border: 1px solid hsl(var(--border)); font-size: 0.8125rem; color: hsl(var(--muted-foreground)); display: flex; align-items: center; gap: 0.75rem;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+                <div>
+                    <strong style="color: hsl(var(--foreground)); font-weight: 600; display: block;">Stage-2 Assessment Unavailable</strong>
+                    <span>Final human review decision is "Do not refer at this time". Stage-2 HbA1c laboratory assessment is only indicated when referral is recommended.</span>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- ======================================================================
+     HUMAN FEEDBACK LEARNING LOOP SECTION
+     ====================================================================== -->
+{% if feedback_error %}
+<div class="ui-alert ui-alert-destructive" style="margin-bottom: 1.5rem;" role="alert">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    <span style="font-size: 0.8125rem; font-weight: 500;">{{ feedback_error }}</span>
+</div>
+{% endif %}
+
+{% if experiment_message %}
+<div class="ui-alert ui-alert-info" style="margin-bottom: 1.5rem;" role="alert">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+    <span style="font-size: 0.8125rem; font-weight: 500;">{{ experiment_message }}</span>
+</div>
+{% endif %}
+
+{% if human_feedback %}
+<!-- FEEDBACK RECORDED (READ-ONLY) -->
+<div class="ui-card" style="margin-bottom: 1.5rem;" id="feedback-recorded-card">
+    <div class="ui-card-header with-actions">
+        <div>
+            <h2 class="ui-card-title" style="display: flex; align-items: center; gap: 0.5rem;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                </svg>
+                Human Feedback Recorded
+            </h2>
+            <p class="ui-card-description">
+                Canonical feedback signal stored for the human feedback learning loop.
+            </p>
+        </div>
+        <div>
+            {% if human_feedback.is_eligible_for_learning %}
+            <span class="ui-badge ui-badge-success" style="font-size: 0.75rem;">
+                Eligible for Adaptation ({{ human_feedback.learning_status|title }})
+            </span>
+            {% else %}
+            <span class="ui-badge ui-badge-secondary" style="font-size: 0.75rem;">
+                Audited Only (Not Eligible)
+            </span>
+            {% endif %}
+        </div>
+    </div>
+    <div class="ui-card-content">
+        <div class="ui-review-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); margin-bottom: 1rem;">
+            <div class="ui-review-item">
+                <span class="ui-review-item-label">Structured Feedback Category</span>
+                <span class="ui-review-item-value" style="font-weight: 600;">
+                    {{ human_feedback.structured_category }}
+                </span>
+            </div>
+            <div class="ui-review-item">
+                <span class="ui-review-item-label">Relevant Feature</span>
+                <span class="ui-review-item-value">
+                    {{ human_feedback.relevant_feature|default:"Global / General" }}
+                </span>
+            </div>
+            <div class="ui-review-item">
+                <span class="ui-review-item-label">Intended Direction</span>
+                <span class="ui-review-item-value">
+                    {{ human_feedback.feedback_direction }}
+                </span>
+            </div>
+            <div class="ui-review-item">
+                <span class="ui-review-item-label">Model Version at Feedback</span>
+                <span class="ui-review-item-value tabular-nums" style="font-family: monospace;">
+                    {{ human_feedback.model_version_at_feedback }}
+                </span>
+            </div>
+        </div>
+
+        {% if human_feedback.feedback_text %}
+        <div style="margin-bottom: 1rem; padding: 0.75rem 1rem; background: hsl(var(--muted)/0.3); border-radius: var(--radius); border: 1px solid hsl(var(--border));">
+            <span class="ui-review-item-label" style="margin-bottom: 0.25rem;">Reviewer Free-Text Feedback:</span>
+            <p style="font-size: 0.84375rem; color: hsl(var(--foreground)); margin: 0; font-style: italic;">
+                &ldquo;{{ human_feedback.feedback_text }}&rdquo;
+            </p>
+            {% if human_feedback.nlp_confidence is not None %}
+            <div style="margin-top: 0.5rem; font-size: 0.75rem; color: hsl(var(--muted-foreground)); display: flex; align-items: center; gap: 0.75rem;">
+                <span>NLP Interpretation Confidence: <strong>{{ human_feedback.nlp_confidence|floatformat:2 }}</strong></span>
+                <span>(Audited supplementary signal)</span>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; padding-top: 0.75rem; border-top: 1px solid hsl(var(--border));">
+            <span style="font-size: 0.75rem; color: hsl(var(--muted-foreground));">
+                Feedback loop protocol: Immutable record. Evaluated against candidate model adaptation layers.
+            </span>
+            <form action="{% url 'predictor:run_comparison' record.id %}" method="post" style="margin: 0;">
+                {% csrf_token %}
+                <button type="submit" class="ui-btn ui-btn-outline" style="font-size: 0.8125rem; display: inline-flex; align-items: center; gap: 0.35rem;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    <span>Check Similar Prior Cases &amp; Delta</span>
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% else %}
+<!-- FEEDBACK SUBMISSION FORM -->
+<div class="ui-card" style="margin-bottom: 1.5rem;" id="feedback-submission-card">
+    <div class="ui-card-header with-actions">
+        <div>
+            <h2 class="ui-card-title" style="display: flex; align-items: center; gap: 0.5rem;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                </svg>
+                Provide Feedback for Learning Loop (Optional)
+            </h2>
+            <p class="ui-card-description">
+                Help investigate whether human feedback can influence AI behavior on subsequent similar cases.
+            </p>
+        </div>
+        <div>
+            <span class="ui-badge ui-badge-outline" style="font-size: 0.75rem;">Research Experiment</span>
+        </div>
+    </div>
+    <div class="ui-card-content">
+        <div style="margin-bottom: 1rem; padding: 0.75rem 1rem; background: hsl(var(--muted)/0.4); border-radius: var(--radius); border-left: 3px solid hsl(var(--primary)); font-size: 0.8125rem; color: hsl(var(--foreground)/0.9); line-height: 1.45;">
+            <strong>Controlled Learning Loop:</strong> Feedback submitted here does NOT change this case's prediction. The frozen GAM remains immutable. Feedback is collected to train a candidate residual adaptation layer for evaluating subsequent similar cases.
+        </div>
+
+        <form action="{% url 'predictor:submit_feedback' record.id %}" method="post" id="feedback-form">
+            {% csrf_token %}
+            
+            <div style="margin-bottom: 1.25rem;">
+                <label class="ui-label" style="display: block; font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem; color: hsl(var(--foreground));">
+                    Select Feedback Category <span style="color: hsl(var(--destructive));">*</span>
+                </label>
+                <select name="structured_category" id="feedback-category-select" class="ui-input" required style="width: 100%;">
+                    <option value="">-- Choose structured category --</option>
+                    {% for cat in feedback_categories %}
+                    <option value="{{ cat.category_id }}">
+                        {{ cat.category_name }} [{{ cat.learning_direction }}]
+                    </option>
+                    {% endfor %}
+                </select>
+                <span style="font-size: 0.75rem; color: hsl(var(--muted-foreground)); display: block; margin-top: 0.35rem;">
+                    Canonical learning signal from Master Taxonomy v1.0.
+                </span>
+            </div>
+
+            <div style="margin-bottom: 1.25rem;">
+                <label for="feedback-text-input" class="ui-label" style="display: block; font-size: 0.875rem; font-weight: 600; margin-bottom: 0.35rem; color: hsl(var(--foreground));">
+                    Optional Free-Text Rationale
+                </label>
+                <textarea name="feedback_text" id="feedback-text-input" class="ui-input" rows="3" maxlength="2000" placeholder="Optional: describe why you believe the model assessment could be improved for similar cases..." style="width: 100%; resize: vertical; min-height: 64px;"></textarea>
+                <span style="font-size: 0.75rem; color: hsl(var(--muted-foreground)); display: block; margin-top: 0.25rem;">
+                    Free-text is interpreted by NLP for supplementary analysis and auditability, but the structured category remains canonical.
+                </span>
+            </div>
+
+            <div style="display: flex; align-items: center; justify-content: flex-end; gap: 0.75rem;">
+                <button type="submit" class="ui-btn ui-btn-primary" id="submit-feedback-btn" style="padding: 0.5rem 1.25rem; font-weight: 600;">
+                    Submit Feedback
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endif %}
+
+<!-- SIMILAR CASE COMPARISONS (IF APPLICABLE, RESEARCH LAB ONLY) -->
+{% if not IS_EVALUATION_MODE and similar_comparisons %}
+<div class="ui-card" style="margin-bottom: 1.5rem;" id="similar-comparisons-card">
+    <div class="ui-card-header with-actions">
+        <div>
+            <h2 class="ui-card-title" style="display: flex; align-items: center; gap: 0.5rem;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
+                </svg>
+                Similar Case Learning Effect (Before vs After Adaptation)
+            </h2>
+            <p class="ui-card-description">
+                Evaluates how prior human feedback influenced prediction on this similar case.
+            </p>
+        </div>
+        <div>
+            <span class="ui-badge ui-badge-outline" style="font-size: 0.75rem;">Research Evaluation</span>
+        </div>
+    </div>
+    <div class="ui-card-content">
+        <div style="overflow-x: auto;">
+            <table class="ui-table" style="width: 100%; border-collapse: collapse; font-size: 0.8125rem;">
+                <thead>
+                    <tr style="border-bottom: 2px solid hsl(var(--border)); text-align: left;">
+                        <th style="padding: 0.6rem 0.75rem;">Source Case (Feedback)</th>
+                        <th style="padding: 0.6rem 0.75rem;">Similarity</th>
+                        <th style="padding: 0.6rem 0.75rem;">Baseline Prob</th>
+                        <th style="padding: 0.6rem 0.75rem;">Adapted Prob</th>
+                        <th style="padding: 0.6rem 0.75rem;">Probability Delta</th>
+                        <th style="padding: 0.6rem 0.75rem;">Rec Changed?</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for comp in similar_comparisons %}
+                    <tr style="border-bottom: 1px solid hsl(var(--border));">
+                        <td style="padding: 0.6rem 0.75rem;">
+                            <span class="tabular-nums" style="font-family: monospace; font-size: 0.75rem;">{{ comp.source_case.id|stringformat:".8s" }}...</span>
+                            <span style="display: block; font-size: 0.6875rem; color: hsl(var(--muted-foreground));">{{ comp.feedback_category }}</span>
+                        </td>
+                        <td style="padding: 0.6rem 0.75rem; font-weight: 600;">
+                            {{ comp.similarity_score|floatformat:3 }}
+                        </td>
+                        <td style="padding: 0.6rem 0.75rem;" class="tabular-nums">
+                            {{ comp.baseline_probability|floatformat:4 }}
+                        </td>
+                        <td style="padding: 0.6rem 0.75rem;" class="tabular-nums">
+                            {{ comp.updated_probability|floatformat:4 }}
+                        </td>
+                        <td style="padding: 0.6rem 0.75rem; font-weight: 600;" class="tabular-nums">
+                            {% if comp.probability_delta > 0 %}+{% endif %}{{ comp.probability_delta|floatformat:4 }}
+                        </td>
+                        <td style="padding: 0.6rem 0.75rem;">
+                            {% if comp.recommendation_changed %}
+                            <span class="ui-badge ui-badge-warning" style="font-size: 0.6875rem;">Yes</span>
+                            {% else %}
+                            <span class="ui-badge ui-badge-outline" style="font-size: 0.6875rem;">No</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% elif not explanation_faithful %}
+<!-- STATE B: UNAVAILABLE STATE (EXPLANATION FAILURE PREREQUISITE) -->
+<div class="ui-card" style="margin-bottom: 1.5rem; opacity: 0.9;" id="review-unavailable-card">
+    <div class="ui-card-header with-actions">
+        <div>
+            <h2 class="ui-card-title" style="display: flex; align-items: center; gap: 0.5rem; color: hsl(var(--muted-foreground));">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                </svg>
+                Human Review
+            </h2>
+            <p class="ui-card-description">
+                Human review workflow is locked pending explanation availability.
+            </p>
+        </div>
+        <div>
+            <span class="ui-badge ui-badge-secondary" style="font-size: 0.75rem;">Review Unavailable</span>
+        </div>
+    </div>
+    <div class="ui-card-content">
+        <div style="padding: 1rem 1.25rem; background: hsl(var(--muted)/0.4); border-radius: var(--radius); border: 1px solid hsl(var(--border)); font-size: 0.875rem; color: hsl(var(--foreground)/0.85); line-height: 1.5;">
+            <p style="margin: 0 0 0.5rem 0; font-weight: 500;" id="review-unavailable-message">
+                Human review is unavailable because the model explanation for this screening could not be generated.
+            </p>
+            <span style="font-size: 0.75rem; color: hsl(var(--muted-foreground)); display: block;">
+                Under research governance protocol, human review must evaluate both the AI recommendation and its faithful additive term explanation before recording an acceptance or override decision.
+            </span>
+        </div>
+    </div>
+</div>
+
+{% else %}
+<!-- STATE C: ACTIONABLE PENDING REVIEW STATE -->
+<div class="ui-card" style="margin-bottom: 1.5rem;" id="human-review-card-pending">
+    <div class="ui-card-header with-actions">
+        <div>
+            <h2 class="ui-card-title" style="display: flex; align-items: center; gap: 0.5rem;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><polyline points="17 11 19 13 23 9"/>
+                </svg>
+                Human Review
+            </h2>
+            <p class="ui-card-description">
+                Review the screening recommendation and choose an action.
+            </p>
+        </div>
+        <div>
+            <span class="ui-badge ui-badge-warning" id="review-pending-badge" style="display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.8125rem; padding: 0.35rem 0.75rem;">
+                <span>Pending Review</span>
+            </span>
+        </div>
+    </div>
+
+    <div class="ui-card-content">
+        <!-- Error Alert if validation failed on previous POST -->
+        {% if review_error %}
+        <div class="ui-alert ui-alert-destructive" style="margin-bottom: 1.25rem; padding: 0.75rem 1rem; border-radius: var(--radius); display: flex; align-items: center; gap: 0.5rem; background: hsl(var(--destructive-muted)); border: 1px solid hsl(var(--destructive)/0.3); color: hsl(var(--destructive));" id="review-error-alert" role="alert">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <span style="font-size: 0.8125rem; font-weight: 500;">{{ review_error }}</span>
+        </div>
+        {% endif %}
+
+        <!-- AI Recommendation Summary Banner -->
+        <div style="padding: 1.25rem; background: hsl(var(--muted)/0.5); border-radius: var(--radius); border: 1px solid hsl(var(--border)); margin-bottom: 1.25rem;">
+            <span style="font-size: 0.75rem; font-weight: 600; color: hsl(var(--muted-foreground)); text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 0.35rem;">
+                AI Recommendation
+            </span>
+            <div style="font-size: 1.125rem; font-weight: 600; color: hsl(var(--foreground));" id="pending-ai-recommendation-display">
+                {% if record.ai_referral_recommended %}
+                Refer for Stage-2 HbA1c assessment
+                {% else %}
+                No referral recommended at the current research operating point
+                {% endif %}
+            </div>
+            <span style="font-size: 0.8125rem; color: hsl(var(--muted-foreground)); margin-top: 0.25rem; display: block;">
+                Based on Stage-1 non-laboratory GAM evaluation at locked threshold 0.1389.
+            </span>
+        </div>
+
+        <!-- Accept Recommendation Action Form -->
+        <form action="{% url 'predictor:accept_review' record.id %}" method="post" id="accept-review-form" novalidate>
+            {% csrf_token %}
+            
+            <div style="display: grid; grid-template-columns: 1fr; gap: 1rem; max-width: 480px; margin-bottom: 1.25rem;">
+                <div>
+                    <label for="reviewer-code-input" class="ui-label" style="display: block; font-size: 0.875rem; font-weight: 600; margin-bottom: 0.35rem; color: hsl(var(--foreground));">
+                        Reviewer Code <span style="color: hsl(var(--destructive));">*</span>
+                    </label>
+                    <input type="text" 
+                           name="reviewer_code" 
+                           id="reviewer-code-input" 
+                           class="ui-input" 
+                           placeholder="e.g. R001, HP-03" 
+                           maxlength="32" 
+                           required 
+                           autocomplete="off"
+                           aria-describedby="reviewer-code-help"
+                           style="width: 100%;">
+                    <span id="reviewer-code-help" style="font-size: 0.75rem; color: hsl(var(--muted-foreground)); display: block; margin-top: 0.25rem;">
+                        Use the reviewer code assigned for this study. Do not enter your name or other identifying information.
+                    </span>
+                </div>
+            </div>
+
+            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; border-top: 1px solid hsl(var(--border)); padding-top: 1.25rem;">
+                <span style="font-size: 0.75rem; color: hsl(var(--muted-foreground)); max-width: 400px; line-height: 1.4;">
+                    Accepting records decision agreement. To record disagreement, use Override Recommendation. Decisions are immutable once finalized.
+                </span>
+                <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+                    <button type="button" 
+                            class="ui-btn ui-btn-outline" 
+                            id="open-override-btn"
+                            onclick="openOverrideModal()"
+                            style="padding: 0.6rem 1.25rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.5rem;">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+                        <span>Override Recommendation</span>
+                    </button>
+                    <button type="submit" 
+                            class="ui-btn ui-btn-primary" 
+                            id="accept-recommendation-btn" 
+                            style="padding: 0.6rem 1.5rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.5rem;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+                        <span>Accept Recommendation</span>
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ======================================================================
+     SHADCN-INSPIRED ACCESSIBLE OVERRIDE MODAL DIALOG (Phase D2.7)
+     ====================================================================== -->
+<div id="override-modal-backdrop" 
+     style="display: {% if open_override_dialog %}flex{% else %}none{% endif %}; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.55); backdrop-filter: blur(4px); z-index: 1000; align-items: center; justify-content: center; padding: 1rem;"
+     role="dialog" 
+     aria-modal="true" 
+     aria-labelledby="override-dialog-title"
+     aria-describedby="override-dialog-desc">
+    <div id="override-dialog-container" 
+         class="ui-card" 
+         style="max-width: 580px; width: 100%; max-height: 92vh; overflow-y: auto; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.35); border: 1px solid hsl(var(--border)); border-radius: var(--radius); padding: 1.5rem; background: hsl(var(--card)); color: hsl(var(--card-foreground));">
+        
+        <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: 1.25rem;">
+            <div>
+                <h3 id="override-dialog-title" style="font-size: 1.125rem; font-weight: 700; margin: 0 0 0.25rem 0; color: hsl(var(--foreground));">
+                    Override Recommendation
+                </h3>
+                <p id="override-dialog-desc" style="font-size: 0.8125rem; color: hsl(var(--muted-foreground)); margin: 0;">
+                    Record an auditable review decision that differs from the AI referral recommendation.
+                </p>
+            </div>
+            <button type="button" 
+                    id="close-override-x-btn"
+                    onclick="closeOverrideModal()" 
+                    style="background: transparent; border: 0; padding: 0.25rem; cursor: pointer; color: hsl(var(--muted-foreground)); border-radius: 4px;"
+                    aria-label="Close override dialog">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+        </div>
+
+        {% if override_error %}
+        <div class="ui-alert ui-alert-destructive" style="margin-bottom: 1.25rem; padding: 0.75rem 1rem; border-radius: var(--radius); display: flex; align-items: center; gap: 0.5rem; background: hsl(var(--destructive-muted)); border: 1px solid hsl(var(--destructive)/0.3); color: hsl(var(--destructive));" id="override-error-alert" role="alert">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <span style="font-size: 0.8125rem; font-weight: 500;">{{ override_error }}</span>
+        </div>
+        {% endif %}
+
+        <!-- Comparison Summary: Original vs Final -->
+        <div style="background: hsl(var(--muted)/0.5); border: 1px solid hsl(var(--border)); border-radius: var(--radius); padding: 1rem; margin-bottom: 1.25rem; display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;" id="override-comparison-grid">
+            <div>
+                <span style="font-size: 0.6875rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: hsl(var(--muted-foreground)); display: block; margin-bottom: 0.25rem;">
+                    Original AI Recommendation
+                </span>
+                <span style="font-size: 0.875rem; font-weight: 600; color: hsl(var(--foreground));" id="dialog-original-rec">
+                    {% if record.ai_referral_recommended %}
+                    Refer for Stage-2 HbA1c
+                    {% else %}
+                    No Referral Recommended
+                    {% endif %}
+                </span>
+            </div>
+            <div style="border-left: 1px solid hsl(var(--border)); padding-left: 1rem;">
+                <span style="font-size: 0.6875rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: hsl(var(--muted-foreground)); display: block; margin-bottom: 0.25rem;">
+                    Your Final Decision
+                </span>
+                <span style="font-size: 0.875rem; font-weight: 600; color: hsl(var(--foreground));" id="dialog-final-decision">
+                    {{ opposite_decision_text }}
+                </span>
+            </div>
+        </div>
+
+        <!-- Override Form -->
+        <form action="{% url 'predictor:override_review' record.id %}" method="post" id="override-review-form" novalidate>
+            {% csrf_token %}
+
+            <!-- Reason Fieldset -->
+            <fieldset style="border: 0; padding: 0; margin: 0 0 1.25rem 0;" id="override-reason-fieldset">
+                <legend style="font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem; color: hsl(var(--foreground)); display: block;">
+                    Reason for override <span style="color: hsl(var(--destructive));">*</span>
+                </legend>
+                <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                    {% for code, label in branch_override_reasons %}
+                    <label for="reason-radio-{{ code }}" 
+                           style="display: flex; align-items: flex-start; gap: 0.625rem; padding: 0.625rem 0.75rem; border: 1px solid hsl(var(--border)); border-radius: var(--radius); cursor: pointer; transition: background 0.15s ease;"
+                           class="override-reason-label">
+                        <input type="radio" 
+                               name="override_reason_code" 
+                               id="reason-radio-{{ code }}" 
+                               value="{{ code }}" 
+                               required 
+                               onchange="handleReasonChange(this)"
+                               style="margin-top: 0.2rem; cursor: pointer;"
+                               {% if forloop.first %}checked{% endif %}>
+                        <span style="font-size: 0.84375rem; color: hsl(var(--foreground)); line-height: 1.4;">{{ label }}</span>
+                    </label>
+                    {% endfor %}
+                </div>
+            </fieldset>
+
+            <!-- Optional Note -->
+            <div style="margin-bottom: 1.25rem;">
+                <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.35rem;">
+                    <label for="override-note-input" class="ui-label" style="font-size: 0.875rem; font-weight: 600; color: hsl(var(--foreground));">
+                        Additional note <span id="note-required-indicator" style="display: none; color: hsl(var(--destructive));">* (Required for Other)</span>
+                    </label>
+                    <span id="override-note-counter" style="font-size: 0.75rem; color: hsl(var(--muted-foreground));">
+                        0 / 500 chars
+                    </span>
+                </div>
+                <textarea name="override_note" 
+                          id="override-note-input" 
+                          class="ui-input" 
+                          rows="3" 
+                          maxlength="500" 
+                          placeholder="Brief contextual rationale (do not include names or identifying information)..."
+                          aria-describedby="override-note-help"
+                          oninput="updateNoteCounter(this)"
+                          style="width: 100%; resize: vertical; min-height: 72px;"></textarea>
+                <span id="override-note-help" style="font-size: 0.75rem; color: hsl(var(--muted-foreground)); display: block; margin-top: 0.25rem;">
+                    Optional context. Do not enter names or other identifying information. Required if selecting &ldquo;Other reason&rdquo;.
+                </span>
+            </div>
+
+            <!-- Reviewer Code -->
+            <div style="margin-bottom: 1.5rem;">
+                <label for="override-reviewer-code-input" class="ui-label" style="display: block; font-size: 0.875rem; font-weight: 600; margin-bottom: 0.35rem; color: hsl(var(--foreground));">
+                    Reviewer Code <span style="color: hsl(var(--destructive));">*</span>
+                </label>
+                <input type="text" 
+                       name="reviewer_code" 
+                       id="override-reviewer-code-input" 
+                       class="ui-input" 
+                       placeholder="e.g. R001, HP-03" 
+                       maxlength="32" 
+                       required 
+                       autocomplete="off"
+                       aria-describedby="override-reviewer-code-help"
+                       style="width: 100%;">
+                <span id="override-reviewer-code-help" style="font-size: 0.75rem; color: hsl(var(--muted-foreground)); display: block; margin-top: 0.25rem;">
+                    Use the reviewer code assigned for this study. Do not enter your name or other identifying information.
+                </span>
+            </div>
+
+            <!-- Modal Action Buttons -->
+            <div style="display: flex; align-items: center; justify-content: flex-end; gap: 0.75rem; border-top: 1px solid hsl(var(--border)); padding-top: 1.25rem;">
+                <button type="button" 
+                        id="cancel-override-btn"
+                        class="ui-btn ui-btn-outline" 
+                        onclick="closeOverrideModal()"
+                        style="padding: 0.6rem 1.25rem; font-weight: 600;">
+                    Cancel
+                </button>
+                <button type="submit" 
+                        id="confirm-override-btn"
+                        class="ui-btn ui-btn-primary" 
+                        style="padding: 0.6rem 1.5rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.5rem;">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+                    <span>Confirm Override</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function openOverrideModal() {
+    const modal = document.getElementById('override-modal-backdrop');
+    if (!modal) return;
+    
+    // Sync reviewer code from main page if typed
+    const mainCode = document.getElementById('reviewer-code-input');
+    const modalCode = document.getElementById('override-reviewer-code-input');
+    if (mainCode && modalCode && mainCode.value.trim() && !modalCode.value.trim()) {
+        modalCode.value = mainCode.value.trim();
+    }
+    
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+    
+    // Set focus inside dialog
+    const firstRadio = modal.querySelector('input[type="radio"]:checked') || modal.querySelector('input[type="radio"]');
+    if (firstRadio) {
+        firstRadio.focus();
+    }
+}
+
+function closeOverrideModal() {
+    const modal = document.getElementById('override-modal-backdrop');
+    if (!modal) return;
+    
+    modal.style.display = 'none';
+    document.body.style.overflow = '';
+    
+    // Sync reviewer code back to main form if entered in dialog
+    const mainCode = document.getElementById('reviewer-code-input');
+    const modalCode = document.getElementById('override-reviewer-code-input');
+    if (mainCode && modalCode && modalCode.value.trim()) {
+        mainCode.value = modalCode.value.trim();
+    }
+    
+    const triggerBtn = document.getElementById('open-override-btn');
+    if (triggerBtn) {
+        triggerBtn.focus();
+    }
+}
+
+function updateNoteCounter(textarea) {
+    const counter = document.getElementById('override-note-counter');
+    if (!counter) return;
+    const len = textarea.value.length;
+    counter.textContent = `${len} / 500 chars`;
+    if (len >= 490) {
+        counter.style.color = 'hsl(var(--destructive))';
+    } else {
+        counter.style.color = 'hsl(var(--muted-foreground))';
+    }
+}
+
+function handleReasonChange(radio) {
+    const noteRequiredIndicator = document.getElementById('note-required-indicator');
+    const noteInput = document.getElementById('override-note-input');
+    if (!noteRequiredIndicator || !noteInput) return;
+    
+    if (radio.value === 'other') {
+        noteRequiredIndicator.style.display = 'inline';
+        noteInput.setAttribute('required', 'required');
+    } else {
+        noteRequiredIndicator.style.display = 'none';
+        noteInput.removeAttribute('required');
+    }
+}
+
+// Trap Escape key for modal
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        const modal = document.getElementById('override-modal-backdrop');
+        if (modal && modal.style.display === 'flex') {
+            closeOverrideModal();
+        }
+    }
+});
+
+// Check reason on load in case "other" was pre-selected
+document.addEventListener('DOMContentLoaded', function() {
+    const checkedRadio = document.querySelector('input[name="override_reason_code"]:checked');
+    if (checkedRadio) {
+        handleReasonChange(checkedRadio);
+    }
+    const noteInput = document.getElementById('override-note-input');
+    if (noteInput) {
+        updateNoteCounter(noteInput);
+    }
+});
+</script>
+{% endif %}
+
+
+<!-- ======================================================================
+     COLLAPSIBLE SECTION 1: SCREENING INPUTS
+     Displays the exact 7 validated human-readable parameters with units.
+     ====================================================================== -->
+<div class="ui-card" style="margin-bottom: 1.5rem;">
+    <details id="screening-inputs-disclosure" style="padding: 1.25rem 1.5rem;">
+        <summary style="font-size: 0.9375rem; font-weight: 600; color: hsl(var(--foreground)); cursor: pointer; display: flex; align-items: center; justify-content: space-between; user-select: none;">
+            <span style="display: inline-flex; align-items: center; gap: 0.5rem;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                Screening Inputs
+            </span>
+            <span style="font-size: 0.75rem; font-weight: 500; color: hsl(var(--muted-foreground));">
+                Show details
+            </span>
+        </summary>
+        
+        <div style="margin-top: 1.25rem; border-top: 1px solid hsl(var(--border)); padding-top: 1rem;">
+            <div class="ui-review-grid">
+                {% for item in input_summary %}
+                <div class="ui-review-item">
+                    <span class="ui-review-item-label">{{ item.label }}</span>
+                    <span class="ui-review-item-value">{{ item.value }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </details>
+</div>
+
+<!-- ======================================================================
+     COLLAPSIBLE SECTION 2: RESEARCH & PROVENANCE DETAILS
+     Technical details, cryptographic hashes, and frozen threshold.
+     ====================================================================== -->
+<div class="ui-card" style="margin-bottom: 1.5rem;">
+    <details id="research-details-disclosure" style="padding: 1.25rem 1.5rem;">
+        <summary style="font-size: 0.9375rem; font-weight: 600; color: hsl(var(--foreground)); cursor: pointer; display: flex; align-items: center; justify-content: space-between; user-select: none;">
+            <span style="display: inline-flex; align-items: center; gap: 0.5rem;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
+                Research &amp; Provenance Details
+            </span>
+            <span style="font-size: 0.75rem; font-weight: 500; color: hsl(var(--muted-foreground));">
+                Show details
+            </span>
+        </summary>
+        
+        <div style="margin-top: 1.25rem; border-top: 1px solid hsl(var(--border)); padding-top: 1rem;">
+            <div class="ui-review-grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));">
+                <div class="ui-review-item">
+                    <span class="ui-review-item-label">Screening Record UUID</span>
+                    <span class="ui-review-item-value tabular-nums" style="font-family: monospace; font-size: 0.8125rem;">{{ record.id }}</span>
+                </div>
+                <div class="ui-review-item">
+                    <span class="ui-review-item-label">Execution Timestamp</span>
+                    <span class="ui-review-item-value tabular-nums">{{ record.created_at|date:"Y-m-d H:i:s" }} UTC</span>
+                </div>
+                <div class="ui-review-item">
+                    <span class="ui-review-item-label">Model Architecture</span>
+                    <span class="ui-review-item-value">{{ record.model_name }}</span>
+                </div>
+                <div class="ui-review-item">
+                    <span class="ui-review-item-label">Frozen Decision Threshold</span>
+                    <span class="ui-review-item-value tabular-nums">{{ record.decision_threshold }} (13.89%)</span>
+                </div>
+                <div class="ui-review-item" style="grid-column: 1 / -1;">
+                    <span class="ui-review-item-label">Model Artifact SHA-256</span>
+                    <span class="ui-review-item-value tabular-nums" style="font-family: monospace; font-size: 0.75rem; word-break: break-all;">{{ record.model_sha256 }}</span>
+                </div>
+                <div class="ui-review-item" style="grid-column: 1 / -1;">
+                    <span class="ui-review-item-label">Preprocessor Artifact SHA-256</span>
+                    <span class="ui-review-item-value tabular-nums" style="font-family: monospace; font-size: 0.75rem; word-break: break-all;">{{ record.preprocessor_sha256 }}</span>
+                </div>
+            </div>
+            <p style="font-size: 0.75rem; color: hsl(var(--muted-foreground)); margin: 0.75rem 0 0 0;">
+                <em>Immutability Guarantee:</em> Original AI screening output is permanently recorded. Future Human Review records do not overwrite this historical baseline.
+            </p>
+        </div>
+    </details>
+</div>
+
+<!-- ======================================================================
+     PAGE ACTIONS
+     Simple, non-distracting navigation actions (No premature XAI / Override buttons).
+     ====================================================================== -->
+<div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; margin-top: 2rem;">
+    {% if IS_EVALUATION_MODE %}
+        {% if record.is_practice %}
+        <a href="{% url 'predictor:evaluation_practice' %}" class="ui-btn ui-btn-outline">
+            ← Kembali ke Panduan P0
+        </a>
+        <a href="{% url 'predictor:new_screening' %}" class="ui-btn ui-btn-primary" style="font-weight: 600;">
+            Selesai Latihan &amp; Mulai Screening Mandiri →
+        </a>
+        {% else %}
+        <a href="{% url 'predictor:new_screening' %}" class="ui-btn ui-btn-outline">
+            Screening Baru
+        </a>
+        <a href="{% url 'predictor:evaluation_questionnaire' %}" class="ui-btn ui-btn-primary" style="font-weight: 600;">
+            Lanjutkan ke Kuesioner Evaluasi →
+        </a>
+        {% endif %}
+    {% else %}
+    <a href="{% url 'predictor:overview' %}" class="ui-btn ui-btn-outline" id="return-overview-btn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
+        Return to Overview
+    </a>
+    <a href="{% url 'predictor:new_screening' %}" class="ui-btn ui-btn-primary" id="start-new-screening-btn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Start New Screening
+    </a>
+    {% endif %}
+</div>
+{% endblock %}

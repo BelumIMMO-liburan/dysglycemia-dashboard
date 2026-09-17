@@ -1,0 +1,21 @@
+================================================================================
+FINAL TEST SET LOCK ENFORCEMENT NOTICE
+================================================================================
+The final test set (N = 839 participants: 645 normal, 194 dysglycemia)
+defined in splits_phase4/master_split.csv is STRICTLY LOCKED.
+
+During Phase 4 Model Development and Benchmarking:
+- DO NOT evaluate candidate models on final_test.
+- DO NOT calculate test ROC-AUC, PR-AUC, F1, or Brier score.
+- DO NOT inspect test prediction errors.
+- DO NOT tune hyperparameters or select features using test data.
+- DO NOT select screening thresholds using test data.
+- DO NOT generate SHAP explanations from test data.
+- DO NOT report final test performance.
+
+All model development, tuning, calibration checks, and threshold trade-off
+analyses MUST be conducted exclusively using Out-Of-Fold (OOF) predictions
+within the 80% development partition (N = 3,355).
+
+FINAL TEST SET REMAINS UNTOUCHED.
+================================================================================

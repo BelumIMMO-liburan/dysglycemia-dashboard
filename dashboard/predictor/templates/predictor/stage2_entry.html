@@ -1,0 +1,184 @@
+{% extends 'predictor/base.html' %}
+
+{% block title %}Stage 2 · HbA1c Laboratory Assessment — Dysglycemia Screening Dashboard{% endblock %}
+{% block breadcrumb %}
+<a href="{% url 'predictor:screening_result' record.id %}" style="color: hsl(var(--muted-foreground)); text-decoration: none;">Screening Result</a>
+<span style="margin: 0 0.5rem; color: hsl(var(--muted-foreground));">/</span>
+<span>Stage-2 Assessment</span>
+{% endblock %}
+
+{% block content %}
+<div class="ui-page-header">
+    <div class="ui-page-header-row">
+        <div>
+            <h1 class="ui-page-title">Stage 2 · HbA1c Laboratory Assessment</h1>
+            <p class="ui-page-description">
+                Enter confirmatory laboratory measurement to determine ADA 2026 reference range.
+            </p>
+        </div>
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span class="ui-badge ui-badge-outline" id="record-id-badge" title="Full UUID: {{ record.id }}">
+                ID: {{ record.id|stringformat:"s"|slice:":8" }}...
+            </span>
+            <span class="ui-badge ui-badge-secondary">
+                Two-Stage Cascade
+            </span>
+        </div>
+    </div>
+</div>
+
+<!-- Two-Stage Screening Workflow Timeline -->
+<div class="ui-card" style="margin-bottom: 1.5rem; padding: 1rem 1.25rem;" id="two-stage-timeline">
+    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+        <!-- Step 1: Stage-1 Screening (Complete) -->
+        <div style="display: flex; align-items: center; gap: 0.6rem;">
+            <div style="width: 28px; height: 28px; border-radius: 50%; background: hsl(var(--success)/0.15); color: hsl(var(--success)); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.8125rem;">
+                ✓
+            </div>
+            <div>
+                <span style="font-size: 0.8125rem; font-weight: 600; color: hsl(var(--foreground)); display: block;">Stage 1: Non-Lab Screening</span>
+                <span style="font-size: 0.6875rem; color: hsl(var(--muted-foreground));">
+                    {% if record.ai_referral_recommended %}Elevated Signal{% else %}Lower Signal{% endif %}
+                </span>
+            </div>
+        </div>
+
+        <div style="flex: 1; height: 2px; background: hsl(var(--border)); min-width: 20px; margin: 0 0.5rem;" class="timeline-connector"></div>
+
+        <!-- Step 2: Human Review (Complete) -->
+        <div style="display: flex; align-items: center; gap: 0.6rem;">
+            <div style="width: 28px; height: 28px; border-radius: 50%; background: hsl(var(--success)/0.15); color: hsl(var(--success)); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.8125rem;">
+                ✓
+            </div>
+            <div>
+                <span style="font-size: 0.8125rem; font-weight: 600; color: hsl(var(--foreground)); display: block;">Human Review</span>
+                <span style="font-size: 0.6875rem; color: hsl(var(--muted-foreground));">Referral Recommended ({{ human_review.action_display }})</span>
+            </div>
+        </div>
+
+        <div style="flex: 1; height: 2px; background: hsl(var(--border)); min-width: 20px; margin: 0 0.5rem;" class="timeline-connector"></div>
+
+        <!-- Step 3: Stage-2 HbA1c (Current) -->
+        <div style="display: flex; align-items: center; gap: 0.6rem;">
+            <div style="width: 28px; height: 28px; border-radius: 50%; background: hsl(var(--primary)/0.15); color: hsl(var(--primary)); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.8125rem;">
+                ●
+            </div>
+            <div>
+                <span style="font-size: 0.8125rem; font-weight: 600; color: hsl(var(--foreground)); display: block;">Stage 2: HbA1c Lab Assessment</span>
+                <span style="font-size: 0.6875rem; color: hsl(var(--primary)); font-weight: 600;">Data Entry In Progress</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Referral Authority Context Card -->
+<div class="ui-card" style="margin-bottom: 1.5rem;" id="referral-context-card">
+    <div class="ui-card-header with-actions">
+        <div>
+            <h2 class="ui-card-title" style="font-size: 1rem;">
+                Triggering Referral Decision
+            </h2>
+            <p class="ui-card-description">
+                Stage 2 is authorized by the finalized human review decision.
+            </p>
+        </div>
+        <div>
+            <span class="ui-badge ui-badge-success" style="font-size: 0.75rem; padding: 0.35rem 0.65rem;">
+                Referral Authorized
+            </span>
+        </div>
+    </div>
+    <div class="ui-card-content">
+        <div class="ui-review-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));">
+            <div class="ui-review-item">
+                <span class="ui-review-item-label">Original AI Recommendation</span>
+                <span class="ui-review-item-value">
+                    {% if record.ai_referral_recommended %}
+                    Refer for Stage-2 HbA1c assessment
+                    {% else %}
+                    No referral recommended at current operating point
+                    {% endif %}
+                </span>
+            </div>
+            <div class="ui-review-item">
+                <span class="ui-review-item-label">Final Human Referral Decision</span>
+                <span class="ui-review-item-value" style="font-weight: 600; color: hsl(var(--foreground));">
+                    {{ human_review.final_decision_text }}
+                </span>
+            </div>
+            <div class="ui-review-item">
+                <span class="ui-review-item-label">Review Status</span>
+                <span class="ui-review-item-value">
+                    {{ human_review.action_display }}
+                    {% if human_review.review_action == 'overridden' %}
+                    <span style="font-size: 0.75rem; color: hsl(var(--muted-foreground)); display: block;">Reason: {{ human_review.override_reason_display }}</span>
+                    {% endif %}
+                </span>
+            </div>
+            <div class="ui-review-item">
+                <span class="ui-review-item-label">Reviewer Code</span>
+                <span class="ui-review-item-value tabular-nums" style="font-family: monospace;">
+                    {{ human_review.reviewer_code }}
+                </span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Stage-2 Data Entry Card -->
+<div class="ui-card" style="margin-bottom: 1.5rem;" id="stage2-entry-card">
+    <div class="ui-card-header">
+        <h2 class="ui-card-title">
+            Enter HbA1c Measurement
+        </h2>
+        <p class="ui-card-description">
+            Laboratory measurement in percent (%). Values are categorized according to ADA Standards of Care (2026).
+        </p>
+    </div>
+    <div class="ui-card-content">
+        <form action="{% url 'predictor:stage2' record.id %}" method="post" id="stage2-entry-form" novalidate>
+            {% csrf_token %}
+
+            {% if form.errors %}
+            <div class="ui-alert ui-alert-destructive" style="margin-bottom: 1.25rem; padding: 0.75rem 1rem; border-radius: var(--radius); display: flex; align-items: center; gap: 0.5rem; background: hsl(var(--destructive-muted)); border: 1px solid hsl(var(--destructive)/0.3); color: hsl(var(--destructive));" id="entry-error-alert" role="alert">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                <span style="font-size: 0.8125rem; font-weight: 500;">
+                    {% for field, errors in form.errors.items %}
+                        {{ errors.0 }}
+                    {% endfor %}
+                </span>
+            </div>
+            {% endif %}
+
+            <div style="max-width: 380px; margin-bottom: 1.5rem;">
+                <label for="hba1c-input" class="ui-label" style="display: block; font-size: 0.875rem; font-weight: 600; margin-bottom: 0.35rem; color: hsl(var(--foreground));">
+                    HbA1c <span style="color: hsl(var(--destructive));">*</span>
+                </label>
+                <div style="position: relative; display: flex; align-items: center;">
+                    {{ form.hba1c_percent }}
+                    <span style="position: absolute; right: 1rem; color: hsl(var(--muted-foreground)); font-weight: 600; font-size: 0.9375rem; pointer-events: none;" aria-hidden="true">%</span>
+                </div>
+                <span id="hba1c-help" style="font-size: 0.75rem; color: hsl(var(--muted-foreground)); display: block; margin-top: 0.35rem;">
+                    Enter numeric percentage (e.g. 5.70, 6.10, 6.50). Valid bounds: 2.00% &ndash; 25.00%.
+                </span>
+            </div>
+
+            <!-- Informational Note on Assay Limitation -->
+            <div style="padding: 0.875rem 1rem; background: hsl(var(--muted)/0.35); border-radius: var(--radius); border-left: 3px solid hsl(var(--border)); margin-bottom: 1.5rem; font-size: 0.8125rem; color: hsl(var(--muted-foreground)); line-height: 1.45;" id="assay-limitation-notice">
+                <strong>Methodological Guidance:</strong> HbA1c interpretation can depend on laboratory method and clinical context. This research prototype categorizes the entered numeric value only.
+            </div>
+
+            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; border-top: 1px solid hsl(var(--border)); padding-top: 1.25rem;">
+                <a href="{% url 'predictor:screening_result' record.id %}" class="ui-btn ui-btn-outline" id="back-to-screening-btn">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
+                    <span>Back to Screening Result</span>
+                </a>
+                <button type="submit" class="ui-btn ui-btn-primary" id="review-hba1c-btn" style="font-weight: 600; display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.6rem 1.5rem;">
+                    <span>Review HbA1c Value</span>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

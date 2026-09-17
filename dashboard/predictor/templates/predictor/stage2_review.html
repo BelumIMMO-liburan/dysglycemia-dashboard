@@ -1,0 +1,131 @@
+{% extends 'predictor/base.html' %}
+
+{% block title %}Review HbA1c Value — Stage 2 · Laboratory Assessment{% endblock %}
+{% block breadcrumb %}
+<a href="{% url 'predictor:screening_result' record.id %}" style="color: hsl(var(--muted-foreground)); text-decoration: none;">Screening Result</a>
+<span style="margin: 0 0.5rem; color: hsl(var(--muted-foreground));">/</span>
+<a href="{% url 'predictor:stage2' record.id %}?hba1c={{ hba1c_val }}" style="color: hsl(var(--muted-foreground)); text-decoration: none;">Stage-2 Assessment</a>
+<span style="margin: 0 0.5rem; color: hsl(var(--muted-foreground));">/</span>
+<span>Review</span>
+{% endblock %}
+
+{% block content %}
+<div class="ui-page-header">
+    <div class="ui-page-header-row">
+        <div>
+            <h1 class="ui-page-title">Review Stage-2 Laboratory Measurement</h1>
+            <p class="ui-page-description">
+                Verify the entered laboratory value before recording permanent audit evidence.
+            </p>
+        </div>
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span class="ui-badge ui-badge-warning" style="font-size: 0.75rem; padding: 0.35rem 0.65rem;">
+                Pending Confirmation
+            </span>
+        </div>
+    </div>
+</div>
+
+<!-- Two-Stage Screening Workflow Timeline -->
+<div class="ui-card" style="margin-bottom: 1.5rem; padding: 1rem 1.25rem;" id="two-stage-timeline">
+    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+        <!-- Step 1: Stage-1 Screening -->
+        <div style="display: flex; align-items: center; gap: 0.6rem;">
+            <div style="width: 28px; height: 28px; border-radius: 50%; background: hsl(var(--success)/0.15); color: hsl(var(--success)); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.8125rem;">
+                ✓
+            </div>
+            <div>
+                <span style="font-size: 0.8125rem; font-weight: 600; color: hsl(var(--foreground)); display: block;">Stage 1: Non-Lab Screening</span>
+                <span style="font-size: 0.6875rem; color: hsl(var(--muted-foreground));">Evaluated</span>
+            </div>
+        </div>
+
+        <div style="flex: 1; height: 2px; background: hsl(var(--border)); min-width: 20px; margin: 0 0.5rem;" class="timeline-connector"></div>
+
+        <!-- Step 2: Human Review -->
+        <div style="display: flex; align-items: center; gap: 0.6rem;">
+            <div style="width: 28px; height: 28px; border-radius: 50%; background: hsl(var(--success)/0.15); color: hsl(var(--success)); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.8125rem;">
+                ✓
+            </div>
+            <div>
+                <span style="font-size: 0.8125rem; font-weight: 600; color: hsl(var(--foreground)); display: block;">Human Review</span>
+                <span style="font-size: 0.6875rem; color: hsl(var(--muted-foreground));">Referral Recommended</span>
+            </div>
+        </div>
+
+        <div style="flex: 1; height: 2px; background: hsl(var(--border)); min-width: 20px; margin: 0 0.5rem;" class="timeline-connector"></div>
+
+        <!-- Step 3: Stage-2 HbA1c (Review Step) -->
+        <div style="display: flex; align-items: center; gap: 0.6rem;">
+            <div style="width: 28px; height: 28px; border-radius: 50%; background: hsl(var(--warning)/0.2); color: hsl(var(--warning)); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.8125rem;">
+                ●
+            </div>
+            <div>
+                <span style="font-size: 0.8125rem; font-weight: 600; color: hsl(var(--foreground)); display: block;">Stage 2: HbA1c Lab Assessment</span>
+                <span style="font-size: 0.6875rem; color: hsl(var(--warning)); font-weight: 600;">Input Review Step</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Input Verification Card -->
+<div class="ui-card" style="margin-bottom: 1.5rem;" id="stage2-review-card">
+    <div class="ui-card-header">
+        <h2 class="ui-card-title">
+            Confirm Laboratory Assessment Data
+        </h2>
+        <p class="ui-card-description">
+            Verify the entered HbA1c value. Confirmation will persist this record and derive the frozen ADA reference category.
+        </p>
+    </div>
+    <div class="ui-card-content">
+        <!-- Prominent Value Verification Display -->
+        <div style="background: hsl(var(--muted)/0.4); border: 1px solid hsl(var(--border)); border-radius: var(--radius); padding: 1.5rem; margin-bottom: 1.5rem;">
+            <div style="display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 1rem; margin-bottom: 1rem;">
+                <div>
+                    <span style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: hsl(var(--muted-foreground)); display: block; margin-bottom: 0.35rem;">
+                        HbA1c Entered
+                    </span>
+                    <div style="font-size: 2.25rem; font-weight: 700; color: hsl(var(--foreground));" class="tabular-nums" id="review-hba1c-display">
+                        {{ hba1c_val }}<span style="font-size: 1.25rem; font-weight: 500; color: hsl(var(--muted-foreground)); margin-left: 0.2rem;">%</span>
+                    </div>
+                </div>
+                <div style="text-align: right;">
+                    <span style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: hsl(var(--muted-foreground)); display: block; margin-bottom: 0.35rem;">
+                        Preliminary Range Category
+                    </span>
+                    <span class="ui-badge" style="font-size: 0.9375rem; font-weight: 600; padding: 0.4rem 0.85rem; background: hsl(var(--card)); border: 1px solid hsl(var(--border));" id="preview-range-badge">
+                        {{ range_result.range_label }}
+                    </span>
+                </div>
+            </div>
+
+            <p style="font-size: 0.875rem; color: hsl(var(--foreground)/0.9); margin: 0; line-height: 1.45;">
+                {{ range_result.interpretation_copy }}
+            </p>
+        </div>
+
+        <!-- Audit & Immutability Notice -->
+        <div style="padding: 0.75rem 1rem; background: hsl(var(--muted)/0.3); border-radius: var(--radius); border-left: 3px solid hsl(var(--primary)); margin-bottom: 1.5rem; font-size: 0.8125rem; color: hsl(var(--muted-foreground)); line-height: 1.45;" id="review-immutable-notice">
+            <strong>Immutability Notice:</strong> Once confirmed, this Stage-2 assessment is permanently recorded as auditable research evidence and cannot be edited in the normal UI.
+        </div>
+
+        <!-- Confirmation Form -->
+        <form action="{% url 'predictor:stage2_confirm' record.id %}" method="post" id="stage2-confirm-form">
+            {% csrf_token %}
+            {{ confirm_form.hba1c_percent }}
+
+            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; border-top: 1px solid hsl(var(--border)); padding-top: 1.25rem;">
+                <a href="{% url 'predictor:stage2' record.id %}?hba1c={{ hba1c_val }}" class="ui-btn ui-btn-outline" id="edit-hba1c-btn" style="display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 600;">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                    <span>Edit Value</span>
+                </a>
+                <button type="submit" class="ui-btn ui-btn-primary" id="confirm-stage2-btn" style="font-weight: 600; display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.65rem 1.75rem;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+                    <span>Confirm Laboratory Result</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

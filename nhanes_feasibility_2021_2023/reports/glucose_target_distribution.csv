@@ -1,0 +1,5 @@
+cohort,total_n,fpg_normal,fpg_prediabetes_range,fpg_diabetes_range,fpg_missing,pct_normal,pct_prediab,pct_diab
+A_all,11933,1766,1476,430,8261,48.09,40.2,11.71
+B_adult,8153,1499,1401,429,4824,45.03,42.08,12.89
+C_no_diab,7080,1467,1269,144,4200,50.94,44.06,5.0
+D_no_diab_no_prediab,6808,1440,1201,112,4055,52.31,43.63,4.07

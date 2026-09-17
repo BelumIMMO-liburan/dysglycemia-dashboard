@@ -1,0 +1,2 @@
+participant_code,protocol_version,prototype_release,session_type,session_date,dashboard_database_archive,dashboard_database_sha256,moderator_sheet_file,survey_export_file,completion_status,notes
+DRYRUN001,1.0.3,research-prototype-v1.0,dryrun,2026-09-05,C:\Users\Felix\Documents\Skripsi\dashboard\db_dryrun.sqlite3,450e3e92b481560d63256292d25fe0054d416e789ab40d8b6ee419510eabbff1,DRYRUN001_moderator.csv,DRYRUN001_survey.csv,completed,Synthetic verification run

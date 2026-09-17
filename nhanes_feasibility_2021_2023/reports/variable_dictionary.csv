@@ -1,0 +1,26 @@
+variable,source_file,description,dtype,total_n,valid_n,missing_n,missing_pct,min,max,frequency_table,notes
+SEQN,DEMO_L.xpt,Respondent sequence number,float64,11933,11933,0,0.0,1.304e+05,1.423e+05,,
+RIDAGEYR,DEMO_L.xpt,Age in years at screening (0-80; 80 = 80+),float64,11933,11933,0,0.0,5.398e-79,80,,
+RIAGENDR,DEMO_L.xpt,"Gender (1=Male, 2=Female)",float64,11933,11933,0,0.0,,,1=5575; 2=6358,
+WTMEC2YR,DEMO_L.xpt,Full sample 2-year MEC exam weight,float64,11933,11933,0,0.0,5.398e-79,2.271e+05,,
+SDMVSTRA,DEMO_L.xpt,Masked variance pseudo-stratum,float64,11933,11933,0,0.0,173,187,,
+SDMVPSU,DEMO_L.xpt,Masked variance pseudo-PSU,float64,11933,11933,0,0.0,1,2,,
+BMXBMI,BMX_L.xpt,Body mass index (kg/m²),float64,8860,8471,389,4.39,11.1,74.8,,
+BMXWAIST,BMX_L.xpt,Waist circumference (cm),float64,8860,8190,670,7.56,39.8,187,,
+BPQ020,BPQ_L.xpt,"Ever told you had high blood pressure (1=Yes,2=No,7=Refused,9=DK)",float64,8501,8498,3,0.04,,,1=2969; 2=5518; 7=1; 9=10,special_code_7_present(n=1); special_code_9_present(n=10)
+BPQ150,BPQ_L.xpt,"Had blood cholesterol checked in past 5 years (1=Yes,2=No,7=Refused,9=DK)",float64,8501,2969,5532,65.07,,,1=2442; 2=523; 9=4,special_code_9_present(n=4); HIGH_MISSINGNESS_>50%
+SMQ020,SMQ_L.xpt,"Smoked at least 100 cigarettes in life (1=Yes,2=No,7=Refused,9=DK)",float64,9015,8135,880,9.76,,,1=3243; 2=4878; 7=7; 9=7,special_code_7_present(n=7); special_code_9_present(n=7)
+SMQ040,SMQ_L.xpt,"Do you now smoke cigarettes (1=Every day,2=Some days,3=Not at all,7=Refused,9=DK)",float64,9015,3243,5772,64.03,,,1=952; 2=238; 3=2053,HIGH_MISSINGNESS_>50%
+PAD790Q,PAQ_L.xpt,Hours/minutes vigorous work activity per day (quantity),float64,8153,8135,18,0.22,5.398e-79,9999,,
+PAD790U,PAQ_L.xpt,"Vigorous work activity unit (1=Hours,2=Minutes)",object,8153,8153,0,0.0,,,=1763; D=985; M=472; W=4851; Y=82,
+PAD800,PAQ_L.xpt,"Walk or bicycle to get places (1=Yes,2=No,7=Refused,9=DK)",float64,8153,6390,1763,21.62,,,1=20; 2=8; 3=8; 4=2; 5=52; 6=4; 7=3; 8=1; 10=119; 11=2; 12=2; 14=1; 15=250; 16=2; 18=1; 20=378; 21=1; 23=2; 24=1; 25=50; 27=1; 29=1; 30=1504; 31=1; 35=30; 36=2; 37=1; 39=1; 40=158; 45=550; 49=1; 50=24; 55=3; 60=1797; 65=3; 70=6; 75=30; 80=5; 90=285; 95=1; 100=3; 105=4; 110=2; 115=1; 120=663; 150=10; 180=172; 240=96; 300=56; 360=24; 420=4; 480=14; 540=1; 600=5; 660=1; 720=4; 9999=19,special_code_7_present(n=3); MODERATE_MISSINGNESS_>20%
+PAD810Q,PAQ_L.xpt,Hours/minutes moderate work activity per day (quantity),float64,8153,8139,14,0.17,5.398e-79,9999,,
+PAD810U,PAQ_L.xpt,"Moderate work activity unit (1=Hours,2=Minutes)",object,8153,8153,0,0.0,,,=4467; D=235; M=711; W=2590; Y=150,
+PAD820,PAQ_L.xpt,"Moderate recreational activities (1=Yes,2=No,7=Refused,9=DK)",float64,8153,3687,4466,54.78,,,1=12; 2=3; 3=6; 4=2; 5=36; 6=2; 7=1; 8=2; 10=108; 12=5; 15=190; 20=212; 25=30; 30=909; 32=1; 35=12; 40=70; 45=262; 46=1; 50=19; 55=3; 60=1064; 70=5; 75=13; 90=145; 100=2; 105=3; 120=364; 150=4; 180=93; 240=49; 300=21; 360=10; 420=1; 480=8; 540=1; 600=1; 660=1; 900=2; 7777=1; 9999=13,special_code_7_present(n=1); HIGH_MISSINGNESS_>50%
+PAD680,PAQ_L.xpt,Minutes sedentary activity per day,float64,8153,8138,15,0.18,5.398e-79,9999,,
+DIQ010,DIQ_L.xpt,"Doctor told you have diabetes (1=Yes,2=No,3=Borderline,7=Refused,9=DK)",float64,11744,11740,4,0.03,,,1=1081; 2=10371; 3=284; 9=4,special_code_9_present(n=4)
+DIQ160,DIQ_L.xpt,"Ever told you have prediabetes (1=Yes,2=No,7=Refused,9=DK)",float64,11744,8022,3722,31.69,,,1=918; 2=7089; 9=15,special_code_9_present(n=15); HIGH_MISSINGNESS_>30%
+DIQ180,DIQ_L.xpt,"Had blood tested past three years (1=Yes,2=No,7=Refused,9=DK)",float64,11744,8304,3440,29.29,,,1=3370; 2=4667; 7=2; 9=265,special_code_7_present(n=2); special_code_9_present(n=265); MODERATE_MISSINGNESS_>20%
+LBXGH,GHB_L.xpt,Glycohemoglobin / HbA1c (%),float64,7199,6715,484,6.72,3.2,17.1,,
+LBXGLU,GLU_L.xpt,Fasting glucose (mg/dL),float64,3996,3672,324,8.11,59,561,,
+WTSAF2YR,GLU_L.xpt,Fasting subsample 2-year MEC weight,float64,3996,3996,0,0.0,5.398e-79,5.619e+05,,

@@ -1,0 +1,134 @@
+{% extends 'predictor/base.html' %}
+
+{% block title %}Kasus Latihan P0 — Orientasi Alur Kerja Evaluasi{% endblock %}
+{% block breadcrumb %}Kasus Latihan P0{% endblock %}
+
+{% block content %}
+<div class="ui-page-header">
+    <div class="ui-page-header-row">
+        <div>
+            <h1 class="ui-page-title">{{ p0_spec.case_title }}</h1>
+            <p class="ui-page-description">
+                Sesi orientasi mandiri untuk membiasakan diri dengan alur kerja dashboard sebelum evaluasi utama.
+            </p>
+        </div>
+        <div>
+            <span class="ui-badge ui-badge-amber">
+                Data Latihan (Non-Riset)
+            </span>
+        </div>
+    </div>
+</div>
+
+<div style="max-width: 900px; margin: 0 auto;">
+    <!-- Practice Orientation Alert -->
+    <div class="ui-alert ui-alert-info" style="margin-bottom: 2rem;">
+        <svg class="ui-alert-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="16" y2="12"/><line x1="12" x2="12.01" y1="8" y2="8"/>
+        </svg>
+        <div class="ui-alert-content">
+            <p class="ui-alert-title">Tentang Kasus Latihan P0</p>
+            <p class="ui-alert-body">
+                {{ p0_spec.description }}
+            </p>
+        </div>
+    </div>
+
+    <!-- 4 Steps Walkthrough Card -->
+    <div class="ui-card" style="margin-bottom: 2rem;">
+        <div class="ui-card-header">
+            <h2 class="ui-card-title">4 Tahap Utama pada Dashboard</h2>
+            <p class="ui-card-description">Setiap kasus screening melibatkan tahapan berikut:</p>
+        </div>
+        <div class="ui-card-content">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.25rem;">
+                <div style="padding: 1rem; border: 1px solid hsl(var(--border)); border-radius: var(--radius); background-color: hsl(var(--card));">
+                    <div style="display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 9999px; background-color: hsl(var(--primary)/0.1); color: hsl(var(--primary)); font-weight: 700; font-size: 0.875rem; margin-bottom: 0.75rem;">1</div>
+                    <h3 style="font-size: 0.9375rem; font-weight: 600; margin-bottom: 0.25rem;">Estimasi Risiko AI</h3>
+                    <p style="font-size: 0.8125rem; color: hsl(var(--muted-foreground)); line-height: 1.4;">
+                        Model GAM menghitung probabilitas risiko disglikemia Stage 1 dan membandingkannya dengan ambang keputusan (13,9%).
+                    </p>
+                </div>
+
+                <div style="padding: 1rem; border: 1px solid hsl(var(--border)); border-radius: var(--radius); background-color: hsl(var(--card));">
+                    <div style="display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 9999px; background-color: hsl(var(--primary)/0.1); color: hsl(var(--primary)); font-weight: 700; font-size: 0.875rem; margin-bottom: 0.75rem;">2</div>
+                    <h3 style="font-size: 0.9375rem; font-weight: 600; margin-bottom: 0.25rem;">Penjelasan XAI</h3>
+                    <p style="font-size: 0.8125rem; color: hsl(var(--muted-foreground)); line-height: 1.4;">
+                        Grafik kontribusi fitur menunjukkan kontribusi aditif masing-masing variabel input terhadap log-odds risiko.
+                    </p>
+                </div>
+
+                <div style="padding: 1rem; border: 1px solid hsl(var(--border)); border-radius: var(--radius); background-color: hsl(var(--card));">
+                    <div style="display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 9999px; background-color: hsl(var(--primary)/0.1); color: hsl(var(--primary)); font-weight: 700; font-size: 0.875rem; margin-bottom: 0.75rem;">3</div>
+                    <h3 style="font-size: 0.9375rem; font-weight: 600; margin-bottom: 0.25rem;">Human Review</h3>
+                    <p style="font-size: 0.8125rem; color: hsl(var(--muted-foreground)); line-height: 1.4;">
+                        Manusia memiliki kendali penuh: dapat menerima rekomendasi AI atau melakukan Override dengan alasan spesifik.
+                    </p>
+                </div>
+
+                <div style="padding: 1rem; border: 1px solid hsl(var(--border)); border-radius: var(--radius); background-color: hsl(var(--card));">
+                    <div style="display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 9999px; background-color: hsl(var(--primary)/0.1); color: hsl(var(--primary)); font-weight: 700; font-size: 0.875rem; margin-bottom: 0.75rem;">4</div>
+                    <h3 style="font-size: 0.9375rem; font-weight: 600; margin-bottom: 0.25rem;">Feedback Terstruktur</h3>
+                    <p style="font-size: 0.8125rem; color: hsl(var(--muted-foreground)); line-height: 1.4;">
+                        Pengguna dapat memberikan taksonomi umpan balik yang dapat digunakan dalam proses adaptation penelitian.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- P0 Case Specification -->
+    <div class="ui-card" style="margin-bottom: 2rem;">
+        <div class="ui-card-header">
+            <h2 class="ui-card-title">Profil Data Kasus Latihan (P0)</h2>
+            <p class="ui-card-description">Data berikut telah dihitung secara otomatis oleh model machine learning GAM:</p>
+        </div>
+        <div class="ui-card-content">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; font-size: 0.875rem; margin-bottom: 1.5rem;">
+                <div style="padding: 0.75rem; background-color: hsl(var(--muted)/0.3); border-radius: var(--radius);">
+                    <div style="color: hsl(var(--muted-foreground)); font-size: 0.75rem;">Usia</div>
+                    <strong>{{ p0_spec.features.age }} tahun</strong>
+                </div>
+                <div style="padding: 0.75rem; background-color: hsl(var(--muted)/0.3); border-radius: var(--radius);">
+                    <div style="color: hsl(var(--muted-foreground)); font-size: 0.75rem;">Jenis Kelamin</div>
+                    <strong>Perempuan (Female)</strong>
+                </div>
+                <div style="padding: 0.75rem; background-color: hsl(var(--muted)/0.3); border-radius: var(--radius);">
+                    <div style="color: hsl(var(--muted-foreground)); font-size: 0.75rem;">Indeks Massa Tubuh (BMI)</div>
+                    <strong>{{ p0_spec.features.bmi }} kg/m²</strong>
+                </div>
+                <div style="padding: 0.75rem; background-color: hsl(var(--muted)/0.3); border-radius: var(--radius);">
+                    <div style="color: hsl(var(--muted-foreground)); font-size: 0.75rem;">Lingkar Pinggang</div>
+                    <strong>{{ p0_spec.features.waist_cm }} cm</strong>
+                </div>
+                <div style="padding: 0.75rem; background-color: hsl(var(--muted)/0.3); border-radius: var(--radius);">
+                    <div style="color: hsl(var(--muted-foreground)); font-size: 0.75rem;">Riwayat Hipertensi</div>
+                    <strong>Tidak (No)</strong>
+                </div>
+                <div style="padding: 0.75rem; background-color: hsl(var(--muted)/0.3); border-radius: var(--radius);">
+                    <div style="color: hsl(var(--muted-foreground)); font-size: 0.75rem;">Riwayat Merokok</div>
+                    <strong>Tidak (Never)</strong>
+                </div>
+                <div style="padding: 0.75rem; background-color: hsl(var(--muted)/0.3); border-radius: var(--radius);">
+                    <div style="color: hsl(var(--muted-foreground)); font-size: 0.75rem;">Waktu Sedentari</div>
+                    <strong>{{ p0_spec.features.sedentary_minutes_day }} menit/hari (6 jam)</strong>
+                </div>
+            </div>
+
+            <div style="display: flex; flex-wrap: wrap; gap: 1rem; justify-content: space-between; align-items: center; border-top: 1px solid hsl(var(--border)); padding-top: 1.25rem;">
+                <a href="{% url 'predictor:screening_result' practice_record.id %}" class="ui-btn ui-btn-primary" style="font-weight: 600;">
+                    Buka Kasus Latihan P0 di Dashboard →
+                </a>
+
+                <form method="post" action="{% url 'predictor:evaluation_practice' %}" style="display: inline;">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="finish_practice">
+                    <button type="submit" class="ui-btn ui-btn-outline">
+                        Lewati Latihan & Langsung Mulai Screening Utama →
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

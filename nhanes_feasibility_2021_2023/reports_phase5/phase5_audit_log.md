@@ -1,0 +1,25 @@
+# Phase 5 Confirmatory Evaluation Audit Log
+
+- **Execution Timestamp:** 2026-09-02 22:09:25
+- **Integrity Verification:** PASSED (All 9 pre-opening hashes verified 100% identical)
+- **Operating System / Environment:** Windows / Python 3.10.11
+- **Key Libraries:** scikit-learn 1.7.2, pygam 0.12.0, tensorflow 2.20.0
+- **Cohort Reconstruction:**
+  - Analytic Expanded Population: N = 4,044
+  - Development Partition: N = 3,232 (Normal: 2,485, Dysglycemia: 747)
+  - Final Test Partition: N = 812 (Normal: 621, Dysglycemia: 191)
+- **Model Artifacts Generated & Frozen:**
+  - `preprocessor.pkl` (SHA256: 6e56a01993a4a6971eb62c82699c49da6f31a3acec2a1169e07862409f42824d)
+  - `gam_final.pkl` (SHA256: 204a94ff072ef4f1edecebf5a643738c006bbf010f3817b4bb798d3ea6fef41d)
+  - `logistic_final.pkl` (SHA256: 4260bef53a88fb4ed3ac30605eaf09c3684b203988e3d1b8e93e4fcc86ea78e6)
+  - `dlnn_final.keras` (SHA256: e084f7c8711c3dd91515f915ba16b3a5c4893bc7222b25f35e2f46d3f8f11bde)
+- **Exact Decision Thresholds Applied:**
+  - GAM: 0.1389
+  - Logistic Regression: 0.1389
+  - DLNN: 0.1419
+- **Final Test Prediction File:** `predictions_phase5/final_test_predictions.csv`
+- **Prediction File Timestamp:** 2026-09-02 22:09:35
+- **Prediction File SHA256:** fac969a00df57d6686c36b09e3de65858e2c744812e0ba3e8765b3f6165b5923
+- **Technical Failures:** NONE. Pipeline executed synchronously without interruption.
+- **Post-Test Changes:** ZERO. No hyperparameters, thresholds, scalers, or model configurations were altered after prediction generation.
+- **Audit Status:** VERIFIED CONFIRMATORY EVALUATION.

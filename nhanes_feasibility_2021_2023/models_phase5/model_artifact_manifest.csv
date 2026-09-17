@@ -1,0 +1,5 @@
+filename,sha256,training_N,positive_N,negative_N,predictor_order,configuration,creation_timestamp,software_version
+preprocessor.pkl,6e56a01993a4a6971eb62c82699c49da6f31a3acec2a1169e07862409f42824d,3232,747,2485,"age,sex,bmi,hypertension_history,smoking_history,waist_cm,sedentary_minutes_day",StandardScaler_continuous_only,2026-09-02 22:09:25,sklearn_1.7.2
+gam_final.pkl,204a94ff072ef4f1edecebf5a643738c006bbf010f3817b4bb798d3ea6fef41d,3232,747,2485,"age,sex,bmi,hypertension_history,smoking_history,waist_cm,sedentary_minutes_day",LogisticGAM_splines10_lam10.0,2026-09-02 22:09:25,pygam_0.12.0
+logistic_final.pkl,4260bef53a88fb4ed3ac30605eaf09c3684b203988e3d1b8e93e4fcc86ea78e6,3232,747,2485,"age,sex,bmi,hypertension_history,smoking_history,waist_cm,sedentary_minutes_day",LogisticRegression_L2_C0.1_lbfgs,2026-09-02 22:09:25,sklearn_1.7.2
+dlnn_final.keras,e084f7c8711c3dd91515f915ba16b3a5c4893bc7222b25f35e2f46d3f8f11bde,3232,747,2485,"age,sex,bmi,hypertension_history,smoking_history,waist_cm,sedentary_minutes_day",DLNN_16_8_drop0.0_Adam_lr0.001,2026-09-02 22:09:25,tensorflow_2.20.0

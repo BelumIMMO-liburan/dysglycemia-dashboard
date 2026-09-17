@@ -1,0 +1,328 @@
+{% extends 'predictor/base.html' %}
+
+{% block title %}Feedback Experiment — Dysglycemia Screening Dashboard{% endblock %}
+{% block breadcrumb %}Feedback Experiment{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="ui-page-header">
+    <div class="ui-page-header-row">
+        <div>
+            <h1 class="ui-page-title">Human Feedback Learning Experiment</h1>
+            <p class="ui-page-description">
+                Investigating whether human review decisions can influence AI behavior on subsequent similar cases without modifying the frozen baseline GAM.
+            </p>
+        </div>
+        <div>
+            <span class="ui-badge ui-badge-outline" id="active-model-badge">
+                Active Model: <strong>{{ active_version.version_label|default:"GAM-v1-baseline" }}</strong>
+            </span>
+        </div>
+    </div>
+</div>
+
+<!-- Research Governance Banner -->
+<div class="ui-alert ui-alert-info" role="region" aria-label="Feedback Governance Note" style="margin-bottom: 1.5rem;">
+    <svg class="ui-alert-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+    </svg>
+    <div class="ui-alert-content">
+        <p class="ui-alert-title">Research Protocol: Controlled Mechanism Demonstration</p>
+        <p class="ui-alert-body">
+            <strong>Immutable Baseline:</strong> The frozen GAM model artifact is strictly read-only. Learning occurs solely via an additive residual correction layer on the logit scale bounded to &plusmn;2.0.
+            <br>
+            <strong>Small-N Boundary:</strong> Small-N updates serve as a controlled mechanism demonstration showing whether human feedback can influence a subsequent similar case. They do not constitute evidence of generalizable model learning.
+        </p>
+    </div>
+</div>
+
+<!-- Flash Alerts -->
+{% if experiment_error %}
+<div class="ui-alert ui-alert-destructive" style="margin-bottom: 1.5rem;" role="alert">
+    <svg class="ui-alert-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+    </svg>
+    <div class="ui-alert-content">
+        <p class="ui-alert-title">Error</p>
+        <p class="ui-alert-body">{{ experiment_error }}</p>
+    </div>
+</div>
+{% endif %}
+
+{% if experiment_message %}
+<div class="ui-alert ui-alert-info" style="margin-bottom: 1.5rem;" role="alert">
+    <svg class="ui-alert-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+    </svg>
+    <div class="ui-alert-content">
+        <p class="ui-alert-title">Experiment Update</p>
+        <p class="ui-alert-body">{{ experiment_message }}</p>
+    </div>
+</div>
+{% endif %}
+
+<!-- Feedback Accumulation KPIs -->
+<div class="ui-stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.75rem;">
+    <div class="ui-card" style="padding: 1.25rem;">
+        <span class="ui-stat-label" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: hsl(var(--muted-foreground));">Total Feedback</span>
+        <div class="ui-stat-value tabular-nums" style="font-size: 1.75rem; font-weight: 700; margin-top: 0.25rem;">{{ total_feedback }}</div>
+        <span style="font-size: 0.75rem; color: hsl(var(--muted-foreground));">All submitted feedback</span>
+    </div>
+
+    <div class="ui-card" style="padding: 1.25rem;">
+        <span class="ui-stat-label" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: hsl(var(--muted-foreground));">Eligible for Learning</span>
+        <div class="ui-stat-value tabular-nums" style="font-size: 1.75rem; font-weight: 700; color: hsl(var(--primary)); margin-top: 0.25rem;">{{ eligible_feedback }}</div>
+        <span style="font-size: 0.75rem; color: hsl(var(--muted-foreground));">Override + learnable taxonomy</span>
+    </div>
+
+    <div class="ui-card" style="padding: 1.25rem;">
+        <span class="ui-stat-label" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: hsl(var(--warning)); margin-top: 0.25rem;">Pending In Next Batch</span>
+        <div class="ui-stat-value tabular-nums" style="font-size: 1.75rem; font-weight: 700; color: hsl(var(--warning)); margin-top: 0.25rem;">{{ pending_feedback }}</div>
+        <span style="font-size: 0.75rem; color: hsl(var(--muted-foreground));">Min. 3 required to trigger batch</span>
+    </div>
+
+    <div class="ui-card" style="padding: 1.25rem;">
+        <span class="ui-stat-label" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: hsl(var(--muted-foreground));">Active Version</span>
+        <div class="ui-stat-value" style="font-size: 1.125rem; font-weight: 700; font-family: monospace; margin-top: 0.5rem; word-break: break-all;">
+            {{ active_version.version_label|default:"GAM-v1-baseline" }}
+        </div>
+        <span style="font-size: 0.75rem; color: hsl(var(--muted-foreground));">
+            {% if active_version.is_baseline %}Frozen Baseline{% else %}Adapted Candidate{% endif %}
+        </span>
+    </div>
+</div>
+
+<!-- Model Management & Learning Batch Controls -->
+<div class="ui-card" style="margin-bottom: 1.75rem;">
+    <div class="ui-card-header with-actions">
+        <div>
+            <h2 class="ui-card-title" style="display: flex; align-items: center; gap: 0.5rem;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                </svg>
+                Learning Batch Management
+            </h2>
+            <p class="ui-card-description">
+                Train a candidate residual adaptation layer from accumulated eligible feedback records.
+            </p>
+        </div>
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+            {% if not active_version.is_baseline %}
+            <form action="{% url 'predictor:rollback_version' %}" method="post" style="margin: 0;" onsubmit="return confirm('Roll back to the frozen baseline GAM-v1?');">
+                {% csrf_token %}
+                <button type="submit" class="ui-btn ui-btn-outline" style="font-size: 0.8125rem; color: hsl(var(--destructive)); border-color: hsl(var(--destructive)/0.3);">
+                    Rollback to Baseline GAM
+                </button>
+            </form>
+            {% endif %}
+
+            <form action="{% url 'predictor:trigger_learning' %}" method="post" style="margin: 0;">
+                {% csrf_token %}
+                <button type="submit" class="ui-btn ui-btn-primary" style="font-size: 0.8125rem;" {% if pending_feedback < 3 %}title="Requires at least 3 pending eligible feedback records"{% endif %}>
+                    Execute Learning Batch ({{ pending_feedback }} pending)
+                </button>
+            </form>
+        </div>
+    </div>
+    <div class="ui-card-content">
+        <p style="font-size: 0.8125rem; color: hsl(var(--muted-foreground)); margin: 0 0 1rem 0;">
+            Executing a learning batch runs Ridge regression residual correction on the logit scale, creates a Candidate version, and executes automated validation checks. It does NOT automatically activate the candidate.
+        </p>
+
+        <!-- Candidate Batches Ready for Activation -->
+        {% for batch in batches %}
+            {% if batch.status == 'completed' and not batch.candidate_version.is_active %}
+            <div style="padding: 1rem; background: hsl(var(--muted)/0.4); border: 1px solid hsl(var(--border)); border-radius: var(--radius); margin-bottom: 1rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+                <div>
+                    <span class="ui-badge ui-badge-warning" style="font-size: 0.6875rem; margin-bottom: 0.25rem;">Candidate Ready</span>
+                    <strong style="display: block; font-size: 0.9375rem; font-family: monospace;">{{ batch.candidate_version.version_label }}</strong>
+                    <span style="font-size: 0.75rem; color: hsl(var(--muted-foreground));">
+                        Trained on {{ batch.feedback_count }} feedback records · Validation: {{ batch.candidate_version.validation_status }}
+                    </span>
+                </div>
+                <form action="{% url 'predictor:activate_candidate' %}" method="post" style="margin: 0;">
+                    {% csrf_token %}
+                    <input type="hidden" name="batch_id" value="{{ batch.batch_id }}">
+                    <button type="submit" class="ui-btn ui-btn-primary" style="font-size: 0.8125rem;">
+                        Activate This Candidate
+                    </button>
+                </form>
+            </div>
+            {% endif %}
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Two Column Layout: Model Versions & Feedback Categories -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 1.5rem; margin-bottom: 1.75rem;">
+    <!-- Model Version Registry -->
+    <div class="ui-card">
+        <div class="ui-card-header">
+            <h3 class="ui-card-title" style="font-size: 1rem;">Model Version Registry</h3>
+            <p class="ui-card-description">Immutable lifecycle audit trail of model iterations.</p>
+        </div>
+        <div class="ui-card-content" style="padding: 0;">
+            <div style="overflow-x: auto;">
+                <table class="ui-table" style="width: 100%; border-collapse: collapse; font-size: 0.8125rem;">
+                    <thead>
+                        <tr style="border-bottom: 2px solid hsl(var(--border)); text-align: left;">
+                            <th style="padding: 0.6rem 0.75rem;">Version</th>
+                            <th style="padding: 0.6rem 0.75rem;">Status</th>
+                            <th style="padding: 0.6rem 0.75rem;">Type</th>
+                            <th style="padding: 0.6rem 0.75rem;">Created</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for v in versions %}
+                        <tr style="border-bottom: 1px solid hsl(var(--border)); {% if v.is_active %}background: hsl(var(--primary)/0.05);{% endif %}">
+                            <td style="padding: 0.6rem 0.75rem; font-family: monospace; font-weight: 600;">
+                                {{ v.version_label }}
+                                {% if v.is_active %}<span class="ui-badge ui-badge-success" style="font-size: 0.625rem; margin-left: 0.35rem;">Active</span>{% endif %}
+                            </td>
+                            <td style="padding: 0.6rem 0.75rem;">{{ v.status|title }}</td>
+                            <td style="padding: 0.6rem 0.75rem;">
+                                {% if v.is_baseline %}Baseline GAM{% else %}Adapted Layer{% endif %}
+                            </td>
+                            <td style="padding: 0.6rem 0.75rem; color: hsl(var(--muted-foreground));" class="tabular-nums">
+                                {{ v.created_at|date:"Y-m-d H:i" }}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" style="padding: 1rem; text-align: center; color: hsl(var(--muted-foreground));">
+                                No registered model versions found.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Feedback Category Breakdown -->
+    <div class="ui-card">
+        <div class="ui-card-header">
+            <h3 class="ui-card-title" style="font-size: 1rem;">Feedback Taxonomy Distribution</h3>
+            <p class="ui-card-description">Frequency of structured feedback categories submitted.</p>
+        </div>
+        <div class="ui-card-content" style="padding: 0;">
+            <div style="overflow-x: auto;">
+                <table class="ui-table" style="width: 100%; border-collapse: collapse; font-size: 0.8125rem;">
+                    <thead>
+                        <tr style="border-bottom: 2px solid hsl(var(--border)); text-align: left;">
+                            <th style="padding: 0.6rem 0.75rem;">Category</th>
+                            <th style="padding: 0.6rem 0.75rem; text-align: right;">Count</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for cat in category_breakdown %}
+                        <tr style="border-bottom: 1px solid hsl(var(--border));">
+                            <td style="padding: 0.6rem 0.75rem; font-weight: 500;">
+                                {{ cat.structured_category }}
+                            </td>
+                            <td style="padding: 0.6rem 0.75rem; text-align: right; font-weight: 600;" class="tabular-nums">
+                                {{ cat.count }}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="2" style="padding: 1rem; text-align: center; color: hsl(var(--muted-foreground));">
+                                No feedback records accumulated yet.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Similar Case Comparisons Table -->
+<div class="ui-card" style="margin-bottom: 2rem;">
+    <div class="ui-card-header with-actions">
+        <div>
+            <h2 class="ui-card-title" style="display: flex; align-items: center; gap: 0.5rem;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                </svg>
+                Similar Case Comparison Evidence (Research Evaluation)
+            </h2>
+            <p class="ui-card-description">
+                Direct before/after comparisons demonstrating whether human feedback on Case A influenced Case B.
+            </p>
+        </div>
+        <div>
+            <span class="ui-badge ui-badge-outline" style="font-size: 0.75rem;">
+                {{ comparisons|length }} Comparison(s) Recorded
+            </span>
+        </div>
+    </div>
+    <div class="ui-card-content" style="padding: 0;">
+        <div style="overflow-x: auto;">
+            <table class="ui-table" style="width: 100%; border-collapse: collapse; font-size: 0.8125rem;">
+                <thead>
+                    <tr style="border-bottom: 2px solid hsl(var(--border)); text-align: left;">
+                        <th style="padding: 0.6rem 0.75rem;">Source Case (Feedback)</th>
+                        <th style="padding: 0.6rem 0.75rem;">Target Case (Subsequent)</th>
+                        <th style="padding: 0.6rem 0.75rem;">Similarity</th>
+                        <th style="padding: 0.6rem 0.75rem;">Baseline Prob</th>
+                        <th style="padding: 0.6rem 0.75rem;">Adapted Prob</th>
+                        <th style="padding: 0.6rem 0.75rem;">Prob Delta</th>
+                        <th style="padding: 0.6rem 0.75rem;">Rec Changed?</th>
+                        <th style="padding: 0.6rem 0.75rem;">Timestamp</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for comp in comparisons %}
+                    <tr style="border-bottom: 1px solid hsl(var(--border));">
+                        <td style="padding: 0.6rem 0.75rem;">
+                            <a href="{% url 'predictor:screening_result' comp.source_case.id %}" style="text-decoration: underline; font-family: monospace; font-size: 0.75rem;">
+                                {{ comp.source_case.id|stringformat:".8s" }}...
+                            </a>
+                            <span style="display: block; font-size: 0.6875rem; color: hsl(var(--muted-foreground));">
+                                {{ comp.feedback_category }}
+                            </span>
+                        </td>
+                        <td style="padding: 0.6rem 0.75rem;">
+                            <a href="{% url 'predictor:screening_result' comp.target_case.id %}" style="text-decoration: underline; font-family: monospace; font-size: 0.75rem;">
+                                {{ comp.target_case.id|stringformat:".8s" }}...
+                            </a>
+                        </td>
+                        <td style="padding: 0.6rem 0.75rem; font-weight: 600;" class="tabular-nums">
+                            {{ comp.similarity_score|floatformat:3 }}
+                        </td>
+                        <td style="padding: 0.6rem 0.75rem;" class="tabular-nums">
+                            {{ comp.baseline_probability|floatformat:4 }}
+                        </td>
+                        <td style="padding: 0.6rem 0.75rem;" class="tabular-nums">
+                            {{ comp.updated_probability|floatformat:4 }}
+                        </td>
+                        <td style="padding: 0.6rem 0.75rem; font-weight: 600;" class="tabular-nums">
+                            {% if comp.probability_delta > 0 %}+{% endif %}{{ comp.probability_delta|floatformat:4 }}
+                        </td>
+                        <td style="padding: 0.6rem 0.75rem;">
+                            {% if comp.recommendation_changed %}
+                            <span class="ui-badge ui-badge-warning" style="font-size: 0.6875rem;">Yes (Changed)</span>
+                            {% else %}
+                            <span class="ui-badge ui-badge-outline" style="font-size: 0.6875rem;">No Change</span>
+                            {% endif %}
+                        </td>
+                        <td style="padding: 0.6rem 0.75rem; color: hsl(var(--muted-foreground));" class="tabular-nums">
+                            {{ comp.created_at|date:"Y-m-d H:i" }}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" style="padding: 1.5rem; text-align: center; color: hsl(var(--muted-foreground));">
+                            No similar case comparisons recorded yet. Comparisons can be generated from any screening result page where prior similar cases with feedback exist.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

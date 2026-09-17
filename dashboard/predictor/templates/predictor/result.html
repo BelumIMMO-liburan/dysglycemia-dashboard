@@ -1,0 +1,335 @@
+{% extends "predictor/base.html" %}
+
+{% block title %}Prediction #{{ prediction.id }} — Diabetes XAI Dashboard{% endblock %}
+{% block topbar_title %}🧠 Prediction Result #{{ prediction.id }}{% endblock %}
+
+{% block content %}
+<div class="grid-2col">
+    <!-- Left Column: Result + SHAP -->
+    <div class="result-column">
+        <!-- Prediction Result Card (CDSS Upgraded: 3-Tier Risk Stratification) -->
+        {% if result.probability < 0.13 %}
+            <!-- Tier 1: Low Risk (Green) -->
+            <div class="card card-glass prediction-result result-safe">
+                <div class="result-header">
+                    <div class="result-icon">✅</div>
+                    <div class="result-text">
+                        <h2>Low Diabetes Risk (Sehat)</h2>
+                        <p class="result-model">Model: {{ prediction.model_used }} | Threshold: {{ prediction.threshold }}</p>
+                    </div>
+                </div>
+        {% elif result.probability < 0.50 %}
+            <!-- Tier 2: Moderate Risk (Yellow/Orange) -->
+            <div class="card card-glass prediction-result result-moderate">
+                <div class="result-header">
+                    <div class="result-icon">⚠️</div>
+                    <div class="result-text">
+                        <h2>Moderate Diabetes Risk (Suspek)</h2>
+                        <p class="result-model">Model: {{ prediction.model_used }} | Threshold: {{ prediction.threshold }} (Recall Optimized)</p>
+                    </div>
+                </div>
+        {% else %}
+            <!-- Tier 3: High Risk (Red) -->
+            <div class="card card-glass prediction-result result-risk">
+                <div class="result-header">
+                    <div class="result-icon">🚨</div>
+                    <div class="result-text">
+                        <h2>High Diabetes Risk (Prioritas)</h2>
+                        <p class="result-model">Model: {{ prediction.model_used }} | Threshold: {{ prediction.threshold }}</p>
+                    </div>
+                </div>
+        {% endif %}
+            
+                <!-- Confidence Gauge -->
+                <div class="confidence-section">
+                    <div class="confidence-bar-container">
+                        <div class="confidence-bar" style="width: {{ result.probability|floatformat:0 }}%;"
+                             data-probability="{{ result.probability }}">
+                        </div>
+                        <span class="confidence-label">{{ result.probability|floatformat:1 }}% probability of diabetes</span>
+                    </div>
+                    <div class="confidence-details">
+                        <span>AI Confidence: <strong>{{ prediction.confidence|floatformat:1 }}%</strong></span>
+                    </div>
+                </div>
+
+                <!-- Dynamic Multi-Model Consensus Badge -->
+                <div class="consensus-badge-container">
+                    <span class="consensus-badge-label">⚖️ Multi-Model Consensus (AI vs GAM):</span>
+                    {% if consensus_status == 'both_positive' %}
+                        <span class="consensus-badge consensus-both-positive">
+                            🔴 Both Positive (High Confidence)
+                        </span>
+                    {% elif consensus_status == 'both_negative' %}
+                        <span class="consensus-badge consensus-both-negative">
+                            🟢 Both Negative (High Confidence)
+                        </span>
+                    {% elif consensus_status == 'disagreement' %}
+                        <span class="consensus-badge consensus-disagreement">
+                            🟡 Disagreement (Override Required)
+                        </span>
+                    {% else %}
+                        <span class="consensus-badge">
+                            ⚪ Unknown Consensus
+                        </span>
+                    {% endif %}
+                </div>
+            </div>
+        
+        <!-- Patient Summary -->
+        <div class="card card-glass">
+            <div class="card-header">
+                <h3>📋 Patient Summary</h3>
+            </div>
+            <div class="patient-grid">
+                {% for key, value in patient_display.items %}
+                <div class="patient-item">
+                    <span class="patient-label">{{ key }}</span>
+                    <span class="patient-value">{{ value }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <!-- SHAP Explanation Chart -->
+        <div class="card card-glass">
+            <div class="card-header">
+                <h3>📊 SHAP Explanation — Why This Prediction?</h3>
+                <p class="card-subtitle">
+                    Each bar shows how much a feature pushed the prediction toward 
+                    <span class="text-risk">diabetes (red)</span> or 
+                    <span class="text-safe">healthy (blue)</span>
+                </p>
+            </div>
+            <div class="chart-container">
+                <canvas id="shapChart"></canvas>
+            </div>
+        </div>
+        
+        <!-- Feature Contribution Table -->
+        <div class="card card-glass">
+            <div class="card-header">
+                <h3>📝 Feature Contributions (Detailed)</h3>
+            </div>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Feature</th>
+                        <th>Value</th>
+                        <th>SHAP Contribution</th>
+                        <th>Direction</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in shap_data %}
+                    <tr>
+                        <td><strong>{{ item.feature }}</strong></td>
+                        <td>{{ item.value }}</td>
+                        <td class="{% if item.shap_value > 0 %}text-risk{% else %}text-safe{% endif %}">
+                            {% if item.shap_value > 0 %}+{% endif %}{{ item.shap_value }}
+                        </td>
+                        <td>
+                            <span class="direction-badge {% if item.direction == 'risk' %}badge-risk{% else %}badge-safe{% endif %}">
+                                {% if item.direction == 'risk' %}↑ Risk{% else %}↓ Protective{% endif %}
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <!-- Right Column: Human Override -->
+    <div class="override-column">
+        {% if has_override %}
+        <!-- Already Reviewed -->
+        <div class="card card-glass override-card">
+            <div class="card-header">
+                <h3>👨‍⚕️ Expert Decision</h3>
+                <p class="card-subtitle">This prediction has been reviewed</p>
+            </div>
+            <div class="override-summary">
+                <div class="override-summary-decision {% if existing_override.decision == 'accept' %}decision-accepted{% else %}decision-rejected{% endif %}">
+                    {% if existing_override.decision == 'accept' %}
+                        ✅ Accepted by {{ existing_override.doctor_name }}
+                    {% else %}
+                        ❌ Rejected by {{ existing_override.doctor_name }}
+                    {% endif %}
+                </div>
+                {% if existing_override.decision == 'reject' %}
+                    {% if existing_override.reason %}
+                    <div class="override-summary-reason">
+                        <strong>Reason:</strong> {{ existing_override.reason }}
+                    </div>
+                    {% endif %}
+                    {% if existing_override.flagged_features %}
+                    <div class="flagged-tags">
+                        <strong>Flagged:</strong>
+                        {% for feature in existing_override.flagged_features %}
+                        <span class="flagged-tag">{{ feature }}</span>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                {% endif %}
+                <p class="override-timestamp">{{ existing_override.timestamp|date:"M d, Y H:i" }}</p>
+            </div>
+        </div>
+        {% else %}
+        <!-- Override Form -->
+        <div class="card card-glass override-card">
+            <div class="card-header">
+                <h3>👨‍⚕️ Expert Override</h3>
+                <p class="card-subtitle">Review the AI's prediction and provide your expert decision</p>
+            </div>
+            
+            <form method="post" action="{% url 'predictor:override' %}" id="override-form">
+                {% csrf_token %}
+                <input type="hidden" name="prediction_id" value="{{ prediction.id }}">
+                
+                <!-- Doctor Name -->
+                <div class="form-group">
+                    <label for="doctor_name">Your Name</label>
+                    <input type="text" name="doctor_name" id="doctor_name" placeholder="Dr. ..." required>
+                </div>
+                
+                <!-- Decision Buttons -->
+                <div class="decision-section">
+                    <p class="decision-label">Do you agree with the AI's prediction?</p>
+                    
+                    <div class="decision-buttons">
+                        <button type="button" class="btn btn-accept" onclick="setDecision('accept')">
+                            ✅ Accept
+                        </button>
+                        <button type="button" class="btn btn-reject" onclick="setDecision('reject')">
+                            ❌ Reject
+                        </button>
+                    </div>
+                    <input type="hidden" name="decision" id="decision-input" value="">
+                </div>
+                
+                <!-- Rejection Details (shown only when rejected) -->
+                <div id="rejection-details" class="rejection-details" style="display: none;">
+                    <div class="form-group">
+                        <label for="reason">Reason for Rejection</label>
+                        <textarea name="reason" id="reason" rows="4" 
+                                  placeholder="Please explain why you disagree with the AI's prediction..."></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Flag Unreliable Features (optional)</label>
+                        <p class="form-hint">Select features you believe are incorrect or unreliable:</p>
+                        <div class="checkbox-grid">
+                            {% for name in feature_names %}
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="flagged_features" value="{{ name }}">
+                                <span>{{ name }}</span>
+                            </label>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn btn-primary btn-lg" id="submit-override" disabled>
+                    📝 Submit Decision
+                </button>
+            </form>
+        </div>
+        {% endif %}
+        
+        <div class="card card-glass info-card">
+            <h4>ℹ️ How This Works</h4>
+            <ul>
+                <li><strong>Accept</strong> — You agree with the AI. Logged for performance tracking.</li>
+                <li><strong>Reject</strong> — You disagree. Your correction is saved as feedback.</li>
+                <li>All decisions form an <strong>audit trail</strong> visible in the History page.</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // SHAP data from Django
+    const shapData = {{ shap_data_json|safe }};
+    
+    // Build SHAP horizontal bar chart
+    if (shapData && shapData.length > 0) {
+        const ctx = document.getElementById('shapChart').getContext('2d');
+        const reversed = [...shapData].reverse();
+        
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: reversed.map(d => d.feature + ' = ' + d.value),
+                datasets: [{
+                    label: 'SHAP Value',
+                    data: reversed.map(d => d.shap_value),
+                    backgroundColor: reversed.map(d => 
+                        d.shap_value > 0 ? 'rgba(239, 68, 68, 0.7)' : 'rgba(59, 130, 246, 0.7)'
+                    ),
+                    borderColor: reversed.map(d => 
+                        d.shap_value > 0 ? 'rgba(239, 68, 68, 1)' : 'rgba(59, 130, 246, 1)'
+                    ),
+                    borderWidth: 1,
+                    borderRadius: 4,
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const val = context.parsed.x;
+                                const dir = val > 0 ? '→ Increases risk' : '→ Decreases risk';
+                                return `SHAP: ${val > 0 ? '+' : ''}${val.toFixed(4)} ${dir}`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: '← Protective          SHAP Value          Risk →',
+                            color: '#94a3b8',
+                        },
+                        grid: { color: 'rgba(148, 163, 184, 0.1)' },
+                        ticks: { color: '#94a3b8' },
+                    },
+                    y: {
+                        grid: { display: false },
+                        ticks: { color: '#e2e8f0', font: { size: 12 } },
+                    }
+                }
+            }
+        });
+    }
+    
+    // Override decision logic
+    function setDecision(decision) {
+        document.getElementById('decision-input').value = decision;
+        document.getElementById('submit-override').disabled = false;
+        
+        const acceptBtn = document.querySelector('.btn-accept');
+        const rejectBtn = document.querySelector('.btn-reject');
+        const rejectionDetails = document.getElementById('rejection-details');
+        
+        if (decision === 'accept') {
+            acceptBtn.classList.add('selected');
+            rejectBtn.classList.remove('selected');
+            rejectionDetails.style.display = 'none';
+        } else {
+            rejectBtn.classList.add('selected');
+            acceptBtn.classList.remove('selected');
+            rejectionDetails.style.display = 'block';
+        }
+    }
+</script>
+{% endblock %}

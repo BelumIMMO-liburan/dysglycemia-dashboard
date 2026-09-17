@@ -1,0 +1,20 @@
+FINAL TEST OPENING AUTHORIZATION
+
+The final test set may be opened exactly once in Phase 5 using the pre-specified model, configuration, predictors, preprocessing procedure, and threshold recorded in FINAL_MODEL_SPECIFICATION_LOCKED.md. No post-test tuning is permitted.
+
+CRYPTOGRAPHIC INTEGRITY VERIFICATION (SHA256):
+
+master_split.csv:
+685b4a15a1ab5ea83647f91f6c335a8a44b2179e47eaab186bdd1960a583f9ed
+
+development_folds.csv:
+0bfacfaba04ffaa02ea0f82294478c0d2790012c0d5466490e85956fabd028e1
+
+analytic_expanded_complete.parquet:
+6fa1dd5c9212359271de03285806044f3d8a8f817c774bdd1e8c054fe75d1679
+
+FINAL_MODEL_SPECIFICATION_LOCKED.md:
+7d2a5eb9c349dabfca4f5387161c78833c8e996dc302e16955a4d588d68d9ec5
+
+STATUS: AUTHORIZED FOR PHASE 5 ONE-TIME EVALUATION
+DATE: 2026-09-02

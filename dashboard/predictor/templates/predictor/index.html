@@ -1,0 +1,156 @@
+{% extends "predictor/base.html" %}
+
+{% block title %}Predict — Diabetes XAI Dashboard{% endblock %}
+{% block topbar_title %}🔬 Patient Prediction{% endblock %}
+
+{% block content %}
+<p class="page-subtitle">Enter patient data to get an AI diabetes risk assessment with explainable insights</p>
+
+{% if error %}
+<div class="alert alert-error">
+    <strong>Error:</strong> {{ error }}
+</div>
+{% endif %}
+
+<div class="grid-2col">
+    <!-- Patient Input Form -->
+    <div class="card card-glass">
+        <div class="card-header">
+            <h2>Patient Data</h2>
+        </div>
+        <form method="post" action="{% url 'predictor:predict' %}" id="predict-form">
+            {% csrf_token %}
+            
+            <div class="form-grid">
+                <!-- Gender -->
+                <div class="form-group">
+                    <label for="gender">Gender</label>
+                    <select name="gender" id="gender" required>
+                        <option value="0">Female</option>
+                        <option value="1">Male</option>
+                        <option value="2">Other</option>
+                    </select>
+                </div>
+                
+                <!-- Age -->
+                <div class="form-group">
+                    <label for="age">Age</label>
+                    <input type="number" name="age" id="age" min="0" max="120" step="0.1" placeholder="e.g. 45" required>
+                </div>
+                
+                <!-- Hypertension -->
+                <div class="form-group">
+                    <label for="hypertension">Hypertension</label>
+                    <select name="hypertension" id="hypertension" required>
+                        <option value="0">No</option>
+                        <option value="1">Yes</option>
+                    </select>
+                </div>
+                
+                <!-- Heart Disease -->
+                <div class="form-group">
+                    <label for="heart_disease">Heart Disease</label>
+                    <select name="heart_disease" id="heart_disease" required>
+                        <option value="0">No</option>
+                        <option value="1">Yes</option>
+                    </select>
+                </div>
+                
+                <!-- Smoking -->
+                <div class="form-group">
+                    <label for="smoking">Smoking History</label>
+                    <select name="smoking" id="smoking" required>
+                        <option value="0">Never</option>
+                        <option value="1">Former</option>
+                        <option value="2">Current</option>
+                        <option value="3">Not Current</option>
+                        <option value="4">Ever</option>
+                        <option value="5">No Info</option>
+                    </select>
+                </div>
+                
+                <!-- BMI -->
+                <div class="form-group">
+                    <label for="bmi">BMI</label>
+                    <input type="number" name="bmi" id="bmi" min="10" max="100" step="0.01" placeholder="e.g. 27.32" required>
+                </div>
+                
+                <!-- HbA1c -->
+                <div class="form-group">
+                    <label for="HbA1c">HbA1c Level</label>
+                    <input type="number" name="HbA1c" id="HbA1c" min="2" max="15" step="0.1" placeholder="e.g. 6.5" required>
+                </div>
+                
+                <!-- Glucose -->
+                <div class="form-group">
+                    <label for="glucose">Blood Glucose (mg/dL)</label>
+                    <input type="number" name="glucose" id="glucose" min="50" max="500" step="1" placeholder="e.g. 140" required>
+                </div>
+            </div>
+            
+            <!-- Model Selection -->
+            <div class="form-section">
+                <h3>Model Configuration</h3>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="model_name">AI Model</label>
+                        <select name="model_name" id="model_name">
+                            {% for model in available_models %}
+                            <option value="{{ model }}" {% if model == "DLNN + Focal Loss" %}selected{% endif %}>{{ model }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="threshold">
+                            Threshold: <span id="threshold-value" class="threshold-badge">0.50</span>
+                        </label>
+                        <input type="range" name="threshold" id="threshold" min="0.1" max="0.9" step="0.05" value="0.5">
+                        <div class="threshold-labels">
+                            <span>More Sensitive</span>
+                            <span>More Specific</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <button type="submit" class="btn btn-primary btn-lg">
+                🧠 Run Prediction
+            </button>
+        </form>
+    </div>
+    
+    <!-- Quick Stats Sidebar -->
+    <div class="sidebar-stats">
+        <div class="stat-card card-glass">
+            <div class="stat-number">{{ total_predictions }}</div>
+            <div class="stat-label">Total Predictions</div>
+        </div>
+        <div class="stat-card card-glass">
+            <div class="stat-number">{{ total_overrides }}</div>
+            <div class="stat-label">Doctor Overrides</div>
+        </div>
+        
+        {% if recent_predictions %}
+        <div class="card card-glass">
+            <div class="card-header">
+                <h3>Recent Predictions</h3>
+            </div>
+            <div class="recent-list">
+                {% for pred in recent_predictions %}
+                <a href="{% url 'predictor:prediction_detail' pk=pred.id %}" class="recent-item-link">
+                    <div class="recent-item">
+                        <span class="prediction-badge {% if pred.prediction == 1 %}badge-risk{% else %}badge-safe{% endif %}">
+                            {% if pred.prediction == 1 %}Diabetic{% else %}Healthy{% endif %}
+                        </span>
+                        <span class="recent-confidence">{{ pred.confidence|floatformat:1 }}%</span>
+                        <span class="recent-model">{{ pred.model_used }}</span>
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

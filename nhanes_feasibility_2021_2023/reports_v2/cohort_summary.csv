@@ -1,0 +1,6 @@
+cohort,total_n,age_distribution,sex_distribution,available_bmi,available_waist,available_hypertension_bpq020,available_smoking_smq020,available_phys_activity_pad680,available_hba1c,available_fasting_glucose
+A_all,11933,"mean=38.3, median=37, min=0, max=80","Male=5575(46.7%), Female=6358(53.3%)",8471,8190,8487,8121,8138,6715,3361
+B_adult,8153,"mean=52.1, median=55, min=18, max=80","Male=3657(44.9%), Female=4496(55.1%)",6235,6019,8139,8121,8138,6002,3063
+C_no_diab,7080,"mean=50.4, median=52, min=18, max=80","Male=3139(44.3%), Female=3941(55.7%)",5390,5223,7068,7051,7066,5182,2654
+D_no_diab_no_prediab,6808,"mean=50.0, median=51, min=18, max=80","Male=3018(44.3%), Female=3790(55.7%)",5170,5012,6796,6779,6794,4967,2542
+E_no_known_dysglycemia,5907,"mean=48.7, median=48, min=18, max=80","Male=2654(44.9%), Female=3253(55.1%)",4451,4315,5898,5883,5898,4260,2167

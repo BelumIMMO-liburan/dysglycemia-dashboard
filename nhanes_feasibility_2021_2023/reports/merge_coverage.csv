@@ -1,0 +1,9 @@
+step,source_file,description,source_n,matched,unmatched_in_source,unmatched_in_base,resulting_rows
+0_base_DEMO_L,DEMO_L.xpt,Demographics (base),11933,11933,0,0,11933
+1_merge_BMX_L,BMX_L.xpt,Body Measures,8860,8860,0,3073,11933
+2_merge_BPQ_L,BPQ_L.xpt,Blood Pressure / Cholesterol Questionnaire,8501,8501,0,3432,11933
+3_merge_SMQ_L,SMQ_L.xpt,Smoking Questionnaire,9015,9015,0,2918,11933
+4_merge_PAQ_L,PAQ_L.xpt,Physical Activity Questionnaire,8153,8153,0,3780,11933
+5_merge_DIQ_L,DIQ_L.xpt,Diabetes Questionnaire,11744,11744,0,189,11933
+6_merge_GHB_L,GHB_L.xpt,Glycohemoglobin (HbA1c),7199,7199,0,4734,11933
+7_merge_GLU_L,GLU_L.xpt,Fasting Glucose,3996,3996,0,7937,11933

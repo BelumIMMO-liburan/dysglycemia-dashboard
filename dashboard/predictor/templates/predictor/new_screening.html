@@ -1,0 +1,553 @@
+{% extends 'predictor/base.html' %}
+
+{% block title %}New Stage-1 Screening — Dysglycemia Screening Dashboard{% endblock %}
+{% block breadcrumb %}New Screening{% endblock %}
+
+{% block content %}
+<div class="ui-page-header">
+    <div class="ui-page-header-row">
+        <div>
+            <h1 class="ui-page-title">New Stage-1 Screening</h1>
+            <p class="ui-page-description">
+                Non-laboratory participant intake for previously unrecognized dysglycemia risk screening.
+            </p>
+        </div>
+        <div>
+            <span class="ui-badge ui-badge-outline">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="16" y2="12"/><line x1="12" x2="12.01" y1="8" y2="8"/></svg>
+                Phase D2.2 Stage-1 Input Contract
+            </span>
+        </div>
+    </div>
+</div>
+
+{% if is_validated %}
+<!-- ======================================================================
+     INPUT REVIEW STATE (Phase D2.2)
+     Displayed after successful server-side validation.
+     Zero model inference or database persistence is performed in this phase.
+     ====================================================================== -->
+{% if inference_error %}
+<div class="ui-alert ui-alert-destructive" role="alert" style="margin-bottom: 1.5rem;" id="inference-error-alert" tabindex="-1">
+    <svg class="ui-alert-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/>
+    </svg>
+    <div class="ui-alert-content">
+        <p class="ui-alert-title">Screening Inference Execution Error</p>
+        <p class="ui-alert-body">{{ inference_error }}</p>
+    </div>
+</div>
+{% endif %}
+
+{% if inference_result %}
+<!-- ======================================================================
+     TEMPORARY TECHNICAL RESULT STATE (Phase D2.3)
+     Ephemeral, non-persisted demonstration of frozen GAM inference.
+     ====================================================================== -->
+<div class="ui-alert ui-alert-success" role="status" style="margin-bottom: 1.5rem;">
+    <svg class="ui-alert-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+    </svg>
+    <div class="ui-alert-content">
+        <p class="ui-alert-title">Screening Inference Completed Successfully</p>
+        <p class="ui-alert-body">
+            Evaluated against the frozen Phase-5 GAM model using locked decision threshold 0.1389.
+        </p>
+    </div>
+</div>
+
+<div class="ui-card" style="margin-bottom: 1.5rem;" id="inference-result-card">
+    <div class="ui-card-header with-actions">
+        <div>
+            <h2 class="ui-card-title">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                Stage-1 Screening Inference Result
+            </h2>
+            <p class="ui-card-description">
+                Model: {{ inference_result.model_version }} · Evaluated: {{ inference_result.execution_timestamp }}
+            </p>
+        </div>
+        <div>
+            {% if inference_result.preliminary_decision == "REFER" %}
+            <span class="ui-badge ui-badge-warning" id="result-badge-refer" style="font-size: 0.8125rem; padding: 0.35rem 0.75rem;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                Referral Recommended
+            </span>
+            {% else %}
+            <span class="ui-badge ui-badge-success" id="result-badge-routine" style="font-size: 0.8125rem; padding: 0.35rem 0.75rem;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+                Routine Care
+            </span>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="ui-card-content">
+        <!-- Key Metrics Grid -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+            <div style="background: hsl(var(--muted)); padding: 1rem; border-radius: var(--radius); border: 1px solid hsl(var(--border));">
+                <div style="font-size: 0.75rem; font-weight: 500; color: hsl(var(--muted-foreground)); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem;">Screening Probability</div>
+                <div style="font-size: 1.75rem; font-weight: 700; color: hsl(var(--foreground)); font-variant-numeric: tabular-nums;" id="result-probability-value">
+                    {{ inference_result.screening_score_pct|floatformat:1 }}%
+                </div>
+                <div style="font-size: 0.75rem; color: hsl(var(--muted-foreground)); margin-top: 0.25rem;">
+                    Full precision: {{ inference_result.screening_probability|floatformat:4 }}
+                </div>
+            </div>
+
+            <div style="background: hsl(var(--muted)); padding: 1rem; border-radius: var(--radius); border: 1px solid hsl(var(--border));">
+                <div style="font-size: 0.75rem; font-weight: 500; color: hsl(var(--muted-foreground)); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem;">Decision Threshold</div>
+                <div style="font-size: 1.75rem; font-weight: 700; color: hsl(var(--foreground)); font-variant-numeric: tabular-nums;">
+                    13.9%
+                </div>
+                <div style="font-size: 0.75rem; color: hsl(var(--muted-foreground)); margin-top: 0.25rem;">
+                    Locked threshold: 0.1389
+                </div>
+            </div>
+
+            <div style="background: hsl(var(--muted)); padding: 1rem; border-radius: var(--radius); border: 1px solid hsl(var(--border));">
+                <div style="font-size: 0.75rem; font-weight: 500; color: hsl(var(--muted-foreground)); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem;">Preliminary Recommendation</div>
+                <div style="font-size: 0.9375rem; font-weight: 600; color: hsl(var(--foreground)); margin-top: 0.5rem;" id="result-recommendation-text">
+                    {{ inference_result.preliminary_recommendation }}
+                </div>
+                <div style="font-size: 0.75rem; color: hsl(var(--muted-foreground)); margin-top: 0.25rem;">
+                    {% if inference_result.preliminary_decision == "REFER" %}
+                    Probability &ge; 0.1389
+                    {% else %}
+                    Probability &lt; 0.1389
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="ui-disclaimer" style="margin-top: 0.5rem; margin-bottom: 0;">
+            <svg class="ui-disclaimer-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/>
+            </svg>
+            <div class="ui-disclaimer-text">
+                <strong>Research prototype — not a diagnostic tool.</strong>
+                This ephemeral output is a technical demonstration of frozen GAM model inference for Phase D2.3 verification. It does not constitute medical advice or a clinical diagnosis. Full clinical results and human review workflow will be available in Phase D2.4.
+            </div>
+        </div>
+    </div>
+
+    <div class="ui-card-footer">
+        <a href="{% url 'predictor:new_screening' %}" class="ui-btn ui-btn-primary" id="start-new-screening-btn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Start New Screening
+        </a>
+        <span style="font-size: 0.75rem; color: hsl(var(--muted-foreground));">
+            Phase D2.3: Verification Only · No database records created
+        </span>
+    </div>
+</div>
+{% else %}
+<div class="ui-alert ui-alert-success" role="status">
+    <svg class="ui-alert-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+    </svg>
+    <div class="ui-alert-content">
+        <p class="ui-alert-title">Inputs Validated Successfully</p>
+        <p class="ui-alert-body">
+            All seven Stage-1 non-laboratory predictors comply with the research model's development-supported range. Review the parameters below and execute model inference.
+        </p>
+    </div>
+</div>
+{% endif %}
+
+<div class="ui-card">
+    <div class="ui-card-header">
+        <h2 class="ui-card-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+            Stage-1 Input Parameter Summary
+        </h2>
+        <p class="ui-card-description">
+            Deterministic input contract validated for the frozen GAM model adapter.
+        </p>
+    </div>
+
+    <div class="ui-card-content">
+        <div class="ui-review-grid">
+            {% for item in sanitized_summary %}
+            <div class="ui-review-item">
+                <span class="ui-review-item-label">{{ item.label }}</span>
+                <span class="ui-review-item-value">{{ item.display_value }}</span>
+            </div>
+            {% endfor %}
+        </div>
+
+        {% if not inference_result %}
+        <div class="ui-alert ui-alert-info" style="margin-top: 1.5rem; margin-bottom: 0;">
+            <svg class="ui-alert-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="16" y2="12"/><line x1="12" x2="12.01" y1="8" y2="8"/>
+            </svg>
+            <div class="ui-alert-content">
+                <p class="ui-alert-title">Phase D2.3 Inference Execution</p>
+                <p class="ui-alert-body">
+                    Click <strong>Run Screening</strong> below to execute inference via the frozen Phase-5 GAM model (λ=10.0).
+                </p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="ui-card-footer">
+        <a href="{% url 'predictor:new_screening' %}" class="ui-btn ui-btn-outline" id="edit-inputs-btn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
+            Edit Inputs
+        </a>
+        {% if not inference_result %}
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <span style="font-size: 0.75rem; color: hsl(var(--muted-foreground));">
+                Deterministic frozen GAM adapter
+            </span>
+            <form method="post" action="{% url 'predictor:run_screening' %}" id="run-screening-form" style="display: inline; margin: 0;">
+                {% csrf_token %}
+                <input type="hidden" name="idempotency_token" value="{{ idempotency_token|default:'' }}">
+                <input type="hidden" name="age" value="{{ form.age.value }}">
+                <input type="hidden" name="sex" value="{{ form.sex.value }}">
+                <input type="hidden" name="bmi" value="{{ form.bmi.value }}">
+                <input type="hidden" name="waist_cm" value="{{ form.waist_cm.value }}">
+                <input type="hidden" name="hypertension_history" value="{{ form.hypertension_history.value }}">
+                <input type="hidden" name="smoking_history" value="{{ form.smoking_history.value }}">
+                <input type="hidden" name="sedentary_minutes_day" value="{{ form.sedentary_minutes_day.value }}">
+                <button type="submit" class="ui-btn ui-btn-primary" id="run-screening-submit-btn">
+                    <span>Run Screening</span>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+                    </svg>
+                </button>
+            </form>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% else %}
+<!-- ======================================================================
+     STAGE-1 SCREENING INTAKE FORM (Single-Surface Layout)
+     Accepts exclusively the 7 immutable non-laboratory predictors.
+     ====================================================================== -->
+
+{% if error_count > 0 %}
+<div class="ui-alert ui-alert-destructive" role="alert" tabindex="-1" id="error-summary">
+    <svg class="ui-alert-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="10"/><line x1="12" x2="8" y1="8" x2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/>
+    </svg>
+    <div class="ui-alert-content">
+        <p class="ui-alert-title">Please review {{ error_count }} input field{{ error_count|pluralize }}:</p>
+        <ul class="ui-error-summary-list">
+            {% for field in form %}
+                {% if field.errors %}
+                    <li>
+                        <a href="#id_{{ field.name }}"><strong>{{ field.label }}</strong>: {{ field.errors.0 }}</a>
+                    </li>
+                {% endif %}
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+{% endif %}
+
+<div class="ui-card">
+    <div class="ui-card-header">
+        <h2 class="ui-card-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
+            Stage-1 Non-Laboratory Screening Form
+        </h2>
+        <p class="ui-card-description">
+            Complete all seven non-laboratory parameters. Laboratory markers (fasting glucose, HbA1c) are strictly excluded from Stage 1.
+        </p>
+    </div>
+
+    <div class="ui-card-content">
+        <form method="post" action="{% url 'predictor:new_screening' %}" id="stage1-screening-form" novalidate>
+            {% csrf_token %}
+
+            <!-- ==========================================================
+                 SECTION 1: DEMOGRAPHIC INFORMATION
+                 ========================================================== -->
+            <div class="ui-form-section">
+                <div class="ui-form-section-title">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    Demographic Information
+                </div>
+
+                <div class="ui-form-grid">
+                    <!-- Field 1: Age -->
+                    <div class="ui-form-group">
+                        <label class="ui-label required" for="id_age">Age</label>
+                        <div class="ui-input-group">
+                            <input type="number" 
+                                   name="age" 
+                                   id="id_age" 
+                                   value="{{ form.age.value|default:'' }}" 
+                                   class="ui-input tabular-nums" 
+                                   placeholder="e.g., 52" 
+                                   min="18" 
+                                   max="80" 
+                                   step="1" 
+                                   required 
+                                   aria-describedby="id_age_help{% if form.age.errors %} id_age_error{% endif %}"
+                                   {% if form.age.errors %}aria-invalid="true"{% endif %}>
+                            <span class="ui-input-unit">years</span>
+                        </div>
+                        <span class="ui-form-help" id="id_age_help">Model-supported research range: 18 to 80 years (80 is top-coded).</span>
+                        {% if form.age.errors %}
+                        <span class="ui-form-error" id="id_age_error" role="alert">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                            {{ form.age.errors.0 }}
+                        </span>
+                        {% endif %}
+                    </div>
+
+                    <!-- Field 2: Biological Sex -->
+                    <div class="ui-form-group">
+                        <fieldset style="border: none; padding: 0; margin: 0;">
+                            <legend class="ui-label required" style="margin-bottom: 0.35rem;">Biological Sex</legend>
+                            <div class="ui-radio-pill-group" role="radiogroup" aria-describedby="id_sex_help{% if form.sex.errors %} id_sex_error{% endif %}">
+                                <label class="ui-radio-pill" for="id_sex_male">
+                                    <input type="radio" 
+                                           name="sex" 
+                                           value="male" 
+                                           id="id_sex_male" 
+                                           {% if form.sex.value == 'male' %}checked{% endif %}
+                                           {% if form.sex.errors %}aria-invalid="true"{% endif %}>
+                                    Male
+                                </label>
+                                <label class="ui-radio-pill" for="id_sex_female">
+                                    <input type="radio" 
+                                           name="sex" 
+                                           value="female" 
+                                           id="id_sex_female" 
+                                           {% if form.sex.value == 'female' %}checked{% endif %}
+                                           {% if form.sex.errors %}aria-invalid="true"{% endif %}>
+                                    Female
+                                </label>
+                            </div>
+                            <span class="ui-form-help" id="id_sex_help" style="display: block; margin-top: 0.35rem;">Biological sex as recorded in the research protocol.</span>
+                            {% if form.sex.errors %}
+                            <span class="ui-form-error" id="id_sex_error" role="alert" style="margin-top: 0.25rem;">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                                {{ form.sex.errors.0 }}
+                            </span>
+                            {% endif %}
+                        </fieldset>
+                    </div>
+                </div>
+            </div>
+
+            <hr class="ui-section-divider">
+
+            <!-- ==========================================================
+                 SECTION 2: BODY MEASUREMENTS
+                 ========================================================== -->
+            <div class="ui-form-section">
+                <div class="ui-form-section-title">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12h20"/><path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-6"/><path d="M12 2v20"/></svg>
+                    Body Measurements
+                </div>
+
+                <div class="ui-form-grid">
+                    <!-- Field 3: BMI -->
+                    <div class="ui-form-group">
+                        <label class="ui-label required" for="id_bmi">Body Mass Index (BMI)</label>
+                        <div class="ui-input-group">
+                            <input type="number" 
+                                   name="bmi" 
+                                   id="id_bmi" 
+                                   value="{{ form.bmi.value|default:'' }}" 
+                                   class="ui-input tabular-nums" 
+                                   placeholder="e.g., 28.4" 
+                                   min="11.1" 
+                                   max="69.9" 
+                                   step="0.1" 
+                                   required 
+                                   aria-describedby="id_bmi_help{% if form.bmi.errors %} id_bmi_error{% endif %}"
+                                   {% if form.bmi.errors %}aria-invalid="true"{% endif %}>
+                            <span class="ui-input-unit">kg/m²</span>
+                        </div>
+                        <span class="ui-form-help" id="id_bmi_help">Model-supported research range: 11.1 to 69.9 kg/m² (1 decimal place).</span>
+                        {% if form.bmi.errors %}
+                        <span class="ui-form-error" id="id_bmi_error" role="alert">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                            {{ form.bmi.errors.0 }}
+                        </span>
+                        {% endif %}
+                    </div>
+
+                    <!-- Field 4: Waist Circumference -->
+                    <div class="ui-form-group">
+                        <label class="ui-label required" for="id_waist_cm">Waist Circumference</label>
+                        <div class="ui-input-group">
+                            <input type="number" 
+                                   name="waist_cm" 
+                                   id="id_waist_cm" 
+                                   value="{{ form.waist_cm.value|default:'' }}" 
+                                   class="ui-input tabular-nums" 
+                                   placeholder="e.g., 98.5" 
+                                   min="60.0" 
+                                   max="187.0" 
+                                   step="0.1" 
+                                   required 
+                                   aria-describedby="id_waist_cm_help{% if form.waist_cm.errors %} id_waist_cm_error{% endif %}"
+                                   {% if form.waist_cm.errors %}aria-invalid="true"{% endif %}>
+                            <span class="ui-input-unit">cm</span>
+                        </div>
+                        <span class="ui-form-help" id="id_waist_cm_help">Measurement in centimeters. Model-supported research range: 60.0 to 187.0 cm.</span>
+                        {% if form.waist_cm.errors %}
+                        <span class="ui-form-error" id="id_waist_cm_error" role="alert">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                            {{ form.waist_cm.errors.0 }}
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <hr class="ui-section-divider">
+
+            <!-- ==========================================================
+                 SECTION 3: HEALTH HISTORY
+                 ========================================================== -->
+            <div class="ui-form-section">
+                <div class="ui-form-section-title">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                    Health History
+                </div>
+
+                <div class="ui-form-grid">
+                    <!-- Field 5: History of Hypertension -->
+                    <div class="ui-form-group">
+                        <fieldset style="border: none; padding: 0; margin: 0;">
+                            <legend class="ui-label required" style="margin-bottom: 0.35rem;">History of Hypertension</legend>
+                            <div class="ui-radio-pill-group" role="radiogroup" aria-describedby="id_hypertension_history_help{% if form.hypertension_history.errors %} id_hypertension_history_error{% endif %}">
+                                <label class="ui-radio-pill" for="id_hyp_yes">
+                                    <input type="radio" 
+                                           name="hypertension_history" 
+                                           value="yes" 
+                                           id="id_hyp_yes" 
+                                           {% if form.hypertension_history.value == 'yes' %}checked{% endif %}
+                                           {% if form.hypertension_history.errors %}aria-invalid="true"{% endif %}>
+                                    Yes
+                                </label>
+                                <label class="ui-radio-pill" for="id_hyp_no">
+                                    <input type="radio" 
+                                           name="hypertension_history" 
+                                           value="no" 
+                                           id="id_hyp_no" 
+                                           {% if form.hypertension_history.value == 'no' %}checked{% endif %}
+                                           {% if form.hypertension_history.errors %}aria-invalid="true"{% endif %}>
+                                    No
+                                </label>
+                            </div>
+                            <span class="ui-form-help" id="id_hypertension_history_help" style="display: block; margin-top: 0.35rem;">Ever diagnosed with high blood pressure by a health professional (BPQ020).</span>
+                            {% if form.hypertension_history.errors %}
+                            <span class="ui-form-error" id="id_hypertension_history_error" role="alert" style="margin-top: 0.25rem;">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                                {{ form.hypertension_history.errors.0 }}
+                            </span>
+                            {% endif %}
+                        </fieldset>
+                    </div>
+
+                    <!-- Field 6: Smoking History -->
+                    <div class="ui-form-group">
+                        <fieldset style="border: none; padding: 0; margin: 0;">
+                            <legend class="ui-label required" style="margin-bottom: 0.35rem;">Smoking History</legend>
+                            <div class="ui-radio-pill-group" role="radiogroup" aria-describedby="id_smoking_history_help{% if form.smoking_history.errors %} id_smoking_history_error{% endif %}">
+                                <label class="ui-radio-pill" for="id_smk_yes">
+                                    <input type="radio" 
+                                           name="smoking_history" 
+                                           value="yes" 
+                                           id="id_smk_yes" 
+                                           {% if form.smoking_history.value == 'yes' %}checked{% endif %}
+                                           {% if form.smoking_history.errors %}aria-invalid="true"{% endif %}>
+                                    Yes
+                                </label>
+                                <label class="ui-radio-pill" for="id_smk_no">
+                                    <input type="radio" 
+                                           name="smoking_history" 
+                                           value="no" 
+                                           id="id_smk_no" 
+                                           {% if form.smoking_history.value == 'no' %}checked{% endif %}
+                                           {% if form.smoking_history.errors %}aria-invalid="true"{% endif %}>
+                                    No
+                                </label>
+                            </div>
+                            <span class="ui-form-help" id="id_smoking_history_help" style="display: block; margin-top: 0.35rem;">Smoked at least 100 cigarettes in lifetime (SMQ020 criterion).</span>
+                            {% if form.smoking_history.errors %}
+                            <span class="ui-form-error" id="id_smoking_history_error" role="alert" style="margin-top: 0.25rem;">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                                {{ form.smoking_history.errors.0 }}
+                            </span>
+                            {% endif %}
+                        </fieldset>
+                    </div>
+                </div>
+            </div>
+
+            <hr class="ui-section-divider">
+
+            <!-- ==========================================================
+                 SECTION 4: DAILY PHYSICAL ACTIVITY
+                 ========================================================== -->
+            <div class="ui-form-section">
+                <div class="ui-form-section-title">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    Daily Physical Activity
+                </div>
+
+                <div class="ui-form-grid">
+                    <!-- Field 7: Sedentary Minutes Day -->
+                    <div class="ui-form-group">
+                        <label class="ui-label required" for="id_sedentary_minutes_day">Sedentary Time</label>
+                        <div class="ui-input-group">
+                            <input type="number" 
+                                   name="sedentary_minutes_day" 
+                                   id="id_sedentary_minutes_day" 
+                                   value="{{ form.sedentary_minutes_day.value|default:'' }}" 
+                                   class="ui-input tabular-nums" 
+                                   placeholder="e.g., 480" 
+                                   min="0" 
+                                   max="1200" 
+                                   step="1" 
+                                   required 
+                                   aria-describedby="id_sedentary_minutes_day_help{% if form.sedentary_minutes_day.errors %} id_sedentary_minutes_day_error{% endif %}"
+                                   {% if form.sedentary_minutes_day.errors %}aria-invalid="true"{% endif %}>
+                            <span class="ui-input-unit">min/day</span>
+                        </div>
+                        <span class="ui-form-help" id="id_sedentary_minutes_day_help">Time spent sitting or reclining per typical day (0 to 1200 min/day).</span>
+                        {% if form.sedentary_minutes_day.errors %}
+                        <span class="ui-form-error" id="id_sedentary_minutes_day_error" role="alert">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                            {{ form.sedentary_minutes_day.errors.0 }}
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card Actions -->
+            <div class="ui-card-footer" style="margin-top: 2rem; margin-left: -1.5rem; margin-right: -1.5rem; margin-bottom: -1.5rem;">
+                <button type="reset" id="clear-form-btn" class="ui-btn ui-btn-outline">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+                    Clear Form
+                </button>
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <span style="font-size: 0.75rem; color: hsl(var(--muted-foreground));">
+                        All 7 parameters required · Deterministic validation
+                    </span>
+                    <button type="submit" class="ui-btn ui-btn-primary" id="submit-screening-btn">
+                        <span>Review Inputs</span>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

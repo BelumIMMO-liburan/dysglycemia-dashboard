@@ -1,0 +1,17 @@
+OS: Windows (PowerShell)
+Python: 3.10.x
+scikit-learn: 1.7.2
+pygam: 0.12.0
+tensorflow: 2.20.0
+matplotlib: 3.10.8
+pandas: 2.3.3
+numpy: 2.2.6
+pyarrow: 25.0.1
+tabulate: 0.10.0
+Random Seed: 42
+CV Scheme: Stratified 5-Fold Cross-Validation (Development Partition only)
+Target Variable: hba1c_dysglycemia (0 = HbA1c < 5.7%, 1 = HbA1c >= 5.7%)
+Primary Dataset: analytic_core_complete.parquet (N=4,194; Normal=3,224, Dysglycemia=970)
+Expanded Dataset: analytic_expanded_complete.parquet (N=4,044; Normal=3,106, Dysglycemia=938)
+Development Split: 80% (N=3,355; Normal=2,579, Dysglycemia=776)
+Final Test Split: 20% (N=839; Normal=645, Dysglycemia=194) — LOCKED

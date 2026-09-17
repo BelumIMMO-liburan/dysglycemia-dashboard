@@ -1,0 +1,4 @@
+model_family,roc_auc,pr_auc,brier_score
+GAM,0.7277,0.4503,0.1587
+Logistic_Regression,0.7288,0.4407,0.1587
+DLNN,0.72,0.4214,0.1609

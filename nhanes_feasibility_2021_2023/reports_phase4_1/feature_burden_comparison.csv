@@ -1,0 +1,3 @@
+feature_set,number_of_inputs,roc_auc,pr_auc,brier,sensitivity_90_floor_referral_rate,sensitivity_90_floor_specificity,additional_input_burden
+CORE_COMMON,5,0.7302,0.4014,0.1579,65.01%,42.54%,"None (baseline: age, sex, BMI, hypertension history, smoking history)"
+EXPANDED_COMMON,7,0.7382,0.4207,0.1561,65.25%,42.25%,Tape-measured waist circumference (cm) + self-reported daily sedentary minutes

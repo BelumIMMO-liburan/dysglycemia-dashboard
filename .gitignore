@@ -1,0 +1,78 @@
+# ==============================================================================
+# Git Ignore Rules: Dysglycemia Screening Dashboard & Research Repository
+# ==============================================================================
+
+# --- Python Bytecode & Cache ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+.coverage
+htmlcov/
+
+# --- Virtual Environments (Dependencies) ---
+.venv/
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+node_modules/
+
+# --- Environment & Secret Files ---
+.env
+.env.*
+!.env.example
+local_settings.py
+secrets/
+*.pem
+*.key
+
+# --- SQLite Databases & Clinical/Participant Data ---
+*.sqlite3
+*.sqlite3-journal
+*.sqlite3-wal
+*.sqlite3-shm
+db.sqlite3*
+dashboard/backups/
+
+# --- Temporary & Scratch Directories ---
+scratch/
+tmp/
+temp/
+
+# --- Static Collection Output ---
+dashboard/staticfiles/
+
+# --- Archive Files ---
+*.zip
+*.tar
+*.tar.gz
+*.rar
+*.7z
+
+# --- Jupyter Checkpoints ---
+.ipynb_checkpoints/
+*-checkpoint.ipynb
+
+# --- OS Metadata ---
+.DS_Store
+Thumbs.db
+desktop.ini
+ehthumbs.db
+
+# --- IDE & Editor Settings ---
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# --- Third-Party & Legacy Archives ---
+template/
+Shenanigans/
+
+# --- Log Files ---
+*.log
+

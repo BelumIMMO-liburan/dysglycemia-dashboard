@@ -1,0 +1,4 @@
+model_family,brier_score,brier_reference,brier_skill_score,calibration_intercept,calibration_slope,slope_interpretation,ece_10bins
+GAM,0.1587,0.1799,0.1176,0.0673,0.9425,Well-calibrated slope,0.0238
+Logistic_Regression,0.1587,0.1799,0.118,0.0649,1.0013,Well-calibrated slope,0.0124
+DLNN,0.1609,0.1799,0.1056,0.0526,0.9208,Well-calibrated slope,0.0113

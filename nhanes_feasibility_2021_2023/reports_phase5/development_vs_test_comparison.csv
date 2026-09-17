@@ -1,0 +1,7 @@
+metric,development_estimate,final_test_estimate,difference,generalization_assessment
+ROC-AUC,0.7382,0.7277,-0.0105,Maintained discrimination
+PR-AUC,0.4207,0.4503,+0.0296,Maintained precision
+Brier Score,0.1561,0.1587,+0.0026,Stable probability error
+Sensitivity (at 0.1389),90.23%,86.39%,-3.84%,Satisfied pre-specified screening floor
+Specificity (at 0.1389),42.25%,42.51%,+0.26%,Consistent community filtering
+Referral Fraction (at 0.1389),65.25%,64.29%,-0.96%,Consistent Stage-2 clinical burden

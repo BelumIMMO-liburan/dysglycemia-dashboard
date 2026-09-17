@@ -1,0 +1,214 @@
+{% extends "predictor/base.html" %}
+
+{% block title %}Model Evaluation — Diabetes XAI Dashboard{% endblock %}
+{% block topbar_title %}🏆 Model Evaluation{% endblock %}
+
+{% block content %}
+<p class="page-subtitle">Compare all trained models side-by-side with key performance metrics</p>
+
+<!-- Radar Chart -->
+<div class="card card-glass">
+    <div class="card-header">
+        <h3>Model Performance Comparison</h3>
+        <p class="card-subtitle">Visual comparison across Accuracy, Precision, Recall, F1-Score, and ROC-AUC</p>
+    </div>
+    <div class="chart-container chart-lg">
+        <canvas id="radarChart"></canvas>
+    </div>
+</div>
+
+<div class="grid-2col">
+    <!-- Bar Chart Comparison -->
+    <div class="card card-glass">
+        <div class="card-header">
+            <h3>Metrics Bar Chart</h3>
+        </div>
+        <div class="chart-container">
+            <canvas id="metricsBarChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Best Model Per Metric -->
+    <div class="card card-glass">
+        <div class="card-header">
+            <h3>🥇 Best Model per Metric</h3>
+        </div>
+        <div class="best-model-list">
+            {% for metric, model in best.items %}
+            <div class="best-model-item">
+                <span class="best-metric">{{ metric|upper }}</span>
+                <span class="best-model-name">{{ model }}</span>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <div class="info-card" style="margin-top: 1.5rem;">
+            <h4>📌 Key Insight for Medical Use</h4>
+            <p class="card-subtitle" style="margin-top: 0.5rem;">
+                For diabetes screening, <strong>Recall</strong> is the most critical metric — 
+                it measures how many actual diabetic patients are correctly identified. 
+                A missed diagnosis (false negative) is far more dangerous than a false alarm.
+            </p>
+        </div>
+    </div>
+</div>
+
+<!-- Full Metrics Table -->
+<div class="card card-glass">
+    <div class="card-header">
+        <h3>📊 Complete Model Metrics</h3>
+        <p class="card-subtitle">All metrics displayed as percentages. Best value per column is highlighted.</p>
+    </div>
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Model</th>
+                    <th>Accuracy</th>
+                    <th>Precision</th>
+                    <th>Recall ⭐</th>
+                    <th>F1-Score</th>
+                    <th>ROC-AUC</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for m in models_data %}
+                <tr>
+                    <td><strong>{{ m.name }}</strong></td>
+                    <td class="{% if best.accuracy == m.name %}text-best{% endif %}">
+                        {{ m.accuracy }}%
+                    </td>
+                    <td class="{% if best.precision == m.name %}text-best{% endif %}">
+                        {{ m.precision }}%
+                    </td>
+                    <td class="{% if best.recall == m.name %}text-best{% endif %}">
+                        {{ m.recall }}%
+                    </td>
+                    <td class="{% if best.f1 == m.name %}text-best{% endif %}">
+                        {{ m.f1 }}%
+                    </td>
+                    <td class="{% if best.roc_auc == m.name %}text-best{% endif %}">
+                        {{ m.roc_auc }}%
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const modelsData = {{ models_data_json|safe }};
+    
+    const modelNames = modelsData.map(m => m.name);
+    const colors = [
+        'rgba(59, 130, 246, 0.7)',   // blue
+        'rgba(168, 85, 247, 0.7)',   // purple
+        'rgba(34, 197, 94, 0.7)',    // green
+        'rgba(251, 146, 60, 0.7)',   // orange
+        'rgba(239, 68, 68, 0.7)',    // red
+        'rgba(6, 182, 212, 0.7)',    // cyan
+        'rgba(236, 72, 153, 0.7)',   // pink
+    ];
+    const borderColors = colors.map(c => c.replace('0.7', '1'));
+    
+    // Radar Chart
+    if (modelsData.length > 0) {
+        new Chart(document.getElementById('radarChart'), {
+            type: 'radar',
+            data: {
+                labels: ['Accuracy', 'Precision', 'Recall', 'F1-Score', 'ROC-AUC'],
+                datasets: modelsData.map((m, i) => ({
+                    label: m.name,
+                    data: [m.accuracy, m.precision, m.recall, m.f1, m.roc_auc],
+                    backgroundColor: colors[i % colors.length].replace('0.7', '0.15'),
+                    borderColor: borderColors[i % borderColors.length],
+                    borderWidth: 2,
+                    pointBackgroundColor: borderColors[i % borderColors.length],
+                    pointRadius: 3,
+                }))
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { color: '#e2e8f0', font: { size: 11 }, padding: 15 }
+                    }
+                },
+                scales: {
+                    r: {
+                        min: 0,
+                        max: 100,
+                        ticks: { color: '#64748b', backdropColor: 'transparent', stepSize: 20 },
+                        grid: { color: 'rgba(148, 163, 184, 0.15)' },
+                        pointLabels: { color: '#94a3b8', font: { size: 12 } },
+                    }
+                }
+            }
+        });
+    }
+    
+    // Bar Chart
+    if (modelsData.length > 0) {
+        new Chart(document.getElementById('metricsBarChart'), {
+            type: 'bar',
+            data: {
+                labels: modelNames,
+                datasets: [
+                    {
+                        label: 'Recall ⭐',
+                        data: modelsData.map(m => m.recall),
+                        backgroundColor: 'rgba(239, 68, 68, 0.7)',
+                        borderColor: 'rgba(239, 68, 68, 1)',
+                        borderWidth: 1,
+                        borderRadius: 4,
+                    },
+                    {
+                        label: 'Precision',
+                        data: modelsData.map(m => m.precision),
+                        backgroundColor: 'rgba(59, 130, 246, 0.7)',
+                        borderColor: 'rgba(59, 130, 246, 1)',
+                        borderWidth: 1,
+                        borderRadius: 4,
+                    },
+                    {
+                        label: 'F1-Score',
+                        data: modelsData.map(m => m.f1),
+                        backgroundColor: 'rgba(34, 197, 94, 0.7)',
+                        borderColor: 'rgba(34, 197, 94, 1)',
+                        borderWidth: 1,
+                        borderRadius: 4,
+                    },
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: { color: '#e2e8f0', font: { size: 11 } }
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: { color: '#94a3b8', font: { size: 9 }, maxRotation: 45 },
+                        grid: { display: false },
+                    },
+                    y: {
+                        min: 0, max: 100,
+                        title: { display: true, text: 'Score (%)', color: '#94a3b8' },
+                        ticks: { color: '#94a3b8' },
+                        grid: { color: 'rgba(148, 163, 184, 0.1)' },
+                    }
+                }
+            }
+        });
+    }
+</script>
+{% endblock %}

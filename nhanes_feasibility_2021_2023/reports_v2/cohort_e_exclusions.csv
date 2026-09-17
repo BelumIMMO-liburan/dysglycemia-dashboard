@@ -1,0 +1,7 @@
+step,count,pct_of_adults,description
+Adults Base (Age >= 18),8153,100.0,All adult participants
+Excluded: Known diabetes (DIQ010=1),1073,13.16,Doctor told you have diabetes
+Excluded: Borderline diabetes (DIQ010=3),272,3.34,Doctor told you have borderline diabetes
+Excluded: Known prediabetes (DIQ160=1),884,10.84,Told you have prediabetes among DIQ010=2
+Excluded: Missing / Refused / Don't Know on DIQ010 or DIQ160,17,0.21,"DIQ010 missing/DK=5, DIQ160 missing/DK=12"
+Cohort E: No Known Dysglycemia (DIQ010=2 & DIQ160=2),5907,72.45,True screening population without prior recognized dysglycemia

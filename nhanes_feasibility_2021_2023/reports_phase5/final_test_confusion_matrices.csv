@@ -1,0 +1,4 @@
+model_family,frozen_threshold,tp,fp,tn,fn,total_n
+GAM,0.1389,165,357,264,26,812
+Logistic_Regression,0.1389,165,368,253,26,812
+DLNN,0.1419,166,362,259,25,812

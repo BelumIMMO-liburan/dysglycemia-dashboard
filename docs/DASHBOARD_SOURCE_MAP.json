@@ -1,0 +1,216 @@
+{
+  "release_identifier": "research-prototype-v1.0",
+  "audit_date": "2026-09-05",
+  "source_map": [
+    {
+      "concept": "application_shell_overview",
+      "file_path": "dashboard/predictor/views.py",
+      "symbol": "overview_view",
+      "active_or_legacy": "active",
+      "short_description": "Main orientation workspace displaying operational case throughput and derived lifecycle states without running ML."
+    },
+    {
+      "concept": "stage1_intake_form_view",
+      "file_path": "dashboard/predictor/views.py",
+      "symbol": "new_screening_view",
+      "active_or_legacy": "active",
+      "short_description": "Presents and validates the 7 non-laboratory screening predictors, rendering the sanitized Input Review State."
+    },
+    {
+      "concept": "stage1_inference_execution_view",
+      "file_path": "dashboard/predictor/views.py",
+      "symbol": "run_screening_view",
+      "active_or_legacy": "active",
+      "short_description": "Authoritative controller executing frozen GAM inference, saving ScreeningRecord and ScreeningExplanation, and issuing PRG 302."
+    },
+    {
+      "concept": "screening_result_view",
+      "file_path": "dashboard/predictor/views.py",
+      "symbol": "screening_result_view",
+      "active_or_legacy": "active",
+      "short_description": "Renders screening probability, signal badge, GAM-native additive attributions, and human review forms from persisted DB records."
+    },
+    {
+      "concept": "human_review_acceptance_view",
+      "file_path": "dashboard/predictor/views.py",
+      "symbol": "accept_review_view",
+      "active_or_legacy": "active",
+      "short_description": "POST endpoint capturing pseudonymous reviewer code and deriving final referral matching AI recommendation."
+    },
+    {
+      "concept": "human_review_override_view",
+      "file_path": "dashboard/predictor/views.py",
+      "symbol": "override_review_view",
+      "active_or_legacy": "active",
+      "short_description": "POST endpoint capturing reviewer code, branch-specific override reasons, and deriving opposite referral decision."
+    },
+    {
+      "concept": "stage2_intake_view",
+      "file_path": "dashboard/predictor/views.py",
+      "symbol": "stage2_view",
+      "active_or_legacy": "active",
+      "short_description": "Enforces final referral gating and presents the laboratory HbA1c entry form."
+    },
+    {
+      "concept": "stage2_confirmation_view",
+      "file_path": "dashboard/predictor/views.py",
+      "symbol": "stage2_confirm_view",
+      "active_or_legacy": "active",
+      "short_description": "POST endpoint revalidating HbA1c, deriving ADA 2026 range server-side, and persisting Stage2Assessment."
+    },
+    {
+      "concept": "review_queue_view",
+      "file_path": "dashboard/predictor/views.py",
+      "symbol": "review_queue_view",
+      "active_or_legacy": "active",
+      "short_description": "Operational task queue partitioning actionable cases into Pending Review, Pending Stage 2, and Needs System Attention."
+    },
+    {
+      "concept": "history_ledger_view",
+      "file_path": "dashboard/predictor/views.py",
+      "symbol": "history_view",
+      "active_or_legacy": "active",
+      "short_description": "Auditable ledger displaying exactly one row per ScreeningRecord with server-side filtering, search, and pagination."
+    },
+    {
+      "concept": "research_analytics_view",
+      "file_path": "dashboard/predictor/views.py",
+      "symbol": "analytics_view",
+      "active_or_legacy": "active",
+      "short_description": "Computes and displays aggregate workflow metrics, transition matrix, and selective verification safeguards."
+    },
+    {
+      "concept": "about_model_view",
+      "file_path": "dashboard/predictor/views.py",
+      "symbol": "about_model_view",
+      "active_or_legacy": "active",
+      "short_description": "Methodological documentation page displaying frozen GAM specification, held-out benchmarks, and research caveats."
+    },
+    {
+      "concept": "components_demo_view",
+      "file_path": "dashboard/predictor/views.py",
+      "symbol": "components_demo_view",
+      "active_or_legacy": "development_only",
+      "short_description": "Visual component inventory for design system QA; suppressed in study mode."
+    },
+    {
+      "concept": "legacy_index_view",
+      "file_path": "dashboard/predictor/views.py",
+      "symbol": "index",
+      "active_or_legacy": "quarantined",
+      "short_description": "Legacy Phase D1 patient data input view; unlinked and dead code."
+    },
+    {
+      "concept": "legacy_predict_view",
+      "file_path": "dashboard/predictor/views.py",
+      "symbol": "predict_view",
+      "active_or_legacy": "quarantined",
+      "short_description": "Legacy Phase D1 multi-model inference and SHAP calculation; unlinked and dead code."
+    },
+    {
+      "concept": "screening_record_model",
+      "file_path": "dashboard/predictor/models.py",
+      "symbol": "ScreeningRecord",
+      "active_or_legacy": "active",
+      "short_description": "Immutable historical domain entity for Stage-1 non-lab screening inputs, AI output, and model checksums."
+    },
+    {
+      "concept": "screening_explanation_model",
+      "file_path": "dashboard/predictor/models.py",
+      "symbol": "ScreeningExplanation",
+      "active_or_legacy": "active",
+      "short_description": "1:1 entity storing GAM spline additive decomposition, link intercept, and reconstruction error."
+    },
+    {
+      "concept": "human_review_model",
+      "file_path": "dashboard/predictor/models.py",
+      "symbol": "HumanReview",
+      "active_or_legacy": "active",
+      "short_description": "1:1 entity capturing pseudonymous reviewer code, review action (accepted/overridden), and final referral."
+    },
+    {
+      "concept": "stage2_assessment_model",
+      "file_path": "dashboard/predictor/models.py",
+      "symbol": "Stage2Assessment",
+      "active_or_legacy": "active",
+      "short_description": "1:1 entity capturing confirmatory laboratory HbA1c percentage and server-derived ADA reference range."
+    },
+    {
+      "concept": "legacy_prediction_model",
+      "file_path": "dashboard/predictor/models.py",
+      "symbol": "Prediction",
+      "active_or_legacy": "quarantined",
+      "short_description": "Legacy Phase D1 integer-keyed model storing 8 features including lab values and multi-model strings."
+    },
+    {
+      "concept": "legacy_override_model",
+      "file_path": "dashboard/predictor/models.py",
+      "symbol": "Override",
+      "active_or_legacy": "quarantined",
+      "short_description": "Legacy Phase D1 doctor override entity storing doctor_name and prediction replacement values."
+    },
+    {
+      "concept": "screening_input_schema",
+      "file_path": "dashboard/predictor/screening_schema.py",
+      "symbol": "STAGE1_INPUT_SCHEMA",
+      "active_or_legacy": "active",
+      "short_description": "Authoritative contract defining valid clinical/research bounds and canonical ordering for the 7 predictors."
+    },
+    {
+      "concept": "stage1_screening_form",
+      "file_path": "dashboard/predictor/forms.py",
+      "symbol": "Stage1ScreeningForm",
+      "active_or_legacy": "active",
+      "short_description": "Django Form enforcing server-side validation against STAGE1_INPUT_SCHEMA domain bounds."
+    },
+    {
+      "concept": "screening_inference_service",
+      "file_path": "dashboard/predictor/services/screening_inference.py",
+      "symbol": "predict_screening",
+      "active_or_legacy": "active",
+      "short_description": "Thread-safe service executing frozen PyGAM inference at threshold 0.1389 with SHA256 integrity verification."
+    },
+    {
+      "concept": "screening_explanation_service",
+      "file_path": "dashboard/predictor/services/screening_explanation.py",
+      "symbol": "explain_screening",
+      "active_or_legacy": "active",
+      "short_description": "Evaluates exact GAM-native partial dependence splines on log-odds scale with <= 1e-10 fidelity verification."
+    },
+    {
+      "concept": "screening_lifecycle_service",
+      "file_path": "dashboard/predictor/services/screening_lifecycle.py",
+      "symbol": "derive_screening_lifecycle",
+      "active_or_legacy": "active",
+      "short_description": "Pure functional precedence evaluator deriving the 6 lifecycle workflow states from relational entity presence."
+    },
+    {
+      "concept": "hba1c_range_service",
+      "file_path": "dashboard/predictor/services/hba1c_range.py",
+      "symbol": "classify_hba1c_range",
+      "active_or_legacy": "active",
+      "short_description": "Pure Decimal classifier mapping HbA1c to ADA 2026 reference cutoffs (<5.7% Normal, 5.7-6.4% Prediabetes, >=6.5% Diabetes)."
+    },
+    {
+      "concept": "research_analytics_service",
+      "file_path": "dashboard/predictor/services/research_analytics.py",
+      "symbol": "compute_research_analytics",
+      "active_or_legacy": "active",
+      "short_description": "Pure read-only aggregator generating workflow rates, 2x2 decision transition matrix, and override distributions."
+    },
+    {
+      "concept": "legacy_shap_service",
+      "file_path": "dashboard/predictor/shap_explainer.py",
+      "symbol": "explain_prediction",
+      "active_or_legacy": "quarantined",
+      "short_description": "Legacy Phase D1 SHAP KernelExplainer module; completely decoupled from active Stage-1 screening."
+    },
+    {
+      "concept": "legacy_model_loader",
+      "file_path": "dashboard/predictor/model_loader.py",
+      "symbol": "predict",
+      "active_or_legacy": "quarantined",
+      "short_description": "Legacy Phase D1 loader caching Keras DLNN and multi-model variants; decoupled from active Stage-1 screening."
+    }
+  ]
+}

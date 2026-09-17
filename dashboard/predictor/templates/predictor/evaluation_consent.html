@@ -1,0 +1,143 @@
+{% extends 'predictor/base.html' %}
+
+{% block title %}Persetujuan Partisipasi & Profil Responden — Dashboard Evaluasi{% endblock %}
+{% block breadcrumb %}Informed Consent{% endblock %}
+
+{% block content %}
+<div class="ui-page-header">
+    <div class="ui-page-header-row">
+        <div>
+            <h1 class="ui-page-title">Persetujuan Partisipasi Penelitian (Informed Consent)</h1>
+            <p class="ui-page-description">
+                Protokol Evaluasi Sistem: Pengambilan Keputusan Kolaboratif Human-AI pada Two-Stage Screening Risiko Disglikemia.
+            </p>
+        </div>
+        <div>
+            <span class="ui-badge ui-badge-emerald">
+                Protokol {{ protocol_version }}
+            </span>
+        </div>
+    </div>
+</div>
+
+<div style="max-width: 800px; margin: 0 auto;">
+    <!-- Research Information Sheet -->
+    <div class="ui-card" style="margin-bottom: 2rem;">
+        <div class="ui-card-header">
+            <h2 class="ui-card-title">Lembar Informasi Partisipan</h2>
+            <p class="ui-card-description">Harap membaca penjelasan berikut sebelum memberikan persetujuan keikutsertaan.</p>
+        </div>
+        <div class="ui-card-content" style="font-size: 0.875rem; line-height: 1.6; color: hsl(var(--foreground));">
+            <div style="background-color: hsl(var(--muted)/0.4); padding: 1rem; border-radius: var(--radius); border-left: 4px solid hsl(var(--primary)); margin-bottom: 1.25rem;">
+                <strong>Tujuan Penelitian:</strong> Penelitian ini bertujuan untuk menguji aspek keterpahaman (objective comprehension), kegunaan sistem (usability melalui SUS), dan interaksi peninjauan keputusan manusia (Human Override & Feedback) pada prototype dashboard screening berbasis Explainable AI.
+            </div>
+
+            <h3 style="font-size: 0.9375rem; font-weight: 600; margin-top: 1rem; margin-bottom: 0.5rem;">Ketentuan Partisipasi:</h3>
+            <ul style="padding-left: 1.25rem; display: flex; flex-direction: column; gap: 0.5rem;">
+                <li><strong>Sifat Sukarela:</strong> Partisipasi Anda bersifat sepenuhnya sukarela. Anda berhak menghentikan keikutsertaan sewaktu-waktu tanpa konsekuensi apa pun.</li>
+                <li><strong>Anonimitas & Kerahasiaan:</strong> Tidak ada data identitas pribadi (nama, kontak, institusi) yang disimpan. Setiap partisipan diidentifikasi melalui kode acak anonim (contoh: <code>R-A1B2C3D4</code>).</li>
+                <li><strong>Bukan Alat Diagnostik Klinis:</strong> Sistem ini merupakan <em>prototype riset akademik</em> sistem informasi dan bukan alat medis diagnostik. Hasil penilaian risiko adalah perkiraan statistik model machine learning.</li>
+                <li><strong>Alur Kegiatan:</strong> Anda akan (1) membaca pengenalan alur pada Kasus Latihan P0, (2) mencoba proses screening risiko, (3) meninjau penjelasan AI dan mencoba fitur peninjauan manusia, dan (4) mengisi kuesioner evaluasi singkat (pemahaman, SUS, dan umpan balik).</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Intake & Consent Form -->
+    <div class="ui-card">
+        <div class="ui-card-header">
+            <h2 class="ui-card-title">Profil Partisipan & Pernyataan Persetujuan</h2>
+            <p class="ui-card-description">Data demografis anonim digunakan semata-mata untuk analisis karakteristik sampel penelitian.</p>
+        </div>
+        <div class="ui-card-content">
+            <form method="post" action="{% url 'predictor:evaluation_consent' %}" class="ui-form-stack" novalidate>
+                {% csrf_token %}
+
+                {% if form.non_field_errors %}
+                <div class="ui-alert ui-alert-danger" style="margin-bottom: 1rem;">
+                    <div class="ui-alert-content">
+                        {% for err in form.non_field_errors %}
+                        <p class="ui-alert-body">{{ err }}</p>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <div class="ui-form-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.25rem; margin-bottom: 1.5rem;">
+                    <!-- Age Group -->
+                    <div class="ui-form-group">
+                        <label for="id_age_group" class="ui-form-label">
+                            Kelompok Usia <span style="color: hsl(var(--destructive));">*</span>
+                        </label>
+                        {{ form.age_group }}
+                        {% if form.age_group.errors %}
+                        <span class="ui-form-error" style="color: hsl(var(--destructive)); font-size: 0.75rem;">
+                            {{ form.age_group.errors.0 }}
+                        </span>
+                        {% endif %}
+                    </div>
+
+                    <!-- Education Level -->
+                    <div class="ui-form-group">
+                        <label for="id_education_level" class="ui-form-label">
+                            Pendidikan Terakhir <span style="color: hsl(var(--destructive));">*</span>
+                        </label>
+                        {{ form.education_level }}
+                        {% if form.education_level.errors %}
+                        <span class="ui-form-error" style="color: hsl(var(--destructive)); font-size: 0.75rem;">
+                            {{ form.education_level.errors.0 }}
+                        </span>
+                        {% endif %}
+                    </div>
+
+                    <!-- Technical Background -->
+                    <div class="ui-form-group">
+                        <label for="id_technical_background" class="ui-form-label">
+                            Latar Belakang Teknis / Komputasi <span style="color: hsl(var(--destructive));">*</span>
+                        </label>
+                        {{ form.technical_background }}
+                        {% if form.technical_background.errors %}
+                        <span class="ui-form-error" style="color: hsl(var(--destructive)); font-size: 0.75rem;">
+                            {{ form.technical_background.errors.0 }}
+                        </span>
+                        {% endif %}
+                    </div>
+
+                    <!-- Health Background -->
+                    <div class="ui-form-group">
+                        <label for="id_health_background" class="ui-form-label">
+                            Latar Belakang Bidang Kesehatan <span style="color: hsl(var(--destructive));">*</span>
+                        </label>
+                        {{ form.health_background }}
+                        {% if form.health_background.errors %}
+                        <span class="ui-form-error" style="color: hsl(var(--destructive)); font-size: 0.75rem;">
+                            {{ form.health_background.errors.0 }}
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Informed Consent Checkbox -->
+                <div style="border-top: 1px solid hsl(var(--border)); padding-top: 1.25rem; margin-bottom: 1.5rem;">
+                    <label style="display: flex; align-items: flex-start; gap: 0.75rem; cursor: pointer;">
+                        {{ form.consent_given }}
+                        <span style="font-size: 0.875rem; line-height: 1.4; color: hsl(var(--foreground));">
+                            <strong>Saya menyatakan telah membaca dan memahami lembar informasi di atas.</strong> Saya secara sukarela bersedia berpartisipasi dalam sesi evaluasi ini dan menyetujui data respons anonim saya digunakan untuk kepentingan publikasi penelitian.
+                        </span>
+                    </label>
+                    {% if form.consent_given.errors %}
+                    <div style="margin-top: 0.5rem; color: hsl(var(--destructive)); font-size: 0.75rem; font-weight: 500;">
+                        {{ form.consent_given.errors.0 }}
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div style="display: flex; justify-content: flex-end;">
+                    <button type="submit" class="ui-btn ui-btn-primary" style="padding: 0.625rem 1.5rem; font-weight: 600;">
+                        Setuju & Lanjutkan ke Kasus Latihan (P0) →
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

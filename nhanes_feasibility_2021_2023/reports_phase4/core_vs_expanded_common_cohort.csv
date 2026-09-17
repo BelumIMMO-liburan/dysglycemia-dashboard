@@ -1,0 +1,4 @@
+model_family,common_cohort_n,core_best_config,core_roc_auc,core_pr_auc,core_brier,expanded_best_config,expanded_roc_auc,expanded_pr_auc,expanded_brier,delta_roc_auc,delta_pr_auc,delta_brier_score
+Logistic_Regression,3232,L2_C0.01,0.7303,0.3988,0.1588,L2_C0.01,0.7355,0.4082,0.1575,0.0052,0.0094,-0.0013
+GAM,3232,GAM_splines10_lam10.0,0.7302,0.4014,0.1579,GAM_splines10_lam10.0,0.7382,0.4207,0.1561,0.008,0.0193,-0.0018
+DLNN,3232,DLNN_32_16_drop0.0,0.7269,0.3988,0.1583,DLNN_16_8_drop0.0,0.7306,0.4115,0.1577,0.0037,0.0127,-0.0006

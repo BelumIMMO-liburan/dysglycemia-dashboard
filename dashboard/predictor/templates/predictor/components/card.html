@@ -1,0 +1,26 @@
+{# Reusable Card Partial #}
+<div class="ui-card {{ card_classes }}">
+    {% if card_title %}
+    <div class="ui-card-header {% if card_has_actions %}with-actions{% endif %}">
+        <div>
+            <h3 class="ui-card-title">{{ card_title }}</h3>
+            {% if card_description %}
+                <p class="ui-card-description">{{ card_description }}</p>
+            {% endif %}
+        </div>
+        {% if card_actions %}
+            <div class="ui-card-actions">
+                {{ card_actions|safe }}
+            </div>
+        {% endif %}
+    </div>
+    {% endif %}
+    <div class="ui-card-content">
+        {{ card_content|safe }}
+    </div>
+    {% if card_footer %}
+    <div class="ui-card-footer">
+        {{ card_footer|safe }}
+    </div>
+    {% endif %}
+</div>

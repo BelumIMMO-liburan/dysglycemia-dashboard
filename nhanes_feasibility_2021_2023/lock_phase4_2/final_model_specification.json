@@ -1,0 +1,117 @@
+{
+  "protocol_phase": "Phase 4.2",
+  "document_status": "FROZEN",
+  "locked_date": "2026-09-02",
+  "research_target": {
+    "task": "non_laboratory_screening_unrecognized_hba1c_dysglycemia",
+    "target_variable": "hba1c_dysglycemia",
+    "classes": {
+      "0": "HbA1c < 5.7% (Normal)",
+      "1": "HbA1c >= 5.7% (Dysglycemia)"
+    },
+    "population": "Cohort E (Adults >=18 without self-reported diabetes or prediabetes)",
+    "dataset_variant": "EXPANDED_COMMON"
+  },
+  "primary_final_model": {
+    "model_family": "Generalized Additive Model (GAM)",
+    "implementation": "pygam.LogisticGAM",
+    "hyperparameters": {
+      "n_splines": 10,
+      "lam": 10.0,
+      "basis": "cubic_p_splines",
+      "penalty": "derivative2"
+    },
+    "predictors": [
+      {
+        "name": "age",
+        "source_variable": "RIDAGEYR",
+        "term_type": "spline",
+        "n_splines": 10,
+        "lam": 10.0
+      },
+      {
+        "name": "sex",
+        "source_variable": "RIAGENDR",
+        "term_type": "factor",
+        "lam": 10.0,
+        "encoding": "Male=1, Female=0"
+      },
+      {
+        "name": "bmi",
+        "source_variable": "BMXBMI",
+        "term_type": "spline",
+        "n_splines": 10,
+        "lam": 10.0
+      },
+      {
+        "name": "hypertension_history",
+        "source_variable": "BPQ020",
+        "term_type": "factor",
+        "lam": 10.0,
+        "encoding": "Yes=1, No=0"
+      },
+      {
+        "name": "smoking_history",
+        "source_variable": "SMQ020",
+        "term_type": "factor",
+        "lam": 10.0,
+        "encoding": "Yes=1, No=0"
+      },
+      {
+        "name": "waist_cm",
+        "source_variable": "BMXWAIST",
+        "term_type": "spline",
+        "n_splines": 10,
+        "lam": 10.0
+      },
+      {
+        "name": "sedentary_minutes_day",
+        "source_variable": "PAD680",
+        "term_type": "spline",
+        "n_splines": 10,
+        "lam": 10.0
+      }
+    ]
+  },
+  "research_operating_point": {
+    "sensitivity_floor_target": 0.90,
+    "frozen_decision_threshold": 0.1389,
+    "selection_rule": "highest_threshold_achieving_sensitivity_floor_on_pooled_development_oof",
+    "development_baseline_metrics": {
+      "sensitivity": 0.9023,
+      "specificity": 0.4225,
+      "ppv": 0.3196,
+      "npv": 0.9350,
+      "referred_fraction": 0.6525,
+      "dysglycemia_captured_fraction": 0.9023,
+      "dysglycemia_missed_fraction": 0.0977,
+      "hba1c_tests_per_case_detected": 3.13
+    }
+  },
+  "training_procedure": {
+    "training_partition": "EXPANDED_COMMON_DEVELOPMENT_ONLY",
+    "sample_size": 3232,
+    "preprocessing": {
+      "scaler": "StandardScaler",
+      "fitted_on": "development_data_only",
+      "leakage_protection": "strict_isolation_no_test_access"
+    }
+  },
+  "comparators": {
+    "linear_statistical_baseline": {
+      "model_family": "Logistic Regression",
+      "configuration": "L2_C0.1",
+      "status": "retained_for_final_test_comparison"
+    },
+    "complex_nonlinear_comparator": {
+      "model_family": "Deep Learning Neural Network (DLNN)",
+      "configuration": "DLNN_16_8_drop0.0",
+      "status": "retained_for_final_test_comparison"
+    }
+  },
+  "file_integrity_hashes": {
+    "master_split_csv_sha256": "685b4a15a1ab5ea83647f91f6c335a8a44b2179e47eaab186bdd1960a583f9ed",
+    "development_folds_csv_sha256": "0bfacfaba04ffaa02ea0f82294478c0d2790012c0d5466490e85956fabd028e1",
+    "analytic_expanded_complete_parquet_sha256": "6fa1dd5c9212359271de03285806044f3d8a8f817c774bdd1e8c054fe75d1679"
+  }
+}

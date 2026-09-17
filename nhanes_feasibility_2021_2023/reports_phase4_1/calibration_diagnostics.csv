@@ -1,0 +1,10 @@
+dataset_variant,model_family,selected_configuration,n,dysglycemia_prev,brier_score,brier_reference,brier_skill_score,cal_intercept,cal_intercept_desc,cal_slope,cal_slope_desc,ece_10bins
+CORE_COMMON,DLNN,DLNN_32_16_drop0.0,3232,0.2311,0.1583,0.1777,0.109,-0.029,Well-calibrated large,0.9086,Well-calibrated slope,0.0118
+CORE_COMMON,GAM,GAM_splines10_lam10.0,3232,0.2311,0.1579,0.1777,0.1114,0.0014,Well-calibrated large,0.9742,Well-calibrated slope,0.0128
+CORE_COMMON,Logistic_Regression,L2_C0.01,3232,0.2311,0.1588,0.1777,0.1065,0.0008,Well-calibrated large,1.2838,Under-confident (spread too narrow),0.0311
+CORE_FULL,DLNN,DLNN_32_16_drop0.2,3355,0.2313,0.158,0.1778,0.1111,-0.0211,Well-calibrated large,1.0059,Well-calibrated slope,0.0101
+CORE_FULL,GAM,GAM_splines10_lam1.0,3355,0.2313,0.1587,0.1778,0.1073,0.0009,Well-calibrated large,0.9541,Well-calibrated slope,0.0116
+CORE_FULL,Logistic_Regression,L2_C0.01,3355,0.2313,0.1593,0.1778,0.1041,0.0008,Well-calibrated large,1.2675,Under-confident (spread too narrow),0.0325
+EXPANDED_COMMON,DLNN,DLNN_16_8_drop0.0,3232,0.2311,0.1577,0.1777,0.1125,-0.0306,Well-calibrated large,0.903,Well-calibrated slope,0.0135
+EXPANDED_COMMON,GAM,GAM_splines10_lam10.0,3232,0.2311,0.1561,0.1777,0.1214,0.0002,Well-calibrated large,0.9652,Well-calibrated slope,0.0106
+EXPANDED_COMMON,Logistic_Regression,L2_C0.1,3232,0.2311,0.1574,0.1777,0.1143,0.0006,Well-calibrated large,1.0005,Well-calibrated slope,0.0169

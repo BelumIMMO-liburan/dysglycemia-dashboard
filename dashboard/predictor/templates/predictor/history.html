@@ -1,0 +1,353 @@
+{% extends 'predictor/base.html' %}
+
+{% block title %}Screening History — Dysglycemia Screening Dashboard{% endblock %}
+{% block breadcrumb %}Screening History{% endblock %}
+
+{% block content %}
+<div class="ui-page-header">
+    <div class="ui-page-header-row">
+        <div>
+            <h1 class="ui-page-title">Screening History &amp; Case Audit</h1>
+            <p class="ui-page-description">
+                Immutable case ledger of all Stage-1 screenings, frozen model inference outputs, human review decisions, and Stage-2 laboratory assessments.
+            </p>
+        </div>
+        <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+            <span class="ui-badge ui-badge-outline" id="total-history-count">
+                Total Records: <span class="tabular-nums" style="font-weight: 700;">{{ total_count|default:"0" }}</span>
+            </span>
+            <a href="{% url 'predictor:new_screening' %}" class="ui-btn ui-btn-primary ui-btn-sm" style="display: inline-flex; align-items: center; gap: 0.35rem;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                <span>New Screening</span>
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- ======================================================================
+     NON-PII FILTERS & SEARCH TOOLBAR (Accessible Form)
+     ====================================================================== -->
+<div class="ui-card" style="margin-bottom: 1.5rem; padding: 1.25rem;" id="history-filter-card">
+    <form method="get" action="{% url 'predictor:history' %}" id="history-filter-form">
+        <!-- Row 1: Search by UUID -->
+        <div style="display: flex; gap: 0.75rem; margin-bottom: 1rem; flex-wrap: wrap; align-items: center;">
+            <div style="flex: 1; min-width: 260px;">
+                <label for="history-search-input" class="ui-label" style="display: block; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem; color: hsl(var(--muted-foreground));">
+                    Search Screening UUID
+                </label>
+                <div style="position: relative;">
+                    <input type="text" 
+                           name="search" 
+                           id="history-search-input" 
+                           class="ui-input" 
+                           value="{{ filters.search }}" 
+                           placeholder="Search by full or partial UUID (e.g. 3a1f4b)..."
+                           style="width: 100%; font-family: monospace; font-size: 0.8125rem;">
+                </div>
+            </div>
+            <div style="min-width: 160px;">
+                <label for="history-order-select" class="ui-label" style="display: block; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem; color: hsl(var(--muted-foreground));">
+                    Sort By
+                </label>
+                <select name="order" id="history-order-select" class="ui-select" style="width: 100%;">
+                    <option value="newest" {% if filters.order == 'newest' or not filters.order %}selected{% endif %}>Newest First</option>
+                    <option value="oldest" {% if filters.order == 'oldest' %}selected{% endif %}>Oldest First</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Row 2: Structured Dropdowns -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.75rem; margin-bottom: 1rem;">
+            <div>
+                <label for="filter-status" class="ui-label" style="display: block; font-size: 0.75rem; font-weight: 600; margin-bottom: 0.25rem; color: hsl(var(--muted-foreground));">
+                    Workflow Status
+                </label>
+                <select name="status" id="filter-status" class="ui-select" style="width: 100%;">
+                    <option value="all" {% if filters.status == 'all' or not filters.status %}selected{% endif %}>All Workflow States</option>
+                    <option value="pending_review" {% if filters.status == 'pending_review' %}selected{% endif %}>Pending Human Review</option>
+                    <option value="pending_stage2" {% if filters.status == 'pending_stage2' %}selected{% endif %}>Pending Stage 2</option>
+                    <option value="reviewed_no_referral" {% if filters.status == 'reviewed_no_referral' %}selected{% endif %}>Reviewed — No Stage 2</option>
+                    <option value="completed_stage2" {% if filters.status == 'completed_stage2' %}selected{% endif %}>Completed Two-Stage</option>
+                    <option value="explanation_unavailable" {% if filters.status == 'explanation_unavailable' %}selected{% endif %}>Needs System Attention</option>
+                </select>
+            </div>
+
+            <div>
+                <label for="filter-ai-rec" class="ui-label" style="display: block; font-size: 0.75rem; font-weight: 600; margin-bottom: 0.25rem; color: hsl(var(--muted-foreground));">
+                    AI Recommendation
+                </label>
+                <select name="ai_rec" id="filter-ai-rec" class="ui-select" style="width: 100%;">
+                    <option value="all" {% if filters.ai_rec == 'all' or not filters.ai_rec %}selected{% endif %}>All AI Recommendations</option>
+                    <option value="refer" {% if filters.ai_rec == 'refer' %}selected{% endif %}>Refer</option>
+                    <option value="no_refer" {% if filters.ai_rec == 'no_refer' %}selected{% endif %}>Do not refer</option>
+                </select>
+            </div>
+
+            <div>
+                <label for="filter-review-action" class="ui-label" style="display: block; font-size: 0.75rem; font-weight: 600; margin-bottom: 0.25rem; color: hsl(var(--muted-foreground));">
+                    Review Action
+                </label>
+                <select name="review_action" id="filter-review-action" class="ui-select" style="width: 100%;">
+                    <option value="all" {% if filters.review_action == 'all' or not filters.review_action %}selected{% endif %}>All Review Actions</option>
+                    <option value="accepted" {% if filters.review_action == 'accepted' %}selected{% endif %}>Accepted</option>
+                    <option value="overridden" {% if filters.review_action == 'overridden' %}selected{% endif %}>Overridden</option>
+                    <option value="pending" {% if filters.review_action == 'pending' %}selected{% endif %}>Pending Review</option>
+                </select>
+            </div>
+
+            <div>
+                <label for="filter-final-decision" class="ui-label" style="display: block; font-size: 0.75rem; font-weight: 600; margin-bottom: 0.25rem; color: hsl(var(--muted-foreground));">
+                    Final Human Decision
+                </label>
+                <select name="final_decision" id="filter-final-decision" class="ui-select" style="width: 100%;">
+                    <option value="all" {% if filters.final_decision == 'all' or not filters.final_decision %}selected{% endif %}>All Final Decisions</option>
+                    <option value="refer" {% if filters.final_decision == 'refer' %}selected{% endif %}>Refer</option>
+                    <option value="no_refer" {% if filters.final_decision == 'no_refer' %}selected{% endif %}>Do not refer</option>
+                    <option value="pending" {% if filters.final_decision == 'pending' %}selected{% endif %}>Pending Review</option>
+                </select>
+            </div>
+
+            <div>
+                <label for="filter-stage2-status" class="ui-label" style="display: block; font-size: 0.75rem; font-weight: 600; margin-bottom: 0.25rem; color: hsl(var(--muted-foreground));">
+                    Stage-2 Status
+                </label>
+                <select name="stage2_status" id="filter-stage2-status" class="ui-select" style="width: 100%;">
+                    <option value="all" {% if filters.stage2_status == 'all' or not filters.stage2_status %}selected{% endif %}>All Stage-2 Statuses</option>
+                    <option value="not_applicable" {% if filters.stage2_status == 'not_applicable' %}selected{% endif %}>Not applicable</option>
+                    <option value="pending" {% if filters.stage2_status == 'pending' %}selected{% endif %}>Pending</option>
+                    <option value="completed" {% if filters.stage2_status == 'completed' %}selected{% endif %}>Completed</option>
+                </select>
+            </div>
+
+            <div>
+                <label for="filter-hba1c-range" class="ui-label" style="display: block; font-size: 0.75rem; font-weight: 600; margin-bottom: 0.25rem; color: hsl(var(--muted-foreground));">
+                    HbA1c Laboratory Range
+                </label>
+                <select name="hba1c_range" id="filter-hba1c-range" class="ui-select" style="width: 100%;">
+                    <option value="all" {% if filters.hba1c_range == 'all' or not filters.hba1c_range %}selected{% endif %}>All Laboratory Ranges</option>
+                    <option value="normal_range" {% if filters.hba1c_range == 'normal_range' %}selected{% endif %}>Normal-range</option>
+                    <option value="prediabetes_range" {% if filters.hba1c_range == 'prediabetes_range' %}selected{% endif %}>Prediabetes-range</option>
+                    <option value="diabetes_range" {% if filters.hba1c_range == 'diabetes_range' %}selected{% endif %}>Diabetes-range</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Row 3: Action Buttons -->
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; border-top: 1px solid hsl(var(--border)); padding-top: 0.75rem;">
+            <div style="font-size: 0.8125rem; color: hsl(var(--muted-foreground));">
+                Showing <strong style="color: hsl(var(--foreground));"><span class="tabular-nums">{{ filtered_count }}</span></strong> of <span class="tabular-nums">{{ total_count }}</span> screening records
+            </div>
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <a href="{% url 'predictor:history' %}" class="ui-btn ui-btn-outline ui-btn-sm" id="clear-filters-btn">
+                    Clear Filters
+                </a>
+                <button type="submit" class="ui-btn ui-btn-primary ui-btn-sm" id="apply-filters-btn">
+                    Apply Filters
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- ======================================================================
+     CASE LEDGER TABLE (1 Row per ScreeningRecord)
+     ====================================================================== -->
+<div class="ui-card" style="margin-bottom: 1.5rem;" id="history-table-card">
+    <div class="ui-card-content" style="padding: 0;">
+        <div class="ui-table-container" style="border: none; border-radius: 0;">
+            <table class="ui-table" aria-label="Screening Case History Ledger">
+                <caption class="sr-only">Screening records history and case audit ledger</caption>
+                <thead>
+                    <tr>
+                        <th scope="col">Screening ID</th>
+                        <th scope="col">Created</th>
+                        <th scope="col">Screening Signal</th>
+                        <th scope="col">AI Recommendation</th>
+                        <th scope="col">Review Action</th>
+                        <th scope="col">Final Human Decision</th>
+                        <th scope="col">Stage-2 Status</th>
+                        <th scope="col">HbA1c Laboratory Range</th>
+                        <th scope="col">Workflow Status</th>
+                        <th scope="col" style="text-align: right;">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in records %}
+                    <tr>
+                        <!-- 1. Screening ID -->
+                        <td>
+                            <a href="{% url 'predictor:screening_result' item.record.id %}" 
+                               title="Full UUID: {{ item.record.id }}" 
+                               style="font-family: monospace; font-size: 0.8125rem; font-weight: 600; color: hsl(var(--primary)); text-decoration: none;">
+                                #{{ item.record.id|stringformat:"s"|slice:":8" }}...
+                            </a>
+                        </td>
+
+                        <!-- 2. Created Timestamp -->
+                        <td class="tabular-nums" style="color: hsl(var(--muted-foreground)); font-size: 0.8125rem; white-space: nowrap;">
+                            {{ item.record.created_at|date:"Y-m-d H:i" }}
+                        </td>
+
+                        <!-- 3. Screening Signal -->
+                        <td>
+                            {% if item.record.ai_referral_recommended %}
+                                <span class="ui-badge ui-badge-amber" style="font-size: 0.75rem;">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>
+                                    Elevated
+                                </span>
+                            {% else %}
+                                <span class="ui-badge ui-badge-slate" style="font-size: 0.75rem;">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" x2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>
+                                    Lower
+                                </span>
+                            {% endif %}
+                        </td>
+
+                        <!-- 4. AI Recommendation (Immutable Baseline) -->
+                        <td>
+                            {% if item.record.ai_referral_recommended %}
+                                <span style="font-weight: 600; color: hsl(var(--foreground)); font-size: 0.8125rem;">Refer</span>
+                            {% else %}
+                                <span style="color: hsl(var(--muted-foreground)); font-size: 0.8125rem;">Do not refer</span>
+                            {% endif %}
+                        </td>
+
+                        <!-- 5. Review Action -->
+                        <td>
+                            {% if item.record.human_review %}
+                                {% if item.record.human_review.review_action == 'accepted' %}
+                                    <span class="ui-badge ui-badge-emerald" style="font-size: 0.75rem;">Accepted</span>
+                                {% else %}
+                                    <span class="ui-badge ui-badge-amber" style="font-size: 0.75rem;" title="Reason: {{ item.record.human_review.override_reason_display }}">
+                                        Overridden
+                                    </span>
+                                {% endif %}
+                            {% else %}
+                                <span class="ui-badge ui-badge-secondary" style="font-size: 0.75rem;">Pending</span>
+                            {% endif %}
+                        </td>
+
+                        <!-- 6. Final Human Decision (Authoritative Human Authority) -->
+                        <td>
+                            {% if item.record.human_review %}
+                                {% if item.record.human_review.final_referral_recommended %}
+                                    <span class="ui-badge ui-badge-emerald" style="font-weight: 600; font-size: 0.75rem;">Refer</span>
+                                {% else %}
+                                    <span class="ui-badge ui-badge-secondary" style="font-size: 0.75rem;">Do not refer</span>
+                                {% endif %}
+                            {% else %}
+                                <span style="color: hsl(var(--muted-foreground)); font-size: 0.8125rem;">—</span>
+                            {% endif %}
+                        </td>
+
+                        <!-- 7. Stage-2 Status ("Not applicable" vs "Pending" vs "Completed") -->
+                        <td>
+                            {% if item.lifecycle.stage2_status_code == 'not_applicable' %}
+                                <span class="ui-badge ui-badge-slate" style="font-size: 0.75rem;">Not applicable</span>
+                            {% elif item.lifecycle.stage2_status_code == 'pending' %}
+                                <span class="ui-badge ui-badge-primary" style="font-size: 0.75rem;">Pending</span>
+                            {% elif item.lifecycle.stage2_status_code == 'completed' %}
+                                <span class="ui-badge ui-badge-emerald" style="font-size: 0.75rem;">Completed</span>
+                            {% else %}
+                                <span style="color: hsl(var(--muted-foreground)); font-size: 0.8125rem;">—</span>
+                            {% endif %}
+                        </td>
+
+                        <!-- 8. HbA1c Laboratory Range (Completed Stage 2 only) -->
+                        <td>
+                            {% if item.record.human_review and item.record.human_review.stage2_assessment %}
+                                {% with s2=item.record.human_review.stage2_assessment %}
+                                    {% if s2.laboratory_range == 'normal_range' %}
+                                        <span class="ui-badge ui-badge-emerald" style="font-size: 0.75rem;" title="{{ s2.hba1c_percent }}% HbA1c">Normal-range</span>
+                                    {% elif s2.laboratory_range == 'prediabetes_range' %}
+                                        <span class="ui-badge ui-badge-amber" style="font-size: 0.75rem;" title="{{ s2.hba1c_percent }}% HbA1c">Prediabetes-range</span>
+                                    {% elif s2.laboratory_range == 'diabetes_range' %}
+                                        <span class="ui-badge ui-badge-destructive" style="font-size: 0.75rem;" title="{{ s2.hba1c_percent }}% HbA1c">Diabetes-range</span>
+                                    {% endif %}
+                                {% endwith %}
+                            {% else %}
+                                <span style="color: hsl(var(--muted-foreground)); font-size: 0.8125rem;">—</span>
+                            {% endif %}
+                        </td>
+
+                        <!-- 9. Workflow Status -->
+                        <td>
+                            <span class="ui-badge ui-badge-{{ item.lifecycle.badge_variant }}" style="font-size: 0.75rem;">
+                                {{ item.lifecycle.label }}
+                            </span>
+                        </td>
+
+                        <!-- 10. Action -->
+                        <td style="text-align: right; white-space: nowrap;">
+                            <a href="{% url 'predictor:screening_result' item.record.id %}" 
+                               class="ui-btn ui-btn-outline ui-btn-sm"
+                               id="view-case-{{ item.record.id|stringformat:'s'|slice:':8' }}"
+                               style="display: inline-flex; align-items: center; gap: 0.25rem;">
+                                <span>View Case</span>
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="10">
+                            <div class="ui-empty-state" style="padding: 3.5rem 1.5rem;">
+                                <div class="ui-empty-icon" aria-hidden="true">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/>
+                                    </svg>
+                                </div>
+                                {% if total_count == 0 %}
+                                    <h3 class="ui-empty-title">No Screening Records Created</h3>
+                                    <p class="ui-empty-description">No screening records have been created yet in the system.</p>
+                                    <a href="{% url 'predictor:new_screening' %}" class="ui-btn ui-btn-primary ui-btn-sm" style="margin-top: 0.75rem;">
+                                        Start New Screening
+                                    </a>
+                                {% else %}
+                                    <h3 class="ui-empty-title">No Matching Records</h3>
+                                    <p class="ui-empty-description">No screening records match the specified filters or search query.</p>
+                                    <a href="{% url 'predictor:history' %}" class="ui-btn ui-btn-outline ui-btn-sm" style="margin-top: 0.75rem;">
+                                        Clear All Filters
+                                    </a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Server-Side Pagination Controls -->
+    {% if page_obj.has_other_pages %}
+    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem; padding: 1rem 1.25rem; border-top: 1px solid hsl(var(--border)); font-size: 0.8125rem;">
+        <div style="color: hsl(var(--muted-foreground));">
+            Page <strong style="color: hsl(var(--foreground));">{{ page_obj.number }}</strong> of {{ page_obj.paginator.num_pages }}
+        </div>
+        <div style="display: flex; align-items: center; gap: 0.35rem;" aria-label="Pagination Navigation">
+            {% if page_obj.has_previous %}
+                <a href="?{% if extra_querystring %}{{ extra_querystring }}&{% endif %}page=1" class="ui-btn ui-btn-outline ui-btn-sm" aria-label="First page">&laquo; First</a>
+                <a href="?{% if extra_querystring %}{{ extra_querystring }}&{% endif %}page={{ page_obj.previous_page_number }}" class="ui-btn ui-btn-outline ui-btn-sm" aria-label="Previous page">&lsaquo; Prev</a>
+            {% else %}
+                <span class="ui-btn ui-btn-outline ui-btn-sm" style="opacity: 0.5; pointer-events: none;" aria-disabled="true">&laquo; First</span>
+                <span class="ui-btn ui-btn-outline ui-btn-sm" style="opacity: 0.5; pointer-events: none;" aria-disabled="true">&lsaquo; Prev</span>
+            {% endif %}
+
+            <span style="padding: 0 0.5rem; font-weight: 600; color: hsl(var(--foreground));">
+                {{ page_obj.number }}
+            </span>
+
+            {% if page_obj.has_next %}
+                <a href="?{% if extra_querystring %}{{ extra_querystring }}&{% endif %}page={{ page_obj.next_page_number }}" class="ui-btn ui-btn-outline ui-btn-sm" aria-label="Next page">Next &rsaquo;</a>
+                <a href="?{% if extra_querystring %}{{ extra_querystring }}&{% endif %}page={{ page_obj.paginator.num_pages }}" class="ui-btn ui-btn-outline ui-btn-sm" aria-label="Last page">Last &raquo;</a>
+            {% else %}
+                <span class="ui-btn ui-btn-outline ui-btn-sm" style="opacity: 0.5; pointer-events: none;" aria-disabled="true">Next &rsaquo;</span>
+                <span class="ui-btn ui-btn-outline ui-btn-sm" style="opacity: 0.5; pointer-events: none;" aria-disabled="true">Last &raquo;</span>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+{% endblock %}

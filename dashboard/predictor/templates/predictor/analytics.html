@@ -1,0 +1,627 @@
+{% extends 'predictor/base.html' %}
+
+{% block title %}Research Analytics — Dysglycemia Screening Dashboard{% endblock %}
+{% block breadcrumb %}Research Analytics{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="ui-page-header">
+    <div class="ui-page-header-row">
+        <div>
+            <h1 class="ui-page-title">Research Analytics</h1>
+            <p class="ui-page-description">
+                Aggregate workflow summaries from screening records created in this research prototype.
+            </p>
+        </div>
+        <div>
+            <span class="ui-badge ui-badge-outline" id="active-period-badge">
+                {% if has_active_filter %}
+                    Filtered: {{ date_from|default:"Start" }} to {{ date_to|default:"Present" }}
+                {% else %}
+                    Surveillance Period: All Active Records
+                {% endif %}
+            </span>
+        </div>
+    </div>
+</div>
+
+{% if IS_DEVELOPMENT_MODE %}
+<!-- Discreet Development Environment Notice -->
+<div class="ui-alert ui-alert-warning" id="dev-environment-banner" role="region" aria-label="Development Environment Warning" style="margin-bottom: 1.5rem;">
+    <svg class="ui-alert-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+    </svg>
+    <div class="ui-alert-content">
+        <p class="ui-alert-title">Development Environment Notice</p>
+        <p class="ui-alert-body">
+            Development environment — displayed records may include synthetic or QA data.
+        </p>
+    </div>
+</div>
+{% endif %}
+
+<!-- Methodology & Verification-Bias Primary Caveat -->
+<div class="ui-alert ui-alert-info" role="region" aria-label="Research Governance Note" style="margin-bottom: 1.5rem;">
+    <svg class="ui-alert-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="16" y2="12"/><line x1="12" x2="12.01" y1="8" y2="8"/>
+    </svg>
+    <div class="ui-alert-content">
+        <p class="ui-alert-title">Research Governance & Verification-Bias Safeguard</p>
+        <p class="ui-alert-body">
+            These summaries describe workflow behavior within this research prototype. <strong>Human–AI agreement</strong> indicates matching referral decisions, not predictive accuracy or clinical ground truth. <strong>Stage-2 laboratory ranges</strong> are observed only among cases ultimately referred for laboratory assessment and therefore should not be interpreted as an unbiased model-performance sample or population disease prevalence. For frozen model specification and held-out validation evaluation, consult <a href="{% url 'predictor:about' %}" style="text-decoration: underline; font-weight: 500;">About the Model</a>.
+        </p>
+    </div>
+</div>
+
+<!-- Date Range Filter Bar -->
+<div class="ui-card" style="margin-bottom: 1.75rem;">
+    <div class="ui-card-content" style="padding: 1rem 1.25rem;">
+        <form method="get" action="{% url 'predictor:analytics' %}" class="ui-filter-form" style="display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-end;">
+            <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+                <label for="date_from" style="font-size: 0.8125rem; font-weight: 500; color: hsl(var(--foreground));">Intake Date From</label>
+                <input type="date" id="date_from" name="date_from" value="{{ date_from }}" class="ui-input" style="height: 2.25rem; font-size: 0.875rem; padding: 0.25rem 0.5rem;" aria-label="Screening intake start date">
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+                <label for="date_to" style="font-size: 0.8125rem; font-weight: 500; color: hsl(var(--foreground));">Intake Date To</label>
+                <input type="date" id="date_to" name="date_to" value="{{ date_to }}" class="ui-input" style="height: 2.25rem; font-size: 0.875rem; padding: 0.25rem 0.5rem;" aria-label="Screening intake end date">
+            </div>
+            <div style="display: flex; gap: 0.5rem;">
+                <button type="submit" class="ui-button ui-button-primary" style="height: 2.25rem; font-size: 0.875rem; padding: 0 1rem;">
+                    Apply Filter
+                </button>
+                {% if has_active_filter %}
+                    <a href="{% url 'predictor:analytics' %}" class="ui-button ui-button-outline" style="height: 2.25rem; font-size: 0.875rem; padding: 0 0.875rem; display: inline-flex; align-items: center;">
+                        Clear Filter
+                    </a>
+                {% endif %}
+            </div>
+            <div style="margin-left: auto; font-size: 0.75rem; color: hsl(var(--muted-foreground)); align-self: center;">
+                Date filters apply to primary <code style="font-size: 0.75rem;">ScreeningRecord.created_at</code>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- TOP 5 HEADLINE METRIC CARDS -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+    <!-- 1. Total Screenings -->
+    <div class="ui-metric-card" id="card-total-screenings">
+        <span class="ui-metric-label">Total Screenings</span>
+        <div class="ui-metric-value tabular-nums">{{ analytics.total_screenings }}</div>
+        <div class="ui-metric-helper">Intake population (<span class="tabular-nums">N = {{ analytics.total_screenings }}</span>)</div>
+    </div>
+
+    <!-- 2. AI Referral Rate -->
+    <div class="ui-metric-card" id="card-ai-referral-rate">
+        <span class="ui-metric-label">AI Referral Rate</span>
+        <div class="ui-metric-value tabular-nums">
+            {% if analytics.ai_refer_rate is not None %}
+                {{ analytics.ai_refer_rate|floatformat:1 }}%
+            {% else %}
+                <span style="font-size: 1.25rem; color: hsl(var(--muted-foreground));">Not available</span>
+            {% endif %}
+        </div>
+        <div class="ui-metric-helper">
+            {% if analytics.total_screenings > 0 %}
+                {{ analytics.ai_refer_count }} of {{ analytics.total_screenings }} screenings
+            {% else %}
+                No screenings recorded
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- 3. Human–AI Agreement -->
+    <div class="ui-metric-card" id="card-human-ai-agreement">
+        <span class="ui-metric-label">Human–AI Agreement</span>
+        <div class="ui-metric-value tabular-nums">
+            {% if analytics.agreement_rate is not None %}
+                {{ analytics.agreement_rate|floatformat:1 }}%
+            {% else %}
+                <span style="font-size: 1.25rem; color: hsl(var(--muted-foreground));">Not available</span>
+            {% endif %}
+        </div>
+        <div class="ui-metric-helper">
+            {% if analytics.reviewed_count > 0 %}
+                {{ analytics.accepted_count }} of {{ analytics.reviewed_count }} reviewed screenings
+            {% else %}
+                No reviewed cases yet
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- 4. Override Rate -->
+    <div class="ui-metric-card" id="card-override-rate">
+        <span class="ui-metric-label">Human Override Rate</span>
+        <div class="ui-metric-value tabular-nums">
+            {% if analytics.override_rate is not None %}
+                {{ analytics.override_rate|floatformat:1 }}%
+            {% else %}
+                <span style="font-size: 1.25rem; color: hsl(var(--muted-foreground));">Not available</span>
+            {% endif %}
+        </div>
+        <div class="ui-metric-helper">
+            {% if analytics.reviewed_count > 0 %}
+                {{ analytics.overridden_count }} of {{ analytics.reviewed_count }} reviewed screenings
+            {% else %}
+                No reviewed cases yet
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- 5. Stage-2 Completion -->
+    <div class="ui-metric-card" id="card-stage2-completion">
+        <span class="ui-metric-label">Stage-2 Completion</span>
+        <div class="ui-metric-value tabular-nums">
+            {% if analytics.stage2_completion_rate is not None %}
+                {{ analytics.stage2_completion_rate|floatformat:1 }}%
+            {% else %}
+                <span style="font-size: 1.25rem; color: hsl(var(--muted-foreground));">Not available</span>
+            {% endif %}
+        </div>
+        <div class="ui-metric-helper">
+            {% if analytics.stage2_eligible_count > 0 %}
+                {{ analytics.stage2_completed_count }} of {{ analytics.stage2_eligible_count }} eligible referrals
+            {% else %}
+                No authorized referrals
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- WORKFLOW FUNNEL / BRANCHED CASCADE -->
+<div class="ui-card" style="margin-bottom: 2rem;">
+    <div class="ui-card-header">
+        <h2 class="ui-card-title">Two-Stage Workflow Cascade</h2>
+        <p class="ui-card-description">
+            Step-by-step case volume across intake, evidence gate, human review disposition, and confirmatory laboratory intake.
+        </p>
+    </div>
+    <div class="ui-card-content">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; align-items: stretch;">
+            <!-- Step 1: Total Screenings -->
+            <div style="border: 1px solid hsl(var(--border)); border-radius: var(--radius); padding: 1rem; background-color: hsl(var(--muted) / 0.2);">
+                <div style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: hsl(var(--muted-foreground)); margin-bottom: 0.25rem;">Stage 1 Intake</div>
+                <div style="font-size: 1.375rem; font-weight: 700;" class="tabular-nums">{{ analytics.total_screenings }}</div>
+                <div style="font-size: 0.8125rem; font-weight: 500; margin-top: 0.25rem;">Total Screenings</div>
+                <div style="font-size: 0.75rem; color: hsl(var(--muted-foreground)); margin-top: 0.5rem;">
+                    AI Refer: <span class="tabular-nums font-semibold">{{ analytics.ai_refer_count }}</span><br>
+                    AI No Refer: <span class="tabular-nums font-semibold">{{ analytics.ai_no_refer_count }}</span>
+                </div>
+            </div>
+
+            <!-- Step 2: Evidence Gate -->
+            <div style="border: 1px solid hsl(var(--border)); border-radius: var(--radius); padding: 1rem; background-color: hsl(var(--muted) / 0.2);">
+                <div style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: hsl(var(--muted-foreground)); margin-bottom: 0.25rem;">Evidence Gate</div>
+                <div style="font-size: 1.375rem; font-weight: 700;" class="tabular-nums">{{ analytics.review_eligible_count }}</div>
+                <div style="font-size: 0.8125rem; font-weight: 500; margin-top: 0.25rem;">Faithful XAI Available</div>
+                <div style="font-size: 0.75rem; color: hsl(var(--muted-foreground)); margin-top: 0.5rem;">
+                    {% if analytics.explanation_availability_rate is not None %}
+                        {{ analytics.explanation_availability_rate|floatformat:1 }}% of screenings
+                    {% else %}
+                        —
+                    {% endif %}<br>
+                    Unavailable: <span class="tabular-nums">{{ analytics.explanation_unavailable_count }}</span>
+                </div>
+            </div>
+
+            <!-- Step 3: Human Review -->
+            <div style="border: 1px solid hsl(var(--border)); border-radius: var(--radius); padding: 1rem; background-color: hsl(var(--muted) / 0.2);">
+                <div style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: hsl(var(--muted-foreground)); margin-bottom: 0.25rem;">Human Review</div>
+                <div style="font-size: 1.375rem; font-weight: 700;" class="tabular-nums">{{ analytics.reviewed_count }}</div>
+                <div style="font-size: 0.8125rem; font-weight: 500; margin-top: 0.25rem;">Reviews Completed</div>
+                <div style="font-size: 0.75rem; color: hsl(var(--muted-foreground)); margin-top: 0.5rem;">
+                    {% if analytics.review_completion_rate is not None %}
+                        {{ analytics.review_completion_rate|floatformat:1 }}% of eligible cases
+                    {% else %}
+                        —
+                    {% endif %}<br>
+                    Pending: <span class="tabular-nums">{{ analytics.review_eligible_count|add:"-"|add:analytics.reviewed_count }}</span>
+                </div>
+            </div>
+
+            <!-- Step 4: Final Disposition Branch -->
+            <div style="border: 1px solid hsl(var(--border)); border-radius: var(--radius); padding: 1rem; background-color: hsl(var(--muted) / 0.2);">
+                <div style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: hsl(var(--muted-foreground)); margin-bottom: 0.25rem;">Final Disposition</div>
+                <div style="font-size: 1.375rem; font-weight: 700;" class="tabular-nums">{{ analytics.final_refer_count }}</div>
+                <div style="font-size: 0.8125rem; font-weight: 500; margin-top: 0.25rem;">Final Human Referrals</div>
+                <div style="font-size: 0.75rem; color: hsl(var(--muted-foreground)); margin-top: 0.5rem;">
+                    Final Refer: <span class="tabular-nums font-semibold">{{ analytics.final_refer_count }}</span> (Eligible)<br>
+                    Final No Refer: <span class="tabular-nums font-semibold">{{ analytics.final_no_refer_count }}</span> (Terminal)
+                </div>
+            </div>
+
+            <!-- Step 5: Stage 2 Completed -->
+            <div style="border: 1px solid hsl(var(--border)); border-radius: var(--radius); padding: 1rem; background-color: hsl(var(--muted) / 0.2);">
+                <div style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: hsl(var(--muted-foreground)); margin-bottom: 0.25rem;">Stage 2 Laboratory</div>
+                <div style="font-size: 1.375rem; font-weight: 700;" class="tabular-nums">{{ analytics.stage2_completed_count }}</div>
+                <div style="font-size: 0.8125rem; font-weight: 500; margin-top: 0.25rem;">Assessments Completed</div>
+                <div style="font-size: 0.75rem; color: hsl(var(--muted-foreground)); margin-top: 0.5rem;">
+                    {% if analytics.stage2_completion_rate is not None %}
+                        {{ analytics.stage2_completion_rate|floatformat:1 }}% of referrals
+                    {% else %}
+                        —
+                    {% endif %}<br>
+                    Pending Lab: <span class="tabular-nums">{{ analytics.stage2_eligible_count|add:"-"|add:analytics.stage2_completed_count }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 2-COLUMN SECTION: DECISION TRANSITION & OVERRIDE PATTERNS -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+    
+    <!-- HUMAN-AI DECISION TRANSITION MATRIX (2x2) -->
+    <div class="ui-card" id="section-decision-transition">
+        <div class="ui-card-header">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                <div>
+                    <h2 class="ui-card-title">Human–AI Decision Transition Matrix</h2>
+                    <p class="ui-card-description">
+                        Cross-tabulation of machine screening recommendations against finalized human reviewer decisions.
+                    </p>
+                </div>
+                <span class="ui-badge ui-badge-outline tabular-nums">
+                    N = {{ analytics.reviewed_count }}
+                </span>
+            </div>
+        </div>
+        <div class="ui-card-content">
+            {% if analytics.reviewed_count > 0 %}
+                <div class="ui-table-container">
+                    <table class="ui-table" style="text-align: center;">
+                        <caption class="sr-only">Human-AI decision transition matrix showing counts of agreement and override branches across reviewed cases</caption>
+                        <thead>
+                            <tr>
+                                <th scope="col" style="text-align: left; background-color: hsl(var(--muted) / 0.4);">
+                                    AI Recommendation \ Final Human
+                                </th>
+                                <th scope="col" style="text-align: center; font-weight: 600;">
+                                    Human Refer
+                                </th>
+                                <th scope="col" style="text-align: center; font-weight: 600;">
+                                    Human Do Not Refer
+                                </th>
+                                <th scope="col" style="text-align: center; font-weight: 600; background-color: hsl(var(--muted) / 0.2);">
+                                    Row Total
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- AI Refer Row -->
+                            <tr>
+                                <th scope="row" style="text-align: left; font-weight: 600; background-color: hsl(var(--muted) / 0.1);">
+                                    AI Refer
+                                </th>
+                                <td style="padding: 0.875rem 0.5rem;">
+                                    <div style="font-size: 1.125rem; font-weight: 700;" class="tabular-nums">{{ analytics.transition_matrix.ai_refer_human_refer }}</div>
+                                    <div style="font-size: 0.6875rem; color: hsl(var(--muted-foreground)); margin-top: 0.125rem;">
+                                        Accepted Referral
+                                    </div>
+                                    <span class="ui-badge ui-badge-outline" style="font-size: 0.625rem; margin-top: 0.25rem;">Agreement</span>
+                                </td>
+                                <td style="padding: 0.875rem 0.5rem;">
+                                    <div style="font-size: 1.125rem; font-weight: 700;" class="tabular-nums">{{ analytics.transition_matrix.ai_refer_human_no_refer }}</div>
+                                    <div style="font-size: 0.6875rem; color: hsl(var(--muted-foreground)); margin-top: 0.125rem;">
+                                        Override Away From Refer
+                                    </div>
+                                    <span class="ui-badge ui-badge-outline" style="font-size: 0.625rem; margin-top: 0.25rem;">Override</span>
+                                </td>
+                                <td class="tabular-nums font-semibold" style="background-color: hsl(var(--muted) / 0.2);">
+                                    {{ analytics.transition_matrix.ai_refer_human_refer|add:analytics.transition_matrix.ai_refer_human_no_refer }}
+                                </td>
+                            </tr>
+                            <!-- AI No Refer Row -->
+                            <tr>
+                                <th scope="row" style="text-align: left; font-weight: 600; background-color: hsl(var(--muted) / 0.1);">
+                                    AI Do Not Refer
+                                </th>
+                                <td style="padding: 0.875rem 0.5rem;">
+                                    <div style="font-size: 1.125rem; font-weight: 700;" class="tabular-nums">{{ analytics.transition_matrix.ai_no_refer_human_refer }}</div>
+                                    <div style="font-size: 0.6875rem; color: hsl(var(--muted-foreground)); margin-top: 0.125rem;">
+                                        Override Toward Refer
+                                    </div>
+                                    <span class="ui-badge ui-badge-outline" style="font-size: 0.625rem; margin-top: 0.25rem;">Override</span>
+                                </td>
+                                <td style="padding: 0.875rem 0.5rem;">
+                                    <div style="font-size: 1.125rem; font-weight: 700;" class="tabular-nums">{{ analytics.transition_matrix.ai_no_refer_human_no_refer }}</div>
+                                    <div style="font-size: 0.6875rem; color: hsl(var(--muted-foreground)); margin-top: 0.125rem;">
+                                        Accepted Non-Referral
+                                    </div>
+                                    <span class="ui-badge ui-badge-outline" style="font-size: 0.625rem; margin-top: 0.25rem;">Agreement</span>
+                                </td>
+                                <td class="tabular-nums font-semibold" style="background-color: hsl(var(--muted) / 0.2);">
+                                    {{ analytics.transition_matrix.ai_no_refer_human_refer|add:analytics.transition_matrix.ai_no_refer_human_no_refer }}
+                                </td>
+                            </tr>
+                        </tbody>
+                        <tfoot>
+                            <tr style="border-top: 2px solid hsl(var(--border)); font-weight: 600; background-color: hsl(var(--muted) / 0.2);">
+                                <th scope="row" style="text-align: left;">Column Total</th>
+                                <td class="tabular-nums">{{ analytics.final_refer_count }}</td>
+                                <td class="tabular-nums">{{ analytics.final_no_refer_count }}</td>
+                                <td class="tabular-nums font-bold" style="background-color: hsl(var(--muted) / 0.4);">{{ analytics.reviewed_count }}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+                <div style="font-size: 0.75rem; color: hsl(var(--muted-foreground)); margin-top: 0.75rem; line-height: 1.4;">
+                    <strong>Note:</strong> Neither axis is clinical ground truth. Diagonal cells represent concordant decisions ({{ analytics.transition_matrix.diagonal_sum }} cases, {{ analytics.agreement_rate|default:"—" }}%); off-diagonal cells represent human override decisions ({{ analytics.transition_matrix.off_diagonal_sum }} cases, {{ analytics.override_rate|default:"—" }}%).
+                </div>
+            {% else %}
+                <div class="ui-empty-state" style="padding: 2.5rem 1rem; text-align: center;">
+                    <p style="color: hsl(var(--muted-foreground)); font-size: 0.875rem;">
+                        Human–AI agreement is not yet available because no screenings have been reviewed.
+                    </p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- OVERRIDE PATTERNS & STRUCTURED RATIONALE -->
+    <div class="ui-card" id="section-override-patterns">
+        <div class="ui-card-header">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                <div>
+                    <h2 class="ui-card-title">Override Patterns & Rationale</h2>
+                    <p class="ui-card-description">
+                        Directional breakdown and structured rationale categories recorded during overrides.
+                    </p>
+                </div>
+                <span class="ui-badge ui-badge-outline tabular-nums">
+                    N = {{ analytics.overridden_count }}
+                </span>
+            </div>
+        </div>
+        <div class="ui-card-content">
+            {% if analytics.overridden_count > 0 %}
+                <!-- Direction split -->
+                <div style="margin-bottom: 1.25rem;">
+                    <div style="font-size: 0.8125rem; font-weight: 600; margin-bottom: 0.5rem;">Override Direction Split</div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                        <div style="padding: 0.75rem; border: 1px solid hsl(var(--border)); border-radius: var(--radius); background-color: hsl(var(--muted) / 0.1);">
+                            <div style="font-size: 0.75rem; color: hsl(var(--muted-foreground));">Away From Referral</div>
+                            <div style="font-size: 1.25rem; font-weight: 700; margin-top: 0.25rem;" class="tabular-nums">{{ analytics.override_away_count }}</div>
+                            <div style="font-size: 0.75rem; color: hsl(var(--muted-foreground));">
+                                {% if analytics.override_away_rate is not None %}{{ analytics.override_away_rate|floatformat:1 }}% of overrides{% else %}—{% endif %}
+                            </div>
+                            <div style="font-size: 0.6875rem; color: hsl(var(--muted-foreground)); margin-top: 0.25rem;">AI Refer &rarr; Human No Refer</div>
+                        </div>
+
+                        <div style="padding: 0.75rem; border: 1px solid hsl(var(--border)); border-radius: var(--radius); background-color: hsl(var(--muted) / 0.1);">
+                            <div style="font-size: 0.75rem; color: hsl(var(--muted-foreground));">Toward Referral</div>
+                            <div style="font-size: 1.25rem; font-weight: 700; margin-top: 0.25rem;" class="tabular-nums">{{ analytics.override_toward_count }}</div>
+                            <div style="font-size: 0.75rem; color: hsl(var(--muted-foreground));">
+                                {% if analytics.override_toward_rate is not None %}{{ analytics.override_toward_rate|floatformat:1 }}% of overrides{% else %}—{% endif %}
+                            </div>
+                            <div style="font-size: 0.6875rem; color: hsl(var(--muted-foreground)); margin-top: 0.25rem;">AI No Refer &rarr; Human Refer</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Branch 1: Refer -> No Refer Structured Reasons -->
+                <div style="margin-bottom: 1.25rem;">
+                    <div style="display: flex; justify-content: space-between; font-size: 0.8125rem; font-weight: 600; margin-bottom: 0.375rem;">
+                        <span>Refer &rarr; No Refer Reasons</span>
+                        <span class="tabular-nums" style="font-size: 0.75rem; color: hsl(var(--muted-foreground));">Denominator: {{ analytics.override_away_count }}</span>
+                    </div>
+                    {% if analytics.override_away_count > 0 %}
+                        <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                            {% for item in analytics.reasons_refer_to_no_refer %}
+                                <div>
+                                    <div style="display: flex; justify-content: space-between; font-size: 0.75rem; margin-bottom: 0.125rem;">
+                                        <span>{{ item.label }}</span>
+                                        <span class="tabular-nums font-semibold">{{ item.count }} ({% if item.rate is not None %}{{ item.rate|floatformat:1 }}%{% else %}—{% endif %})</span>
+                                    </div>
+                                    <div style="height: 6px; width: 100%; background-color: hsl(var(--muted)); border-radius: 3px; overflow: hidden;">
+                                        <div style="height: 100%; width: {{ item.rate|default:0 }}%; background-color: hsl(var(--foreground)); border-radius: 3px;"></div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div style="font-size: 0.75rem; color: hsl(var(--muted-foreground)); padding: 0.5rem 0;">
+                            No overrides recorded in this direction.
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Branch 2: No Refer -> Refer Structured Reasons -->
+                <div style="margin-bottom: 0.5rem;">
+                    <div style="display: flex; justify-content: space-between; font-size: 0.8125rem; font-weight: 600; margin-bottom: 0.375rem;">
+                        <span>No Refer &rarr; Refer Reasons</span>
+                        <span class="tabular-nums" style="font-size: 0.75rem; color: hsl(var(--muted-foreground));">Denominator: {{ analytics.override_toward_count }}</span>
+                    </div>
+                    {% if analytics.override_toward_count > 0 %}
+                        <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                            {% for item in analytics.reasons_no_refer_to_refer %}
+                                <div>
+                                    <div style="display: flex; justify-content: space-between; font-size: 0.75rem; margin-bottom: 0.125rem;">
+                                        <span>{{ item.label }}</span>
+                                        <span class="tabular-nums font-semibold">{{ item.count }} ({% if item.rate is not None %}{{ item.rate|floatformat:1 }}%{% else %}—{% endif %})</span>
+                                    </div>
+                                    <div style="height: 6px; width: 100%; background-color: hsl(var(--muted)); border-radius: 3px; overflow: hidden;">
+                                        <div style="height: 100%; width: {{ item.rate|default:0 }}%; background-color: hsl(var(--foreground)); border-radius: 3px;"></div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div style="font-size: 0.75rem; color: hsl(var(--muted-foreground)); padding: 0.5rem 0;">
+                            No overrides recorded in this direction.
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div style="font-size: 0.6875rem; color: hsl(var(--muted-foreground)); margin-top: 0.75rem;">
+                    Free-text override notes are preserved in individual audit ledgers; automated text-mining is strictly prohibited by research protocol.
+                </div>
+            {% else %}
+                <div class="ui-empty-state" style="padding: 2.5rem 1rem; text-align: center;">
+                    <p style="color: hsl(var(--muted-foreground)); font-size: 0.875rem;">
+                        No overrides have been recorded in the selected period.
+                    </p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- OBSERVED STAGE-2 LABORATORY RANGE DISTRIBUTION -->
+<div class="ui-card" id="section-stage2-ranges" style="margin-bottom: 2rem;">
+    <div class="ui-card-header">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+            <div>
+                <h2 class="ui-card-title">Observed HbA1c Laboratory-Range Distribution</h2>
+                <p class="ui-card-description">
+                    Observed laboratory range distribution among completed Stage-2 assessments (ADA 2026 reference criteria).
+                </p>
+            </div>
+            <span class="ui-badge ui-badge-outline tabular-nums">
+                N_completed = {{ analytics.stage2_completed_count }}
+            </span>
+        </div>
+    </div>
+    <div class="ui-card-content">
+        {% if analytics.stage2_completed_count > 0 %}
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+                <!-- Normal range -->
+                <div style="border: 1px solid hsl(var(--border)); border-radius: var(--radius); padding: 1rem; background-color: hsl(var(--muted) / 0.1);">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span class="ui-badge ui-badge-outline" style="font-weight: 600;">Normal-range</span>
+                        <span style="font-size: 0.75rem; color: hsl(var(--muted-foreground));">&lt;5.7%</span>
+                    </div>
+                    <div style="font-size: 1.5rem; font-weight: 700; margin-top: 0.5rem;" class="tabular-nums">
+                        {{ analytics.stage2_normal_count }}
+                    </div>
+                    <div style="font-size: 0.8125rem; color: hsl(var(--muted-foreground)); margin-top: 0.25rem;">
+                        {% if analytics.stage2_normal_rate is not None %}{{ analytics.stage2_normal_rate|floatformat:1 }}%{% else %}—{% endif %} of completed Stage-2
+                    </div>
+                </div>
+
+                <!-- Prediabetes range -->
+                <div style="border: 1px solid hsl(var(--border)); border-radius: var(--radius); padding: 1rem; background-color: hsl(var(--muted) / 0.1);">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span class="ui-badge ui-badge-outline" style="font-weight: 600;">Prediabetes-range</span>
+                        <span style="font-size: 0.75rem; color: hsl(var(--muted-foreground));">5.7% to &lt;6.5%</span>
+                    </div>
+                    <div style="font-size: 1.5rem; font-weight: 700; margin-top: 0.5rem;" class="tabular-nums">
+                        {{ analytics.stage2_prediabetes_count }}
+                    </div>
+                    <div style="font-size: 0.8125rem; color: hsl(var(--muted-foreground)); margin-top: 0.25rem;">
+                        {% if analytics.stage2_prediabetes_rate is not None %}{{ analytics.stage2_prediabetes_rate|floatformat:1 }}%{% else %}—{% endif %} of completed Stage-2
+                    </div>
+                </div>
+
+                <!-- Diabetes range -->
+                <div style="border: 1px solid hsl(var(--border)); border-radius: var(--radius); padding: 1rem; background-color: hsl(var(--muted) / 0.1);">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span class="ui-badge ui-badge-outline" style="font-weight: 600;">Diabetes-range</span>
+                        <span style="font-size: 0.75rem; color: hsl(var(--muted-foreground));">&ge;6.5%</span>
+                    </div>
+                    <div style="font-size: 1.5rem; font-weight: 700; margin-top: 0.5rem;" class="tabular-nums">
+                        {{ analytics.stage2_diabetes_count }}
+                    </div>
+                    <div style="font-size: 0.8125rem; color: hsl(var(--muted-foreground)); margin-top: 0.25rem;">
+                        {% if analytics.stage2_diabetes_rate is not None %}{{ analytics.stage2_diabetes_rate|floatformat:1 }}%{% else %}—{% endif %} of completed Stage-2
+                    </div>
+                </div>
+            </div>
+
+            <!-- Visual Bar Distribution -->
+            <div style="margin-bottom: 1rem;">
+                <div style="font-size: 0.8125rem; font-weight: 600; margin-bottom: 0.375rem;">Proportional Distribution</div>
+                <div style="height: 12px; width: 100%; background-color: hsl(var(--muted)); border-radius: 6px; overflow: hidden; display: flex;" role="img" aria-label="Distribution of Stage-2 laboratory ranges: {{ analytics.stage2_normal_rate|default:0 }}% normal, {{ analytics.stage2_prediabetes_rate|default:0 }}% prediabetes, {{ analytics.stage2_diabetes_rate|default:0 }}% diabetes">
+                    <div style="height: 100%; width: {{ analytics.stage2_normal_rate|default:0 }}%; background-color: hsl(var(--primary)); opacity: 0.5;" title="Normal-range: {{ analytics.stage2_normal_rate|default:0 }}%"></div>
+                    <div style="height: 100%; width: {{ analytics.stage2_prediabetes_rate|default:0 }}%; background-color: hsl(var(--primary)); opacity: 0.75;" title="Prediabetes-range: {{ analytics.stage2_prediabetes_rate|default:0 }}%"></div>
+                    <div style="height: 100%; width: {{ analytics.stage2_diabetes_rate|default:0 }}%; background-color: hsl(var(--primary)); opacity: 1.0;" title="Diabetes-range: {{ analytics.stage2_diabetes_rate|default:0 }}%"></div>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 0.6875rem; color: hsl(var(--muted-foreground)); margin-top: 0.375rem;">
+                    <span>Normal (&lt;5.7%)</span>
+                    <span>Prediabetes (5.7–6.4%)</span>
+                    <span>Diabetes (&ge;6.5%)</span>
+                </div>
+            </div>
+
+            <div class="ui-callout" style="padding: 0.75rem; border: 1px solid hsl(var(--border)); border-radius: var(--radius); font-size: 0.75rem; color: hsl(var(--muted-foreground)); line-height: 1.4; background-color: hsl(var(--muted) / 0.1);">
+                <strong>Epistemic Boundary:</strong> Stage-2 HbA1c measurements are selectively recorded only for cases authorized by human review referral. These counts reflect observed laboratory intake within this research cascade and <em>must not</em> be interpreted as population disease prevalence or true positive distribution.
+            </div>
+        {% else %}
+            <div class="ui-empty-state" style="padding: 2.5rem 1rem; text-align: center;">
+                <p style="color: hsl(var(--muted-foreground)); font-size: 0.875rem;">
+                    No Stage-2 laboratory assessments have been completed in the selected period.
+                </p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- METHODOLOGY SPECIFICATION & DENOMINATOR TABLE -->
+<div class="ui-card" id="section-methodology-specification" style="margin-bottom: 2rem;">
+    <div class="ui-card-header">
+        <h2 class="ui-card-title">Research Metric Governance & Denominators</h2>
+        <p class="ui-card-description">
+            Explicit definitions, numerators, denominators, and interpretation boundaries for all surveillance metrics.
+        </p>
+    </div>
+    <div class="ui-card-content">
+        <div class="ui-table-container">
+            <table class="ui-table" style="font-size: 0.8125rem;">
+                <caption class="sr-only">Research surveillance metrics with exact numerators, denominators, and interpretation constraints</caption>
+                <thead>
+                    <tr>
+                        <th scope="col" style="width: 22%;">Metric</th>
+                        <th scope="col" style="width: 22%;">Numerator</th>
+                        <th scope="col" style="width: 22%;">Denominator</th>
+                        <th scope="col" style="width: 34%;">Permitted Interpretation & Boundaries</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <th scope="row" style="font-weight: 600;">AI Referral Rate</th>
+                        <td><code>ai_referral_recommended == True</code></td>
+                        <td>Total Screenings (<span class="tabular-nums">N_screenings</span>)</td>
+                        <td>Proportion of intakes crossing the locked Stage-1 decision threshold (0.1389). Not disease rate.</td>
+                    </tr>
+                    <tr>
+                        <th scope="row" style="font-weight: 600;">Review Completion Rate</th>
+                        <td>Completed <code>HumanReview</code> count</td>
+                        <td>Review-Eligible Screenings (<span class="tabular-nums">N_review_eligible</span>)</td>
+                        <td>Progress through protocol. Cases with explanation failure are not eligible for human review.</td>
+                    </tr>
+                    <tr>
+                        <th scope="row" style="font-weight: 600;">Human–AI Agreement Rate</th>
+                        <td><code>review_action == 'accepted'</code></td>
+                        <td>Reviewed Screenings (<span class="tabular-nums">N_reviewed</span>)</td>
+                        <td>Concordance between AI recommendation and clinician disposition. <strong>Never called AI accuracy.</strong></td>
+                    </tr>
+                    <tr>
+                        <th scope="row" style="font-weight: 600;">Human Override Rate</th>
+                        <td><code>review_action == 'overridden'</code></td>
+                        <td>Reviewed Screenings (<span class="tabular-nums">N_reviewed</span>)</td>
+                        <td>Frequency of clinician decision override. <strong>Never called AI error rate or mistake.</strong></td>
+                    </tr>
+                    <tr>
+                        <th scope="row" style="font-weight: 600;">Final Referral Rate</th>
+                        <td><code>final_referral_recommended == True</code></td>
+                        <td>Reviewed Screenings (<span class="tabular-nums">N_reviewed</span>)</td>
+                        <td>Proportion of reviewed cases ultimately authorized by human clinical judgment for Stage 2.</td>
+                    </tr>
+                    <tr>
+                        <th scope="row" style="font-weight: 600;">Stage-2 Completion Rate</th>
+                        <td>Completed <code>Stage2Assessment</code> count</td>
+                        <td>Eligible Final Referrals (<span class="tabular-nums">N_stage2_eligible</span>)</td>
+                        <td>Follow-through fraction among authorized referrals. Only referrals are indicated for Stage 2.</td>
+                    </tr>
+                    <tr>
+                        <th scope="row" style="font-weight: 600;">Observed Range Distribution</th>
+                        <td>Laboratory category count</td>
+                        <td>Completed Stage-2 (<span class="tabular-nums">N_stage2_completed</span>)</td>
+                        <td>Observed laboratory ranges in referred cases. <strong>Not disease prevalence; selective verification applies.</strong></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

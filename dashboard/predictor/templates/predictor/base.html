@@ -1,0 +1,344 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Dysglycemia Screening Dashboard{% endblock %} — Research Decision-Support Prototype</title>
+
+    <!-- Theme pre-hydration to prevent visual flashing -->
+    <script>
+        (function() {
+            var theme = localStorage.getItem('dashboard-theme') || 'light';
+            document.documentElement.setAttribute('data-theme', theme);
+        })();
+    </script>
+
+    <!-- Inline SVG Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%232563eb' stroke-width='2'><path d='M22 12h-4l-3 9L9 3l-3 9H2'/></svg>">
+
+    <!-- Design System CSS (shadcn/ui tokens & primitives with local/system fallback stack) -->
+    <link rel="stylesheet" href="{% static 'predictor/css/design_system.css' %}">
+
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    <!-- Skip to Content Landmark (WCAG 2.1 AA) -->
+    <a href="#main-content" class="ui-skip-link">Skip to main content</a>
+
+    <div class="ui-app-layout">
+        <!-- Desktop Persistent Sidebar -->
+        <aside class="ui-sidebar" aria-label="Main Navigation">
+            <div class="ui-sidebar-brand">
+                <div class="ui-brand-icon" aria-hidden="true">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+                    </svg>
+                </div>
+                <div class="ui-brand-text">
+                    <span class="ui-brand-title">Dysglycemia Screening</span>
+                    <span class="ui-brand-subtitle">Research Decision Support</span>
+                </div>
+            </div>
+
+            <nav class="ui-sidebar-nav" aria-label="Primary">
+                {% if IS_EVALUATION_MODE %}
+                <span class="ui-nav-group-label">Alur Evaluasi Partisipan</span>
+
+                <a href="{% url 'predictor:evaluation_consent' %}" class="ui-nav-link {% if request.resolver_match.url_name == 'evaluation_consent' %}active{% endif %}" {% if request.resolver_match.url_name == 'evaluation_consent' %}aria-current="page"{% endif %}>
+                    <svg class="ui-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
+                    </svg>
+                    <span>Informed Consent</span>
+                </a>
+
+                <a href="{% url 'predictor:evaluation_practice' %}" class="ui-nav-link {% if request.resolver_match.url_name == 'evaluation_practice' %}active{% endif %}" {% if request.resolver_match.url_name == 'evaluation_practice' %}aria-current="page"{% endif %}>
+                    <svg class="ui-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+                    </svg>
+                    <span>Kasus Latihan P0</span>
+                </a>
+
+                <a href="{% url 'predictor:new_screening' %}" class="ui-nav-link {% if request.resolver_match.url_name == 'new_screening' %}active{% endif %}" {% if request.resolver_match.url_name == 'new_screening' %}aria-current="page"{% endif %}>
+                    <svg class="ui-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <circle cx="12" cy="12" r="10"/><path d="M8 12h8"/><path d="M12 8v8"/>
+                    </svg>
+                    <span>Screening Evaluasi</span>
+                </a>
+
+                <a href="{% url 'predictor:evaluation_questionnaire' %}" class="ui-nav-link {% if request.resolver_match.url_name == 'evaluation_questionnaire' %}active{% endif %}" {% if request.resolver_match.url_name == 'evaluation_questionnaire' %}aria-current="page"{% endif %}>
+                    <svg class="ui-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+                    </svg>
+                    <span>Kuesioner Evaluasi</span>
+                </a>
+
+                <span class="ui-nav-group-label" style="margin-top: 0.75rem;">Informasi</span>
+
+                <a href="{% url 'predictor:about' %}" class="ui-nav-link {% if request.resolver_match.url_name == 'about' %}active{% endif %}" {% if request.resolver_match.url_name == 'about' %}aria-current="page"{% endif %}>
+                    <svg class="ui-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>
+                    </svg>
+                    <span>Tentang Model (GAM-v1)</span>
+                </a>
+
+                {% else %}
+                <span class="ui-nav-group-label">Screening Workflow</span>
+
+                <a href="{% url 'predictor:overview' %}" class="ui-nav-link {% if request.resolver_match.url_name == 'overview' %}active{% endif %}" {% if request.resolver_match.url_name == 'overview' %}aria-current="page"{% endif %}>
+                    <svg class="ui-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/>
+                    </svg>
+                    <span>Overview</span>
+                </a>
+
+                <a href="{% url 'predictor:new_screening' %}" class="ui-nav-link {% if request.resolver_match.url_name == 'new_screening' %}active{% endif %}" {% if request.resolver_match.url_name == 'new_screening' %}aria-current="page"{% endif %}>
+                    <svg class="ui-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <circle cx="12" cy="12" r="10"/><path d="M8 12h8"/><path d="M12 8v8"/>
+                    </svg>
+                    <span>New Screening</span>
+                </a>
+
+                <a href="{% url 'predictor:review_queue' %}" class="ui-nav-link {% if request.resolver_match.url_name == 'review_queue' %}active{% endif %}" {% if request.resolver_match.url_name == 'review_queue' %}aria-current="page"{% endif %}>
+                    <svg class="ui-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="m9 11 3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+                    </svg>
+                    <span>Review Queue</span>
+                </a>
+
+                <a href="{% url 'predictor:history' %}" class="ui-nav-link {% if request.resolver_match.url_name == 'history' %}active{% endif %}" {% if request.resolver_match.url_name == 'history' %}aria-current="page"{% endif %}>
+                    <svg class="ui-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/>
+                    </svg>
+                    <span>History</span>
+                </a>
+
+                <span class="ui-nav-group-label" style="margin-top: 0.75rem;">Research & Methodology</span>
+
+                <a href="{% url 'predictor:analytics' %}" class="ui-nav-link {% if request.resolver_match.url_name == 'analytics' %}active{% endif %}" {% if request.resolver_match.url_name == 'analytics' %}aria-current="page"{% endif %}>
+                    <svg class="ui-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/>
+                    </svg>
+                    <span>Analytics</span>
+                </a>
+
+                <a href="{% url 'predictor:about' %}" class="ui-nav-link {% if request.resolver_match.url_name == 'about' %}active{% endif %}" {% if request.resolver_match.url_name == 'about' %}aria-current="page"{% endif %}>
+                    <svg class="ui-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>
+                    </svg>
+                    <span>About the Model</span>
+                </a>
+
+                <a href="{% url 'predictor:feedback_experiment' %}" class="ui-nav-link {% if request.resolver_match.url_name == 'feedback_experiment' %}active{% endif %}" {% if request.resolver_match.url_name == 'feedback_experiment' %}aria-current="page"{% endif %}>
+                    <svg class="ui-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/>
+                    </svg>
+                    <span>Feedback Experiment</span>
+                </a>
+
+                {% if IS_DEVELOPMENT_MODE %}
+                <a href="{% url 'predictor:components_demo' %}" class="ui-nav-link {% if request.resolver_match.url_name == 'components_demo' %}active{% endif %}" {% if request.resolver_match.url_name == 'components_demo' %}aria-current="page"{% endif %}>
+                    <svg class="ui-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/>
+                    </svg>
+                    <span>Design System UI</span>
+                </a>
+                {% endif %}
+                {% endif %}
+            </nav>
+
+            <div class="ui-sidebar-footer">
+                <div class="ui-footer-pill">
+                    <span class="ui-footer-tag">Protocol:</span> NHANES 2021–2023 Locked GAM
+                </div>
+                <div class="ui-footer-pill" style="font-size: 0.6875rem;">
+                    Two-Stage Non-Laboratory Screening
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Workspace -->
+        <div class="ui-main-area">
+            <!-- Topbar / Header -->
+            <header class="ui-topbar" role="banner">
+                <div class="ui-topbar-left">
+                    <button class="ui-sidebar-toggle" id="sidebar-toggle" aria-label="Open mobile navigation" aria-controls="mobile-sheet">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/>
+                        </svg>
+                    </button>
+
+                    <nav class="ui-breadcrumb" aria-label="Breadcrumb">
+                        <span>Dysglycemia Screening</span>
+                        <span class="ui-breadcrumb-separator" aria-hidden="true">/</span>
+                        <span class="ui-breadcrumb-current">{% block breadcrumb %}Overview{% endblock %}</span>
+                    </nav>
+                </div>
+
+                <div class="ui-topbar-right">
+                    <!-- Mode Badges -->
+                    {% if IS_EVALUATION_MODE %}
+                    <div class="ui-disclaimer-pill" style="background-color: #eff6ff; border-color: #bfdbfe; color: #1e40af;" title="Evaluasi Partisipan Protocol {{ EVALUATION_PROTOCOL_VERSION }}">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>
+                        </svg>
+                        <span><strong>Mode Evaluasi</strong> · Protocol {{ EVALUATION_PROTOCOL_VERSION }}</span>
+                    </div>
+                    {% else %}
+                    <div class="ui-disclaimer-pill" style="background-color: #fffbeb; border-color: #fde68a; color: #92400e;" title="Feedback Lab Mode: Localhost Researcher Evaluation">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                        </svg>
+                        <span><strong>Feedback Lab</strong> · Localhost Mode</span>
+                    </div>
+                    {% endif %}
+
+                    <!-- Subtle persistent research notice -->
+                    <div class="ui-disclaimer-pill" title="Screening decision-support prototype for research evaluation">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/>
+                        </svg>
+                        <span>Research Prototype — Not a Diagnostic Tool</span>
+                    </div>
+
+
+                    <!-- Accessible Light/Dark Theme Switcher -->
+                    <button class="ui-theme-toggle" id="theme-toggle-btn" aria-label="Toggle Light or Dark Mode">
+                        <svg id="theme-icon-sun" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;" aria-hidden="true">
+                            <circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>
+                        </svg>
+                        <svg id="theme-icon-moon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>
+                        </svg>
+                        <span id="theme-label">Theme</span>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Main Content Container -->
+            <main id="main-content" class="ui-main" role="main">
+                <div class="ui-container">
+                    {% if messages %}
+                        <div class="ui-messages" style="margin-bottom: 1.5rem;" role="alert">
+                            {% for message in messages %}
+                                <div class="ui-alert ui-alert-info">
+                                    <svg class="ui-alert-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                        <circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="16" y2="12"/><line x1="12" x2="12.01" y1="8" y2="8"/>
+                                    </svg>
+                                    <div class="ui-alert-content">
+                                        <p class="ui-alert-body">{{ message }}</p>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+
+                    {% block content %}{% endblock %}
+                </div>
+            </main>
+
+            <!-- Footer Landmark -->
+            <footer class="ui-footer" role="contentinfo">
+                <div>
+                    <strong>Two-Stage Non-Laboratory Screening Dashboard</strong> · Undergraduate Information Systems Research
+                </div>
+                <div>
+                    Research Prototype — Not a Diagnostic Tool · Model: GAM (λ=10.0)
+                </div>
+            </footer>
+        </div>
+    </div>
+
+    <!-- Mobile Navigation Drawer / Sheet (Accessible) -->
+    <div class="ui-sheet-backdrop" id="sheet-backdrop" aria-hidden="true"></div>
+    <div class="ui-mobile-sheet" id="mobile-sheet" role="dialog" aria-modal="true" aria-label="Mobile Navigation Menu" aria-hidden="true">
+        <div class="ui-sheet-header">
+            <div class="ui-sidebar-brand" style="border: none; padding: 0;">
+                <div class="ui-brand-icon" aria-hidden="true">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+                    </svg>
+                </div>
+                <div class="ui-brand-text">
+                    <span class="ui-brand-title">Dysglycemia Screening</span>
+                    <span class="ui-brand-subtitle">Research Decision Support</span>
+                </div>
+            </div>
+            <button class="ui-sheet-close" id="sheet-close" aria-label="Close navigation menu">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <line x1="18" x2="6" y1="6" y2="18"/><line x1="6" x2="18" y1="6" y2="18"/>
+                </svg>
+            </button>
+        </div>
+
+        <nav class="ui-sidebar-nav" aria-label="Mobile Primary">
+            {% if IS_EVALUATION_MODE %}
+            <span class="ui-nav-group-label">Alur Evaluasi Partisipan</span>
+            <a href="{% url 'predictor:evaluation_consent' %}" class="ui-nav-link {% if request.resolver_match.url_name == 'evaluation_consent' %}active{% endif %}">
+                <svg class="ui-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                <span>Informed Consent</span>
+            </a>
+            <a href="{% url 'predictor:evaluation_practice' %}" class="ui-nav-link {% if request.resolver_match.url_name == 'evaluation_practice' %}active{% endif %}">
+                <svg class="ui-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+                <span>Kasus Latihan P0</span>
+            </a>
+            <a href="{% url 'predictor:new_screening' %}" class="ui-nav-link {% if request.resolver_match.url_name == 'new_screening' %}active{% endif %}">
+                <svg class="ui-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/><path d="M12 8v8"/></svg>
+                <span>Screening Evaluasi</span>
+            </a>
+            <a href="{% url 'predictor:evaluation_questionnaire' %}" class="ui-nav-link {% if request.resolver_match.url_name == 'evaluation_questionnaire' %}active{% endif %}">
+                <svg class="ui-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                <span>Kuesioner Evaluasi</span>
+            </a>
+            <span class="ui-nav-group-label" style="margin-top: 0.75rem;">Informasi</span>
+            <a href="{% url 'predictor:about' %}" class="ui-nav-link {% if request.resolver_match.url_name == 'about' %}active{% endif %}">
+                <svg class="ui-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                <span>Tentang Model (GAM-v1)</span>
+            </a>
+            {% else %}
+            <span class="ui-nav-group-label">Screening Workflow</span>
+            <a href="{% url 'predictor:overview' %}" class="ui-nav-link {% if request.resolver_match.url_name == 'overview' %}active{% endif %}">
+                <svg class="ui-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>
+                <span>Overview</span>
+            </a>
+            <a href="{% url 'predictor:new_screening' %}" class="ui-nav-link {% if request.resolver_match.url_name == 'new_screening' %}active{% endif %}">
+                <svg class="ui-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/><path d="M12 8v8"/></svg>
+                <span>New Screening</span>
+            </a>
+            <a href="{% url 'predictor:review_queue' %}" class="ui-nav-link {% if request.resolver_match.url_name == 'review_queue' %}active{% endif %}">
+                <svg class="ui-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 11 3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                <span>Review Queue</span>
+            </a>
+            <a href="{% url 'predictor:history' %}" class="ui-nav-link {% if request.resolver_match.url_name == 'history' %}active{% endif %}">
+                <svg class="ui-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>
+                <span>History</span>
+            </a>
+
+            <span class="ui-nav-group-label" style="margin-top: 0.75rem;">Research & Methodology</span>
+            <a href="{% url 'predictor:analytics' %}" class="ui-nav-link {% if request.resolver_match.url_name == 'analytics' %}active{% endif %}">
+                <svg class="ui-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+                <span>Analytics</span>
+            </a>
+            <a href="{% url 'predictor:about' %}" class="ui-nav-link {% if request.resolver_match.url_name == 'about' %}active{% endif %}">
+                <svg class="ui-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                <span>About the Model</span>
+            </a>
+            <a href="{% url 'predictor:feedback_experiment' %}" class="ui-nav-link {% if request.resolver_match.url_name == 'feedback_experiment' %}active{% endif %}">
+                <svg class="ui-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+                <span>Feedback Experiment</span>
+            </a>
+            {% if IS_DEVELOPMENT_MODE %}
+            <a href="{% url 'predictor:components_demo' %}" class="ui-nav-link {% if request.resolver_match.url_name == 'components_demo' %}active{% endif %}">
+                <svg class="ui-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+                <span>Design System UI</span>
+            </a>
+            {% endif %}
+            {% endif %}
+        </nav>
+    </div>
+
+    <!-- Application JavaScript -->
+    <script src="{% static 'predictor/js/app.js' %}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

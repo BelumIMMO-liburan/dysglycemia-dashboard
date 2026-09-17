@@ -1,0 +1,4 @@
+model_family,frozen_threshold,sensitivity,specificity,ppv,npv,f1,balanced_accuracy,referred_percent,not_referred_percent,dysglycemia_captured_percent,dysglycemia_missed_percent,hba1c_tests_per_case_detected
+GAM,0.1389,0.8639,0.4251,0.3161,0.9103,0.4628,0.6445,64.29,35.71,86.39,13.61,3.16
+Logistic_Regression,0.1389,0.8639,0.4074,0.3096,0.9068,0.4558,0.6356,65.64,34.36,86.39,13.61,3.23
+DLNN,0.1419,0.8691,0.4171,0.3144,0.912,0.4618,0.6431,65.02,34.98,86.91,13.09,3.18

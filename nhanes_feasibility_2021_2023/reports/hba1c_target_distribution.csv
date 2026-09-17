@@ -1,0 +1,5 @@
+cohort,total_n,hba1c_normal,hba1c_prediabetes_range,hba1c_diabetes_range,hba1c_missing,pct_normal,pct_prediab,pct_diab
+A_all,11933,4354,1640,721,5218,64.84,24.42,10.74
+B_adult,8153,3691,1590,721,2151,61.5,26.49,12.01
+C_no_diab,7080,3626,1404,152,1898,69.97,27.09,2.93
+D_no_diab_no_prediab,6808,3565,1286,116,1841,71.77,25.89,2.34

@@ -1,0 +1,25 @@
+{# Reusable Empty State Partial #}
+<div class="ui-empty-state {{ empty_classes }}">
+    <div class="ui-empty-icon" aria-hidden="true">
+        {% if empty_icon_type == 'check' %}
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/>
+            </svg>
+        {% elif empty_icon_type == 'search' %}
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+            </svg>
+        {% else %}
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+            </svg>
+        {% endif %}
+    </div>
+    <h4 class="ui-empty-title">{{ empty_title|default:"No records found" }}</h4>
+    <p class="ui-empty-description">{{ empty_description|default:"There is currently no data available to display in this view." }}</p>
+    {% if empty_action_url %}
+        <div style="margin-top: 0.5rem;">
+            <a href="{{ empty_action_url }}" class="ui-btn ui-btn-primary ui-btn-sm">{{ empty_action_text|default:"Get Started" }}</a>
+        </div>
+    {% endif %}
+</div>

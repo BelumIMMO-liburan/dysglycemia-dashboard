@@ -1,0 +1,6 @@
+cohort,total_n,valid_n,missing_n,fpg_normal,fpg_prediabetes_range,fpg_diabetes_range,pct_normal,pct_prediab,pct_diab,dysglycemia_total,pct_dysglycemia
+A_all,11933,3361,8572,1604,1373,384,47.72,40.85,11.43,1757,52.28
+B_adult,8153,3063,5090,1369,1311,383,44.69,42.8,12.5,1694,55.31
+C_no_diab,7080,2654,4426,1340,1188,126,50.49,44.76,4.75,1314,49.51
+D_no_diab_no_prediab,6808,2542,4266,1321,1124,97,51.97,44.22,3.82,1221,48.03
+E_no_known_dysglycemia,5907,2167,3740,1211,902,54,55.88,41.62,2.49,956,44.12

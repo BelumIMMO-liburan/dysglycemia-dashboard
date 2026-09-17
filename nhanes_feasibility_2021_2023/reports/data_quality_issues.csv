@@ -1,0 +1,17 @@
+issue_type,variable,detail,severity
+high_missingness,BMXBMI,29.0% missing (3462/11933),moderate
+high_missingness,BMXWAIST,31.4% missing (3743/11933),moderate
+high_missingness,BPQ020,28.8% missing (3435/11933),moderate
+high_missingness,SMQ020,31.8% missing (3798/11933),moderate
+high_missingness,SMQ040,72.8% missing (8690/11933),high
+high_missingness,PAD680,31.8% missing (3795/11933),moderate
+high_missingness,LBXGH,43.7% missing (5218/11933),moderate
+high_missingness,LBXGLU,69.2% missing (8261/11933),high
+high_missingness,WTSAF2YR,66.5% missing (7937/11933),high
+special_missing_code,BPQ020,Code 7 appears 1 times (refused/don't know),info
+special_missing_code,BPQ020,Code 9 appears 10 times (refused/don't know),info
+special_missing_code,SMQ020,Code 7 appears 7 times (refused/don't know),info
+special_missing_code,SMQ020,Code 9 appears 7 times (refused/don't know),info
+special_missing_code,DIQ010,Code 9 appears 4 times (refused/don't know),info
+special_missing_code,DIQ160,Code 9 appears 15 times (refused/don't know),info
+sample_availability_range,all_components,"Component sizes range from 3672 to 11933 (diff=8261). Details: {'DEMO_L': 11933, 'BMX_L': 8471, 'BPQ_L': 8498, 'SMQ_L': 8135, 'GHB_L': 6715, 'GLU_L': 3672}",info

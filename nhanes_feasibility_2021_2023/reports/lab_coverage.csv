@@ -1,0 +1,5 @@
+cohort,total_n,valid_hba1c,valid_fpg,valid_wtsaf2yr_gt0,valid_fpg_and_wtsaf,valid_both_labs,core_plus_hba1c,core_plus_fpg,core_plus_both_labs,expanded_plus_hba1c,expanded_plus_fpg,expanded_plus_both_labs
+A_all,11933,6715,3672,3996,3672,3670,5902,3279,3277,5692,3159,3157
+B_adult,8153,6002,3329,3562,3329,3327,5902,3279,3277,5692,3159,3157
+C_no_diab,7080,5182,2880,3074,2880,2878,5105,2844,2842,4944,2752,2750
+D_no_diab_no_prediab,6808,4967,2753,2942,2753,2751,4893,2719,2717,4739,2630,2628

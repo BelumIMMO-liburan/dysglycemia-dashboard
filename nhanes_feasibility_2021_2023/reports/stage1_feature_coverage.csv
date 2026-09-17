@@ -1,0 +1,5 @@
+cohort,total_n,valid_RIDAGEYR,valid_RIAGENDR,valid_BMXBMI,valid_BPQ020_clean,valid_SMQ020_clean,valid_BMXWAIST,valid_PAD680,core_complete,core_complete_pct,expanded_complete,expanded_complete_pct,largest_reduction_feature,largest_reduction_missing_n
+A_all,11933,11933,11933,8471,8487,8121,8190,8138,6222,52.14,5985,50.16,SMQ020_clean,3812
+B_adult,8153,8153,8153,6235,8139,8121,6019,8138,6222,76.32,5985,73.41,BMXWAIST,2134
+C_no_diab,7080,7080,7080,5390,7068,7051,5223,7066,5379,75.97,5197,73.4,BMXWAIST,1857
+D_no_diab_no_prediab,6808,6808,6808,5170,6796,6779,5012,6794,5159,75.78,4986,73.24,BMXWAIST,1796

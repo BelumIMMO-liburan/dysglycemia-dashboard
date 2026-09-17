@@ -1,0 +1,17 @@
+cohort,target,total_n,valid_n,missing_outcome,n_diabetes_range,n_dysglycemia_range,n_normal,n_prediabetes_range,pct_diabetes_range,pct_dysglycemia_range,pct_normal,pct_prediabetes_range
+adults_ge18,hba1c_binary,8153,6002,2151,,2311,3691,,,38.5,61.5,
+adults_ge18,fpg_binary,8153,3329,4824,,1830,1499,,,54.97,45.03,
+adults_ge18,hba1c_cat3,8153,6002,2151,721,,3691,1590,12.01,,61.5,26.49
+adults_ge18,fpg_cat3,8153,3329,4824,429,,1499,1401,12.89,,45.03,42.08
+adults_no_known_diab,hba1c_binary,7080,5182,1898,,1556,3626,,,30.03,69.97,
+adults_no_known_diab,fpg_binary,7080,2880,4200,,1413,1467,,,49.06,50.94,
+adults_no_known_diab,hba1c_cat3,7080,5182,1898,152,,3626,1404,2.93,,69.97,27.09
+adults_no_known_diab,fpg_cat3,7080,2880,4200,144,,1467,1269,5.0,,50.94,44.06
+adults_no_known_diab_core_complete,hba1c_binary,5379,5105,274,,1537,3568,,,30.11,69.89,
+adults_no_known_diab_core_complete,fpg_binary,5379,2844,2535,,1394,1450,,,49.02,50.98,
+adults_no_known_diab_core_complete,hba1c_cat3,5379,5105,274,150,,3568,1387,2.94,,69.89,27.17
+adults_no_known_diab_core_complete,fpg_cat3,5379,2844,2535,143,,1450,1251,5.03,,50.98,43.99
+adults_no_known_diab_expanded_complete,hba1c_binary,5197,4944,253,,1491,3453,,,30.16,69.84,
+adults_no_known_diab_expanded_complete,fpg_binary,5197,2752,2445,,1359,1393,,,49.38,50.62,
+adults_no_known_diab_expanded_complete,hba1c_cat3,5197,4944,253,144,,3453,1347,2.91,,69.84,27.25
+adults_no_known_diab_expanded_complete,fpg_cat3,5197,2752,2445,136,,1393,1223,4.94,,50.62,44.44

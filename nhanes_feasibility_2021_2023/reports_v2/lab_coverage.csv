@@ -1,0 +1,6 @@
+cohort,total_n,valid_hba1c,valid_fpg_analytically_valid,valid_both_labs,core_plus_hba1c,core_plus_fpg,core_plus_both_labs,expanded_plus_hba1c,expanded_plus_fpg,expanded_plus_both_labs
+A_all,11933,6715,3361,3359,5902,3020,3018,5692,2919,2917
+B_adult,8153,6002,3063,3061,5902,3020,3018,5692,2919,2917
+C_no_diab,7080,5182,2654,2652,5105,2624,2622,4944,2546,2544
+D_no_diab_no_prediab,6808,4967,2542,2540,4893,2513,2511,4739,2437,2435
+E_no_known_dysglycemia,5907,4260,2167,2165,4194,2141,2139,4066,2079,2077

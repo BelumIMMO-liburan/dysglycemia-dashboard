@@ -1,0 +1,32 @@
+canonical_name,source_variable,source_file,role,raw_coding,canonical_coding,missing_handling,unit,included_in_core,included_in_expanded,allowed_as_predictor,notes
+SEQN,SEQN,DEMO_L.xpt,identifier,Numeric float ID,Integer ID,None (never missing),dimensionless,Yes,Yes,No,Respondent sequence number; primary merge and tracking key
+DIQ010,DIQ010,DIQ_L.xpt,cohort_definition,"1=Yes, 2=No, 3=Borderline, 7=Refused, 9=DK","1, 2, 3, 7, 9",Included only if == 2,category,No,No,No,Self-reported diabetes diagnosis. Cohort E requires DIQ010 == 2
+DIQ160,DIQ160,DIQ_L.xpt,cohort_definition,"1=Yes, 2=No, 7=Refused, 9=DK","1, 2, 7, 9",Included only if == 2,category,No,No,No,Self-reported prediabetes diagnosis. Cohort E requires DIQ160 == 2
+DIQ180,DIQ180,DIQ_L.xpt,cohort_definition,"1=Yes, 2=No, 7=Refused, 9=DK","1, 2, 7, 9",Preserved as metadata,category,No,No,No,Had blood tested for diabetes past 3 years; retained as metadata
+age,RIDAGEYR,DEMO_L.xpt,predictor_candidate,0-80 (80 = 80+),Continuous float (18-80),Must be non-missing and >= 18,years,Yes,Yes,Yes,Age at screening interview
+sex,RIAGENDR,DEMO_L.xpt,predictor_candidate,"1=Male, 2=Female","1=Male, 2=Female",Must be non-missing,category,Yes,Yes,Yes,Biological sex; preserved without arbitrary ordinal scaling
+bmi,BMXBMI,BMX_L.xpt,predictor_candidate,Continuous float,Continuous float,Missing if MEC exam skipped,kg/m²,Yes,Yes,Yes,Body mass index measured during MEC physical exam
+hypertension_history,BPQ020,BPQ_L.xpt,predictor_candidate,"1=Yes, 2=No, 7=Refused, 9=DK","1=Yes, 2=No","7, 9, missing recoded to NaN",category,Yes,Yes,Yes,Ever told by health professional had high blood pressure
+smoking_history,SMQ020,SMQ_L.xpt,predictor_candidate,"1=Yes, 2=No, 7=Refused, 9=DK","1=Yes, 2=No","7, 9, missing recoded to NaN",category,Yes,Yes,Yes,Smoked at least 100 cigarettes in lifetime; strictly lifetime history
+waist_cm,BMXWAIST,BMX_L.xpt,predictor_candidate,Continuous float,Continuous float,Missing if MEC exam skipped,cm,No,Yes,Yes,Waist circumference measured during MEC physical exam
+sedentary_minutes_day,PAD680,PAQ_L.xpt,predictor_candidate,"0-1440, 7777=Refused, 9999=DK",Continuous float (0-1440),"7777, 9999 recoded to NaN",minutes/day,No,Yes,Yes,Minutes of sedentary activity per day; special codes 7777/9999 treated as missing
+PAD790Q,PAD790Q,PAQ_L.xpt,predictor_candidate,"Days/frequency, 7777=Refused, 9999=DK",Raw numeric,Preserved as raw item,days,No,No,No,Moderate leisure physical activity frequency; un-engineered raw item
+PAD790U,PAD790U,PAQ_L.xpt,predictor_candidate,"D=Day, W=Week, M=Month, Y=Year","D, W, M, Y",Preserved as raw item,unit,No,No,No,Moderate leisure activity frequency unit; un-engineered raw item
+PAD800,PAD800,PAQ_L.xpt,predictor_candidate,"Minutes per session, 7777=Refused, 9999=DK",Raw numeric,Preserved as raw item,minutes,No,No,No,Moderate leisure activity duration per session; un-engineered raw item
+PAD810Q,PAD810Q,PAQ_L.xpt,predictor_candidate,"Days/frequency, 7777=Refused, 9999=DK",Raw numeric,Preserved as raw item,days,No,No,No,Vigorous leisure physical activity frequency; un-engineered raw item
+PAD810U,PAD810U,PAQ_L.xpt,predictor_candidate,"D=Day, W=Week, M=Month, Y=Year","D, W, M, Y",Preserved as raw item,unit,No,No,No,Vigorous leisure activity frequency unit; un-engineered raw item
+PAD820,PAD820,PAQ_L.xpt,predictor_candidate,"Minutes per session, 7777=Refused, 9999=DK",Raw numeric,Preserved as raw item,minutes,No,No,No,Vigorous leisure activity duration per session; un-engineered raw item
+LBXGH,LBXGH,GHB_L.xpt,primary_outcome,Continuous float (%),Continuous float (%),Required for primary analytic datasets,%,No,No,No,Glycohemoglobin (HbA1c); laboratory reference standard
+valid_hba1c,LBXGH + WTPH2YR,GHB_L.xpt,primary_outcome,Binary (0/1),"1=Valid (LBXGH notna & WTPH2YR > 0), 0=Invalid",Must equal 1,binary,No,No,No,Phlebotomy-validated HbA1c indicator
+hba1c_category,LBXGH,GHB_L.xpt,primary_outcome,"0=<5.7, 1=5.7-6.4, 2=>=6.5","0=normal_range, 1=prediabetes_range, 2=diabetes_range",NaN if invalid HbA1c,category,No,No,No,Provisional 3-class laboratory range label
+hba1c_dysglycemia,LBXGH,GHB_L.xpt,primary_outcome,"0=<5.7, 1=>=5.7","0=normal_range, 1=dysglycemia_range",NaN if invalid HbA1c,binary,No,No,No,PRIMARY BINARY SCREENING TARGET (Stage-1 reference label)
+LBXGLU,LBXGLU,GLU_L.xpt,secondary_outcome,Continuous float (mg/dL),Continuous float (mg/dL),"Preserved where valid, not required for inclusion",mg/dL,No,No,No,Fasting plasma glucose; secondary reference standard
+valid_fasting_subsample,LBXGLU + WTSAF2YR,GLU_L.xpt,secondary_outcome,Binary (0/1),"1=Analytically valid fasting (LBXGLU notna & WTSAF2YR > 0), 0=Invalid",Optional flag,binary,No,No,No,Fasting subsample weight validated glucose indicator
+fpg_category,LBXGLU,GLU_L.xpt,secondary_outcome,"0=<100, 1=100-125, 2=>=126","0=normal, 1=prediabetes_range, 2=diabetes_range",NaN if not in fasting subsample,category,No,No,No,Provisional 3-class fasting glucose category
+fpg_dysglycemia,LBXGLU,GLU_L.xpt,secondary_outcome,"0=<100, 1=>=100","0=normal, 1=dysglycemia_range",NaN if not in fasting subsample,binary,No,No,No,Secondary binary screening target for sensitivity analysis
+WTINT2YR,WTINT2YR,DEMO_L.xpt,survey_design_metadata,Continuous weight float,Continuous weight float,Normalized float,weight,No,No,No,Full sample 2-year interview weight; survey metadata only
+WTMEC2YR,WTMEC2YR,DEMO_L.xpt,survey_design_metadata,Continuous weight float (0 if non-MEC),Continuous weight float,Normalized float (0.0 for non-MEC),weight,No,No,No,Full sample 2-year MEC exam weight; survey metadata only
+WTPH2YR,WTPH2YR,GHB_L.xpt,survey_design_metadata,Continuous weight float (0 if non-phlebotomy),Continuous weight float,Normalized float (0.0 for non-phlebotomy),weight,No,No,No,2-year phlebotomy exam weight for HbA1c/blood analytes; survey metadata only
+WTSAF2YR,WTSAF2YR,GLU_L.xpt,survey_design_metadata,Continuous weight float (0 if non-fasting),Continuous weight float,Normalized float (0.0 for non-fasting),weight,No,No,No,Fasting subsample 2-year MEC weight; survey metadata only
+SDMVSTRA,SDMVSTRA,DEMO_L.xpt,survey_design_metadata,Integer pseudo-stratum (173-187),Integer pseudo-stratum (173-187),Never missing,stratum ID,No,No,No,Masked variance pseudo-stratum; survey metadata only
+SDMVPSU,SDMVPSU,DEMO_L.xpt,survey_design_metadata,Integer pseudo-PSU (1-2),Integer pseudo-PSU (1-2),Never missing,PSU ID,No,No,No,Masked variance pseudo-PSU; survey metadata only

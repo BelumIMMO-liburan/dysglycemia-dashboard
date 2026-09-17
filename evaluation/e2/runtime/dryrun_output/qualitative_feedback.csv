@@ -1,0 +1,4 @@
+participant_code,item_id,feedback_text
+DRYRUN001,QUAL_01,"Synthetic dry run feedback: navigation was straightforward"
+DRYRUN001,QUAL_02,"Synthetic dry run feedback: factor direction labels are clear"
+DRYRUN001,QUAL_03,"Synthetic dry run feedback: no ambiguity in decision ownership"

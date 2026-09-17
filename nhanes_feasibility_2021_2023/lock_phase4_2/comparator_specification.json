@@ -1,0 +1,104 @@
+{
+  "amendment_phase": "Phase 4.2A",
+  "document_status": "FROZEN",
+  "locked_date": "2026-09-02",
+  "primary_model_summary": {
+    "model_family": "Generalized Additive Model (GAM)",
+    "configuration": "GAM_splines10_lam10.0",
+    "frozen_threshold": 0.1389,
+    "status": "unchanged_from_final_model_specification_locked"
+  },
+  "comparators": {
+    "logistic_regression": {
+      "role": "statistical_baseline_comparator",
+      "estimator_class": "sklearn.linear_model.LogisticRegression",
+      "penalty": "l2",
+      "C": 0.1,
+      "solver": "lbfgs",
+      "max_iter": 1000,
+      "tol": 0.0001,
+      "class_weight": null,
+      "fit_intercept": true,
+      "random_state": 42,
+      "predictor_order": [
+        "age",
+        "sex",
+        "bmi",
+        "hypertension_history",
+        "smoking_history",
+        "waist_cm",
+        "sedentary_minutes_day"
+      ],
+      "categorical_mappings": {
+        "sex": {"1.0": 1.0, "2.0": 0.0},
+        "hypertension_history": {"1.0": 1.0, "2.0": 0.0},
+        "smoking_history": {"1.0": 1.0, "2.0": 0.0}
+      },
+      "continuous_features": [
+        "age",
+        "bmi",
+        "waist_cm",
+        "sedentary_minutes_day"
+      ],
+      "continuous_preprocessing": "StandardScaler_fit_on_development_only",
+      "frozen_operating_threshold": 0.1389,
+      "target_sensitivity_floor": 0.90,
+      "development_baseline": {
+        "sensitivity": 0.9023,
+        "specificity": 0.4165,
+        "ppv": 0.3173,
+        "npv": 0.9341,
+        "referral_fraction": 0.6572,
+        "tests_per_case_detected": 3.15
+      }
+    },
+    "dlnn": {
+      "role": "complex_nonlinear_comparator",
+      "implementation_framework": "tensorflow.keras",
+      "architecture": {
+        "input_dim": 7,
+        "hidden_layers": [
+          {"units": 16, "activation": "relu", "dropout": 0.0},
+          {"units": 8, "activation": "relu", "dropout": 0.0}
+        ],
+        "output_layer": {"units": 1, "activation": "sigmoid"}
+      },
+      "loss": "binary_crossentropy",
+      "optimizer": "Adam",
+      "learning_rate": 0.001,
+      "batch_size": 32,
+      "max_epochs": 200,
+      "early_stopping": {
+        "monitor": "val_loss",
+        "patience": 15,
+        "restore_best_weights": true
+      },
+      "internal_validation_split": {
+        "source": "development_partition_only",
+        "fraction": 0.15,
+        "random_state": 42,
+        "stratify": true
+      },
+      "deterministic_seeds": {
+        "PYTHONHASHSEED": "42",
+        "TF_DETERMINISTIC_OPS": "1",
+        "TF_ENABLE_ONEDNN_OPTS": "0",
+        "python_random_seed": 42,
+        "numpy_seed": 42,
+        "tensorflow_seed": 42,
+        "keras_model_seed": 42
+      },
+      "continuous_preprocessing": "StandardScaler_fit_on_development_only",
+      "frozen_operating_threshold": 0.1419,
+      "target_sensitivity_floor": 0.90,
+      "development_baseline": {
+        "sensitivity": 0.9009,
+        "specificity": 0.4193,
+        "ppv": 0.3181,
+        "npv": 0.9337,
+        "referral_fraction": 0.6547,
+        "tests_per_case_detected": 3.14
+      }
+    }
+  }
+}

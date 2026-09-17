@@ -1,0 +1,27 @@
+issue_type,variable,detail,severity
+high_missingness,WTPH2YR,39.7% missing (4734/11933),moderate
+high_missingness,WTSAF2YR,66.5% missing (7937/11933),high
+high_missingness,BMXBMI,29.0% missing (3462/11933),moderate
+high_missingness,BMXWAIST,31.4% missing (3743/11933),moderate
+high_missingness,BPQ020,28.8% missing (3435/11933),moderate
+high_missingness,BPQ150,75.1% missing (8964/11933),high
+high_missingness,SMQ020,31.8% missing (3798/11933),moderate
+high_missingness,SMQ040,72.8% missing (8690/11933),high
+high_missingness,PAD790Q,31.8% missing (3798/11933),moderate
+high_missingness,PAD800,46.5% missing (5543/11933),moderate
+high_missingness,PAD810Q,31.8% missing (3794/11933),moderate
+high_missingness,PAD820,69.1% missing (8246/11933),high
+high_missingness,PAD680,31.8% missing (3795/11933),moderate
+high_missingness,DIQ160,32.8% missing (3911/11933),moderate
+high_missingness,DIQ180,30.4% missing (3629/11933),moderate
+high_missingness,LBXGH,43.7% missing (5218/11933),moderate
+high_missingness,LBXGLU,69.2% missing (8261/11933),high
+special_missing_code,BPQ020,Code 7 appears 1 times (refused/don't know),info
+special_missing_code,BPQ020,Code 9 appears 10 times (refused/don't know),info
+special_missing_code,SMQ020,Code 7 appears 7 times (refused/don't know),info
+special_missing_code,SMQ020,Code 9 appears 7 times (refused/don't know),info
+special_missing_code,DIQ010,Code 9 appears 4 times (refused/don't know),info
+special_missing_code,DIQ160,Code 9 appears 15 times (refused/don't know),info
+subsample_zero_weights,WTMEC2YR,MEC exam weight (WTMEC2YR) has 8860 positive weights and 3073 zero weights (unweighted subsample non-participants),info
+subsample_zero_weights,WTPH2YR,Phlebotomy weight (WTPH2YR) has 6750 positive weights and 449 zero weights (unweighted subsample non-participants),info
+subsample_zero_weights,WTSAF2YR,Fasting weight (WTSAF2YR) has 3361 positive weights and 635 zero weights (unweighted subsample non-participants),info

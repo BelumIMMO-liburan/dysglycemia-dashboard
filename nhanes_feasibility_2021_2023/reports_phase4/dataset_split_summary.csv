@@ -1,0 +1,7 @@
+partition,total_n,normal_n,dysglycemia_n,prevalence_pct,status
+Full Master Core Cohort,4194,3224,970,23.13,Full sample
+Core-Full Development (80%),3355,2579,776,23.13,Used for 5-fold CV
+Core-Full Final Test (20%),839,645,194,23.12,LOCKED — NO EVALUATION
+Common Cohort Total (Expanded),4044,3106,938,23.19,Common participant subset
+Common Development (80%),3232,2485,747,23.11,Used for paired Core-vs-Expanded CV
+Common Final Test (20%),812,621,191,23.52,LOCKED — NO EVALUATION

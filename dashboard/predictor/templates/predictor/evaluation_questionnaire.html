@@ -1,0 +1,327 @@
+{% extends 'predictor/base.html' %}
+
+{% block title %}Kuesioner Evaluasi Sistem — Dashboard Screening Disglikemia{% endblock %}
+{% block breadcrumb %}Kuesioner Evaluasi{% endblock %}
+
+{% block content %}
+<div class="ui-page-header">
+    <div class="ui-page-header-row">
+        <div>
+            <h1 class="ui-page-title">Kuesioner Evaluasi Akhir (Post-Task Instrument)</h1>
+            <p class="ui-page-description">
+                Pengukuran pemahaman objektif, usability (SUS), dan kejelasan representasi dashboard.
+            </p>
+        </div>
+        <div>
+            <span class="ui-badge ui-badge-emerald">
+                Responden: {{ session.respondent.respondent_code }}
+            </span>
+        </div>
+    </div>
+</div>
+
+<div style="max-width: 900px; margin: 0 auto;">
+    <form method="post" action="{% url 'predictor:evaluation_questionnaire' %}" class="ui-form-stack" novalidate>
+        {% csrf_token %}
+
+        {% if form.errors %}
+        <div class="ui-alert ui-alert-danger" style="margin-bottom: 2rem;">
+            <svg class="ui-alert-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/>
+            </svg>
+            <div class="ui-alert-content">
+                <p class="ui-alert-title">Kuesioner Belum Lengkap</p>
+                <p class="ui-alert-body">Harap menjawab seluruh pertanyaan pilihan ganda dan skala pada Bagian A, B, dan C sebelum mengirimkan kuesioner.</p>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- =============================================================== -->
+        <!-- SECTION A: OBJECTIVE COMPREHENSION (8 ITEMS)                     -->
+        <!-- =============================================================== -->
+        <div class="ui-card" style="margin-bottom: 2rem;">
+            <div class="ui-card-header">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <h2 class="ui-card-title">Bagian A: Pemahaman Konsep Dashboard (Objective Comprehension)</h2>
+                    <span class="ui-badge ui-badge-secondary">8 Pertanyaan Pilihan Ganda</span>
+                </div>
+                <p class="ui-card-description">
+                    Pilihlah satu jawaban yang paling tepat berdasarkan informasi yang Anda pelajari saat menggunakan dashboard.
+                </p>
+            </div>
+            <div class="ui-card-content" style="display: flex; flex-direction: column; gap: 2rem;">
+                <!-- C1 -->
+                <div class="ui-form-group" style="padding-bottom: 1.5rem; border-bottom: 1px solid hsl(var(--border));">
+                    <p style="font-weight: 600; font-size: 0.9375rem; margin-bottom: 0.75rem;">
+                        1. Apa yang ditunjukkan oleh nilai probabilitas pada hasil screening AI? <span style="color: hsl(var(--destructive));">*</span>
+                    </p>
+                    <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                        {% for radio in form.c1 %}
+                        <label style="display: flex; align-items: flex-start; gap: 0.75rem; cursor: pointer; padding: 0.5rem; border-radius: var(--radius); background-color: hsl(var(--muted)/0.2);">
+                            {{ radio.tag }}
+                            <span style="font-size: 0.875rem;">{{ radio.choice_label }}</span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                    {% if form.c1.errors %}<div style="color: hsl(var(--destructive)); font-size: 0.75rem; margin-top: 0.375rem;">Wajib dijawab.</div>{% endif %}
+                </div>
+
+                <!-- C2 -->
+                <div class="ui-form-group" style="padding-bottom: 1.5rem; border-bottom: 1px solid hsl(var(--border));">
+                    <p style="font-weight: 600; font-size: 0.9375rem; margin-bottom: 0.75rem;">
+                        2. Apa arti rekomendasi "REFER" pada Stage 1? <span style="color: hsl(var(--destructive));">*</span>
+                    </p>
+                    <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                        {% for radio in form.c2 %}
+                        <label style="display: flex; align-items: flex-start; gap: 0.75rem; cursor: pointer; padding: 0.5rem; border-radius: var(--radius); background-color: hsl(var(--muted)/0.2);">
+                            {{ radio.tag }}
+                            <span style="font-size: 0.875rem;">{{ radio.choice_label }}</span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                    {% if form.c2.errors %}<div style="color: hsl(var(--destructive)); font-size: 0.75rem; margin-top: 0.375rem;">Wajib dijawab.</div>{% endif %}
+                </div>
+
+                <!-- C3 -->
+                <div class="ui-form-group" style="padding-bottom: 1.5rem; border-bottom: 1px solid hsl(var(--border));">
+                    <p style="font-weight: 600; font-size: 0.9375rem; margin-bottom: 0.75rem;">
+                        3. Apa tujuan feature contribution pada penjelasan AI? <span style="color: hsl(var(--destructive));">*</span>
+                    </p>
+                    <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                        {% for radio in form.c3 %}
+                        <label style="display: flex; align-items: flex-start; gap: 0.75rem; cursor: pointer; padding: 0.5rem; border-radius: var(--radius); background-color: hsl(var(--muted)/0.2);">
+                            {{ radio.tag }}
+                            <span style="font-size: 0.875rem;">{{ radio.choice_label }}</span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                    {% if form.c3.errors %}<div style="color: hsl(var(--destructive)); font-size: 0.75rem; margin-top: 0.375rem;">Wajib dijawab.</div>{% endif %}
+                </div>
+
+                <!-- C4 -->
+                <div class="ui-form-group" style="padding-bottom: 1.5rem; border-bottom: 1px solid hsl(var(--border));">
+                    <p style="font-weight: 600; font-size: 0.9375rem; margin-bottom: 0.75rem;">
+                        4. Kapan Human Override terjadi? <span style="color: hsl(var(--destructive));">*</span>
+                    </p>
+                    <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                        {% for radio in form.c4 %}
+                        <label style="display: flex; align-items: flex-start; gap: 0.75rem; cursor: pointer; padding: 0.5rem; border-radius: var(--radius); background-color: hsl(var(--muted)/0.2);">
+                            {{ radio.tag }}
+                            <span style="font-size: 0.875rem;">{{ radio.choice_label }}</span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                    {% if form.c4.errors %}<div style="color: hsl(var(--destructive)); font-size: 0.75rem; margin-top: 0.375rem;">Wajib dijawab.</div>{% endif %}
+                </div>
+
+                <!-- C5 -->
+                <div class="ui-form-group" style="padding-bottom: 1.5rem; border-bottom: 1px solid hsl(var(--border));">
+                    <p style="font-weight: 600; font-size: 0.9375rem; margin-bottom: 0.75rem;">
+                        5. Jika AI merekomendasikan REFER tetapi peninjau manusia memilih DO NOT REFER, bagaimana hubungan keputusan tersebut dipahami? <span style="color: hsl(var(--destructive));">*</span>
+                    </p>
+                    <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                        {% for radio in form.c5 %}
+                        <label style="display: flex; align-items: flex-start; gap: 0.75rem; cursor: pointer; padding: 0.5rem; border-radius: var(--radius); background-color: hsl(var(--muted)/0.2);">
+                            {{ radio.tag }}
+                            <span style="font-size: 0.875rem;">{{ radio.choice_label }}</span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                    {% if form.c5.errors %}<div style="color: hsl(var(--destructive)); font-size: 0.75rem; margin-top: 0.375rem;">Wajib dijawab.</div>{% endif %}
+                </div>
+
+                <!-- C6 -->
+                <div class="ui-form-group" style="padding-bottom: 1.5rem; border-bottom: 1px solid hsl(var(--border));">
+                    <p style="font-weight: 600; font-size: 0.9375rem; margin-bottom: 0.75rem;">
+                        6. Apa tujuan feedback yang diberikan setelah Human Override? <span style="color: hsl(var(--destructive));">*</span>
+                    </p>
+                    <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                        {% for radio in form.c6 %}
+                        <label style="display: flex; align-items: flex-start; gap: 0.75rem; cursor: pointer; padding: 0.5rem; border-radius: var(--radius); background-color: hsl(var(--muted)/0.2);">
+                            {{ radio.tag }}
+                            <span style="font-size: 0.875rem;">{{ radio.choice_label }}</span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                    {% if form.c6.errors %}<div style="color: hsl(var(--destructive)); font-size: 0.75rem; margin-top: 0.375rem;">Wajib dijawab.</div>{% endif %}
+                </div>
+
+                <!-- C7 -->
+                <div class="ui-form-group" style="padding-bottom: 1.5rem; border-bottom: 1px solid hsl(var(--border));">
+                    <p style="font-weight: 600; font-size: 0.9375rem; margin-bottom: 0.75rem;">
+                        7. Kapan pemeriksaan HbA1c pada Stage 2 dilakukan dalam alur dashboard? <span style="color: hsl(var(--destructive));">*</span>
+                    </p>
+                    <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                        {% for radio in form.c7 %}
+                        <label style="display: flex; align-items: flex-start; gap: 0.75rem; cursor: pointer; padding: 0.5rem; border-radius: var(--radius); background-color: hsl(var(--muted)/0.2);">
+                            {{ radio.tag }}
+                            <span style="font-size: 0.875rem;">{{ radio.choice_label }}</span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                    {% if form.c7.errors %}<div style="color: hsl(var(--destructive)); font-size: 0.75rem; margin-top: 0.375rem;">Wajib dijawab.</div>{% endif %}
+                </div>
+
+                <!-- C8 -->
+                <div class="ui-form-group">
+                    <p style="font-weight: 600; font-size: 0.9375rem; margin-bottom: 0.75rem;">
+                        8. Apa perbedaan utama Stage 1 dan Stage 2 pada dashboard? <span style="color: hsl(var(--destructive));">*</span>
+                    </p>
+                    <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                        {% for radio in form.c8 %}
+                        <label style="display: flex; align-items: flex-start; gap: 0.75rem; cursor: pointer; padding: 0.5rem; border-radius: var(--radius); background-color: hsl(var(--muted)/0.2);">
+                            {{ radio.tag }}
+                            <span style="font-size: 0.875rem;">{{ radio.choice_label }}</span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                    {% if form.c8.errors %}<div style="color: hsl(var(--destructive)); font-size: 0.75rem; margin-top: 0.375rem;">Wajib dijawab.</div>{% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- =============================================================== -->
+        <!-- SECTION B: SYSTEM USABILITY SCALE (10 ITEMS)                     -->
+        <!-- Indonesian Adaptation: Sharfina & Santoso (2016)                 -->
+        <!-- =============================================================== -->
+        <div class="ui-card" style="margin-bottom: 2rem;">
+            <div class="ui-card-header">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <h2 class="ui-card-title">Bagian B: System Usability Scale (SUS)</h2>
+                    <span class="ui-badge ui-badge-secondary">10 Pernyataan Standar</span>
+                </div>
+                <p class="ui-card-description">
+                    Instrumen standar System Usability Scale adaptasi Bahasa Indonesia (Sharfina & Santoso, 2016).<br>
+                    Skala 1 = Sangat Tidak Setuju, 2 = Tidak Setuju, 3 = Netral, 4 = Setuju, 5 = Sangat Setuju.
+                </p>
+            </div>
+            <div class="ui-card-content" style="display: flex; flex-direction: column; gap: 1.5rem;">
+                {% for item in sus_items %}
+                <div style="padding-bottom: 1.25rem; border-bottom: 1px solid hsl(var(--border));">
+                    <p style="font-weight: 500; font-size: 0.875rem; margin-bottom: 0.75rem;">
+                        {{ item.num }}. {{ item.text }} <span style="color: hsl(var(--destructive));">*</span>
+                    </p>
+                    <div style="display: flex; flex-wrap: wrap; gap: 0.75rem;">
+                        {% if item.num == 1 %}{% for r in form.sus_1 %}<label style="display: inline-flex; align-items: center; gap: 0.375rem; padding: 0.375rem 0.75rem; border: 1px solid hsl(var(--border)); border-radius: var(--radius); cursor: pointer; font-size: 0.8125rem;">{{ r.tag }} {{ r.choice_label }}</label>{% endfor %}{% endif %}
+                        {% if item.num == 2 %}{% for r in form.sus_2 %}<label style="display: inline-flex; align-items: center; gap: 0.375rem; padding: 0.375rem 0.75rem; border: 1px solid hsl(var(--border)); border-radius: var(--radius); cursor: pointer; font-size: 0.8125rem;">{{ r.tag }} {{ r.choice_label }}</label>{% endfor %}{% endif %}
+                        {% if item.num == 3 %}{% for r in form.sus_3 %}<label style="display: inline-flex; align-items: center; gap: 0.375rem; padding: 0.375rem 0.75rem; border: 1px solid hsl(var(--border)); border-radius: var(--radius); cursor: pointer; font-size: 0.8125rem;">{{ r.tag }} {{ r.choice_label }}</label>{% endfor %}{% endif %}
+                        {% if item.num == 4 %}{% for r in form.sus_4 %}<label style="display: inline-flex; align-items: center; gap: 0.375rem; padding: 0.375rem 0.75rem; border: 1px solid hsl(var(--border)); border-radius: var(--radius); cursor: pointer; font-size: 0.8125rem;">{{ r.tag }} {{ r.choice_label }}</label>{% endfor %}{% endif %}
+                        {% if item.num == 5 %}{% for r in form.sus_5 %}<label style="display: inline-flex; align-items: center; gap: 0.375rem; padding: 0.375rem 0.75rem; border: 1px solid hsl(var(--border)); border-radius: var(--radius); cursor: pointer; font-size: 0.8125rem;">{{ r.tag }} {{ r.choice_label }}</label>{% endfor %}{% endif %}
+                        {% if item.num == 6 %}{% for r in form.sus_6 %}<label style="display: inline-flex; align-items: center; gap: 0.375rem; padding: 0.375rem 0.75rem; border: 1px solid hsl(var(--border)); border-radius: var(--radius); cursor: pointer; font-size: 0.8125rem;">{{ r.tag }} {{ r.choice_label }}</label>{% endfor %}{% endif %}
+                        {% if item.num == 7 %}{% for r in form.sus_7 %}<label style="display: inline-flex; align-items: center; gap: 0.375rem; padding: 0.375rem 0.75rem; border: 1px solid hsl(var(--border)); border-radius: var(--radius); cursor: pointer; font-size: 0.8125rem;">{{ r.tag }} {{ r.choice_label }}</label>{% endfor %}{% endif %}
+                        {% if item.num == 8 %}{% for r in form.sus_8 %}<label style="display: inline-flex; align-items: center; gap: 0.375rem; padding: 0.375rem 0.75rem; border: 1px solid hsl(var(--border)); border-radius: var(--radius); cursor: pointer; font-size: 0.8125rem;">{{ r.tag }} {{ r.choice_label }}</label>{% endfor %}{% endif %}
+                        {% if item.num == 9 %}{% for r in form.sus_9 %}<label style="display: inline-flex; align-items: center; gap: 0.375rem; padding: 0.375rem 0.75rem; border: 1px solid hsl(var(--border)); border-radius: var(--radius); cursor: pointer; font-size: 0.8125rem;">{{ r.tag }} {{ r.choice_label }}</label>{% endfor %}{% endif %}
+                        {% if item.num == 10 %}{% for r in form.sus_10 %}<label style="display: inline-flex; align-items: center; gap: 0.375rem; padding: 0.375rem 0.75rem; border: 1px solid hsl(var(--border)); border-radius: var(--radius); cursor: pointer; font-size: 0.8125rem;">{{ r.tag }} {{ r.choice_label }}</label>{% endfor %}{% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- =============================================================== -->
+        <!-- SECTION C: DASHBOARD CLARITY (5 ITEMS)                          -->
+        <!-- =============================================================== -->
+        <div class="ui-card" style="margin-bottom: 2rem;">
+            <div class="ui-card-header">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <h2 class="ui-card-title">Bagian C: Kejelasan Antarmuka & Keputusan (Dashboard Clarity)</h2>
+                    <span class="ui-badge ui-badge-secondary">5 Pernyataan Evaluatif</span>
+                </div>
+                <p class="ui-card-description">
+                    Tingkat kejelasan visual dan interaksi pengambilan keputusan pada sistem.
+                </p>
+            </div>
+            <div class="ui-card-content" style="display: flex; flex-direction: column; gap: 1.5rem;">
+                <div style="padding-bottom: 1.25rem; border-bottom: 1px solid hsl(var(--border));">
+                    <p style="font-weight: 500; font-size: 0.875rem; margin-bottom: 0.75rem;">
+                        DQ1. Informasi yang ditampilkan pada dashboard mudah saya pahami. <span style="color: hsl(var(--destructive));">*</span>
+                    </p>
+                    <div style="display: flex; flex-wrap: wrap; gap: 0.75rem;">
+                        {% for r in form.clarity_1 %}<label style="display: inline-flex; align-items: center; gap: 0.375rem; padding: 0.375rem 0.75rem; border: 1px solid hsl(var(--border)); border-radius: var(--radius); cursor: pointer; font-size: 0.8125rem;">{{ r.tag }} {{ r.choice_label }}</label>{% endfor %}
+                    </div>
+                </div>
+
+                <div style="padding-bottom: 1.25rem; border-bottom: 1px solid hsl(var(--border));">
+                    <p style="font-weight: 500; font-size: 0.875rem; margin-bottom: 0.75rem;">
+                        DQ2. Penjelasan feature contribution membantu saya memahami hasil AI. <span style="color: hsl(var(--destructive));">*</span>
+                    </p>
+                    <div style="display: flex; flex-wrap: wrap; gap: 0.75rem;">
+                        {% for r in form.clarity_2 %}<label style="display: inline-flex; align-items: center; gap: 0.375rem; padding: 0.375rem 0.75rem; border: 1px solid hsl(var(--border)); border-radius: var(--radius); cursor: pointer; font-size: 0.8125rem;">{{ r.tag }} {{ r.choice_label }}</label>{% endfor %}
+                    </div>
+                </div>
+
+                <div style="padding-bottom: 1.25rem; border-bottom: 1px solid hsl(var(--border));">
+                    <p style="font-weight: 500; font-size: 0.875rem; margin-bottom: 0.75rem;">
+                        DQ3. Perbedaan antara rekomendasi AI dan keputusan manusia mudah saya pahami. <span style="color: hsl(var(--destructive));">*</span>
+                    </p>
+                    <div style="display: flex; flex-wrap: wrap; gap: 0.75rem;">
+                        {% for r in form.clarity_3 %}<label style="display: inline-flex; align-items: center; gap: 0.375rem; padding: 0.375rem 0.75rem; border: 1px solid hsl(var(--border)); border-radius: var(--radius); cursor: pointer; font-size: 0.8125rem;">{{ r.tag }} {{ r.choice_label }}</label>{% endfor %}
+                    </div>
+                </div>
+
+                <div style="padding-bottom: 1.25rem; border-bottom: 1px solid hsl(var(--border));">
+                    <p style="font-weight: 500; font-size: 0.875rem; margin-bottom: 0.75rem;">
+                        DQ4. Mekanisme Human Override mudah saya pahami. <span style="color: hsl(var(--destructive));">*</span>
+                    </p>
+                    <div style="display: flex; flex-wrap: wrap; gap: 0.75rem;">
+                        {% for r in form.clarity_4 %}<label style="display: inline-flex; align-items: center; gap: 0.375rem; padding: 0.375rem 0.75rem; border: 1px solid hsl(var(--border)); border-radius: var(--radius); cursor: pointer; font-size: 0.8125rem;">{{ r.tag }} {{ r.choice_label }}</label>{% endfor %}
+                    </div>
+                </div>
+
+                <div>
+                    <p style="font-weight: 500; font-size: 0.875rem; margin-bottom: 0.75rem;">
+                        DQ5. Alur dari Stage 1 ke Stage 2 mudah saya pahami. <span style="color: hsl(var(--destructive));">*</span>
+                    </p>
+                    <div style="display: flex; flex-wrap: wrap; gap: 0.75rem;">
+                        {% for r in form.clarity_5 %}<label style="display: inline-flex; align-items: center; gap: 0.375rem; padding: 0.375rem 0.75rem; border: 1px solid hsl(var(--border)); border-radius: var(--radius); cursor: pointer; font-size: 0.8125rem;">{{ r.tag }} {{ r.choice_label }}</label>{% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- =============================================================== -->
+        <!-- SECTION D: QUALITATIVE FEEDBACK (3 OPEN ITEMS)                  -->
+        <!-- =============================================================== -->
+        <div class="ui-card" style="margin-bottom: 2rem;">
+            <div class="ui-card-header">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <h2 class="ui-card-title">Bagian D: Masukan & Saran Kualitatif</h2>
+                    <span class="ui-badge ui-badge-secondary">Opsional</span>
+                </div>
+                <p class="ui-card-description">
+                    Masukan terbuka Anda sangat berharga bagi penyempurnaan perancangan sistem interaktif ini.
+                </p>
+            </div>
+            <div class="ui-card-content" style="display: flex; flex-direction: column; gap: 1.5rem;">
+                <div class="ui-form-group">
+                    <label class="ui-form-label" for="id_open_1">
+                        OQ1. Bagian mana dari dashboard yang paling membantu Anda memahami hasil screening? Jelaskan alasannya.
+                    </label>
+                    {{ form.open_1 }}
+                </div>
+
+                <div class="ui-form-group">
+                    <label class="ui-form-label" for="id_open_2">
+                        OQ2. Bagian mana dari dashboard yang menurut Anda paling membingungkan atau sulit dipahami?
+                    </label>
+                    {{ form.open_2 }}
+                </div>
+
+                <div class="ui-form-group">
+                    <label class="ui-form-label" for="id_open_3">
+                        OQ3. Apa perbaikan utama yang menurut Anda dapat membuat dashboard ini lebih mudah dipahami atau digunakan?
+                    </label>
+                    {{ form.open_3 }}
+                </div>
+            </div>
+        </div>
+
+        <!-- Submit Button -->
+        <div style="display: flex; justify-content: flex-end; margin-bottom: 3rem;">
+            <button type="submit" class="ui-btn ui-btn-primary" style="padding: 0.75rem 2rem; font-size: 1rem; font-weight: 600;">
+                Kirimkan Kuesioner Evaluasi →
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,4 @@
+model_family,core_config,expanded_config,delta_roc_auc,roc_auc_ci_95,delta_pr_auc,pr_auc_ci_95,delta_brier,brier_ci_95,interpretation
+Logistic_Regression,L2_C0.01,L2_C0.1,0.0042,"[-0.0014, 0.0098]",0.0099,"[-0.0008, 0.0207]",-0.0014,"[-0.0028, -0.0000]",Compatible with null/uncertain
+GAM,GAM_splines10_lam10.0,GAM_splines10_lam10.0,0.008,"[0.0013, 0.0147]",0.0193,"[0.0031, 0.0363]",-0.0018,"[-0.0033, -0.0003]",Statistically positive
+DLNN,DLNN_32_16_drop0.0,DLNN_16_8_drop0.0,0.0037,"[-0.0049, 0.0121]",0.0127,"[-0.0073, 0.0331]",-0.0006,"[-0.0026, 0.0012]",Compatible with null/uncertain
