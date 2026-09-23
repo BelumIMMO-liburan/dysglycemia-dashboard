@@ -87,31 +87,60 @@ TEMPLATES = [
 WSGI_APPLICATION = 'dashboard.wsgi.application'
 
 
-# Database Selection based on APP_MODE
-# Evaluation mode uses db_evaluation.sqlite3, keeping participant data completely separated.
-# Feedback Lab uses db.sqlite3, preserving historical research evidence, model versions, and Case A/B results.
-if APP_MODE == 'evaluation':
-    raw_db_name = os.environ.get('DB_NAME', 'db_evaluation.sqlite3')
+# Database Configuration:
+# 1. If DATABASE_URL is set (e.g. Railway PostgreSQL service / volume plugin), use PostgreSQL
+# 2. Otherwise fall back to SQLite:
+#    - Evaluation mode uses db_evaluation.sqlite3 (or /data/db_evaluation.sqlite3 for persistent volume)
+#    - Feedback Lab uses db.sqlite3 (localhost)
+database_url = os.environ.get('DATABASE_URL')
+
+if database_url:
+    try:
+        import dj_database_url
+        DATABASES = {
+            'default': dj_database_url.config(
+                default=database_url,
+                conn_max_age=600,
+                conn_health_checks=True,
+            )
+        }
+    except ImportError:
+        # Fallback if dj-database-url is not yet installed in local dev environment
+        from urllib.parse import urlparse
+        parsed = urlparse(database_url)
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.postgresql',
+                'NAME': parsed.path.lstrip('/'),
+                'USER': parsed.username,
+                'PASSWORD': parsed.password,
+                'HOST': parsed.hostname,
+                'PORT': parsed.port or 5432,
+            }
+        }
 else:
-    raw_db_name = os.environ.get('DB_NAME', 'db.sqlite3')
+    if APP_MODE == 'evaluation':
+        raw_db_name = os.environ.get('DB_NAME', 'db_evaluation.sqlite3')
+    else:
+        raw_db_name = os.environ.get('DB_NAME', 'db.sqlite3')
 
-# Support absolute paths (e.g. Railway persistent volume /data/db_evaluation.sqlite3)
-db_path = Path(raw_db_name)
-if not db_path.is_absolute():
-    db_path = BASE_DIR / db_path
+    # Support absolute paths (e.g. Railway persistent volume /data/db_evaluation.sqlite3)
+    db_path = Path(raw_db_name)
+    if not db_path.is_absolute():
+        db_path = BASE_DIR / db_path
 
-# Ensure parent directory exists for volume mounts
-try:
-    db_path.parent.mkdir(parents=True, exist_ok=True)
-except Exception:
-    pass
+    # Ensure parent directory exists for volume mounts
+    try:
+        db_path.parent.mkdir(parents=True, exist_ok=True)
+    except Exception:
+        pass
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': db_path,
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': db_path,
+        }
     }
-}
 
 
 # Password validation

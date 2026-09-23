@@ -1,39 +1,26 @@
-# Railway Persistent Volume Configuration Guide for Evaluation Mode
+# Railway Persistent Database Configuration Guide (PostgreSQL & Persistent Volumes)
 **Protocol E1 / E2 Participant Data Preservation**
 
 ---
 
 ## 1. Executive Summary & Critical Risk Assessment
 
-In Railway deployments, container filesystems are **ephemeral** by default. Any deployment, build restart, container crash, or manual restart recreates the container image from scratch, wiping all files not mounted on a **Persistent Volume**.
+In Railway deployments, container filesystems are **ephemeral** by default. Any deployment, build restart, container crash, or manual restart recreates the container image from scratch, wiping all files not stored on a persistent service or mounted on a volume.
 
-If `db_evaluation.sqlite3` is located inside the application's local root (`/app/dashboard/db_evaluation.sqlite3` or relative path), **ALL participant research data (evaluation respondents, completed sessions, event logs, questionnaire responses, screening records, and human review decisions) will be PERMANENTLY DESTROYED upon redeployment or container restart.**
-
-This guide outlines the mandatory steps to configure a persistent volume on Railway and direct SQLite to store `db_evaluation.sqlite3` on that persistent volume.
+By connecting to **Railway PostgreSQL** (or using a Persistent Volume mount), **participant research data (evaluation respondents, completed sessions, event logs, questionnaire responses, screening records, and human review decisions) is fully preserved across restarts and redeployments.**
 
 ---
 
-## 2. Railway Volume Setup Instructions
+## 2. Railway PostgreSQL Setup (Recommended)
 
-### Step 1: Create a Persistent Volume in Railway
-1. Navigate to your project dashboard on [Railway.app](https://railway.app).
-2. Select your web service card (the Django deployment running `APP_MODE=evaluation`).
-3. In the service settings menu, click the **Volumes** tab.
-4. Click **+ Add Volume**.
-5. Configure the volume parameters:
-   - **Mount Path**: `/data`
-   - **Volume Name**: `evaluation-data` (or default generated name)
-6. Click **Add**. Railway will provision and attach the volume to your service.
+When you create a PostgreSQL service / database in your Railway project:
 
-### Step 2: Configure Environment Variables
-Navigate to the **Variables** tab of the service and configure:
-
-| Variable Name | Required Value | Description |
-| :--- | :--- | :--- |
-| `APP_MODE` | `evaluation` | Enforces participant workflow isolation |
-| `DB_NAME` | `/data/db_evaluation.sqlite3` | Directs SQLite to the persistent mount path |
-| `RESEARCHER_ACCESS_KEY` | *(Set a secure 32+ char key)* | Protects `/evaluation/analytics/` and `/evaluation/export/` |
-| `DJANGO_SETTINGS_MODULE` | `dashboard.settings` | Django settings entry point |
+1. Railway automatically provisions a managed PostgreSQL instance with persistent storage.
+2. In your Django service, link the PostgreSQL database or ensure the variable `DATABASE_URL` is available:
+   - Railway typically sets `DATABASE_URL` automatically if both services are in the same project.
+   - If not automatically linked, go to your Django service **Variables** tab $\to$ **New Variable** $\to$ **Add Reference** $\to$ select `DATABASE_URL` from the Postgres service.
+3. The Django application's `dashboard/dashboard/settings.py` automatically detects `DATABASE_URL` using `dj-database-url` and connects to PostgreSQL.
+4. On deployment, `Procfile` runs `python dashboard/manage.py migrate`, automatically applying all 11 schema migrations to PostgreSQL.
 
 ### Step 3: Verify Automated Path Resolution
 The Django settings file (`dashboard/dashboard/settings.py`) has been updated to automatically detect absolute paths:
