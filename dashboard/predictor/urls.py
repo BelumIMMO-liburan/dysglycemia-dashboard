@@ -24,6 +24,11 @@ urlpatterns = [
     path('screening/<uuid:screening_id>/feedback/', views.submit_feedback_view, name='submit_feedback'),
     path('screening/<uuid:screening_id>/compare/', views.run_comparison_view, name='run_comparison'),
     path('feedback-experiment/', views.feedback_experiment_view, name='feedback_experiment'),
+    path('feedback-experiment/start-controlled/', views.start_controlled_experiment_view, name='start_controlled_experiment'),
+    path('feedback-experiment/run-controlled-learning/', views.run_controlled_learning_view, name='run_controlled_learning'),
+    path('feedback-experiment/activate-controlled/', views.activate_controlled_adaptation_view, name='activate_controlled_adaptation'),
+    path('feedback-experiment/evaluate-case-b/', views.evaluate_controlled_case_b_view, name='evaluate_controlled_case_b'),
+    path('feedback-experiment/reset-controlled/', views.reset_controlled_experiment_view, name='reset_controlled_experiment'),
     path('feedback-experiment/trigger-learning/', views.trigger_learning_view, name='trigger_learning'),
     path('feedback-experiment/activate-candidate/', views.activate_candidate_view, name='activate_candidate'),
     path('feedback-experiment/rollback/', views.rollback_version_view, name='rollback_version'),
@@ -33,6 +38,11 @@ urlpatterns = [
     path('evaluation/practice/', views.evaluation_practice_view, name='evaluation_practice'),
     path('evaluation/questionnaire/', views.evaluation_questionnaire_view, name='evaluation_questionnaire'),
     path('evaluation/complete/', views.evaluation_complete_view, name='evaluation_complete'),
+
+    # Researcher-Only Evaluation Infrastructure Routes
+    path('evaluation/analytics/', views.evaluation_analytics_view, name='evaluation_analytics'),
+    path('evaluation/export/', views.evaluation_export_view, name='evaluation_export'),
+    path('evaluation/session/<uuid:session_id>/exclude/', views.evaluation_exclude_session_view, name='evaluation_exclude_session'),
 
     # Backward-compatible routes for ongoing legacy/audit endpoints
     path('index/', views.index, name='index'),

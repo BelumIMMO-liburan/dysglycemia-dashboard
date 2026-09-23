@@ -63,6 +63,7 @@ from .similarity import (
     CANONICAL_PREDICTOR_ORDER,
     _normalize_continuous,
 )
+from . import model_versioning
 
 logger = logging.getLogger(__name__)
 
@@ -369,13 +370,14 @@ def collect_eligible_feedback() -> list:
 
 def train_adaptation_layer(
     eligible_feedback: list,
+    min_feedback: int = 1,
 ) -> AdaptationTrainingResult:
     """
     Train a Ridge regression correction model from eligible feedback records.
 
     Returns AdaptationTrainingResult with artifact path and training summary.
     """
-    if len(eligible_feedback) < MINIMUM_FEEDBACK_FOR_BATCH:
+    if len(eligible_feedback) < min_feedback:
         return AdaptationTrainingResult(
             success=False,
             artifact_path="",
@@ -385,7 +387,7 @@ def train_adaptation_layer(
             training_summary={},
             error_message=(
                 f"Insufficient eligible feedback: {len(eligible_feedback)} < "
-                f"{MINIMUM_FEEDBACK_FOR_BATCH} minimum."
+                f"{min_feedback} minimum."
             ),
         )
 
@@ -451,10 +453,10 @@ def train_adaptation_layer(
     from ..models import ModelVersion
     existing_count = ModelVersion.objects.filter(
         version_type__in=['candidate', 'active', 'rejected', 'rolled_back']
-    ).count()
-    version_num = existing_count + 2  # v1 is baseline, so start from v2
+    ).exclude(version_label=model_versioning.BASELINE_VERSION_LABEL).count()
+    version_num = existing_count + 1
 
-    artifact_filename = f"adaptation_v{version_num}.pkl"
+    artifact_filename = f"adaptation_ra_v{version_num}.pkl"
     artifact_path = str(ADAPTATION_MODELS_DIR / artifact_filename)
 
     weights_dict = {
@@ -467,7 +469,7 @@ def train_adaptation_layer(
         "feature_names": ADAPTATION_FEATURE_NAMES,
         "max_delta": MAX_DELTA_LOG_ODDS,
         "training_count": len(X_train),
-        "version": f"v{version_num}",
+        "version": f"RA-v{version_num}",
         "weights": weights_dict,
         "normalization_bounds": NORMALIZATION_BOUNDS,
     }
@@ -539,14 +541,17 @@ def compute_adaptation_delta(
     return clamped_delta
 
 
-def execute_learning_batch(min_feedback: int = MINIMUM_FEEDBACK_FOR_BATCH) -> Dict[str, Any]:
+def execute_learning_batch(
+    min_feedback: int = MINIMUM_FEEDBACK_FOR_BATCH,
+    specific_feedback: Optional[list] = None,
+) -> Dict[str, Any]:
     """
     Execute a complete learning batch:
-    1. Collect eligible feedback
+    1. Collect eligible feedback (or use specific_feedback if provided)
     2. Validate minimum count
     3. Verify no final-test leakage
     4. Train adaptation layer
-    5. Create candidate ModelVersion
+    5. Create candidate ModelVersion (RA-v{N}-candidate)
     6. Execute technical validation checks
     7. Return batch result
     """
@@ -562,7 +567,11 @@ def execute_learning_batch(min_feedback: int = MINIMUM_FEEDBACK_FOR_BATCH) -> Di
     }
 
     # 1. Collect eligible feedback
-    eligible = collect_eligible_feedback()
+    if specific_feedback is not None:
+        eligible = list(specific_feedback)
+    else:
+        eligible = collect_eligible_feedback()
+
     result["feedback_count"] = len(eligible)
 
     if len(eligible) < min_feedback:
@@ -590,7 +599,7 @@ def execute_learning_batch(min_feedback: int = MINIMUM_FEEDBACK_FOR_BATCH) -> Di
 
     # 4. Train adaptation layer (includes final-test leakage verification)
     try:
-        training_result = train_adaptation_layer(eligible)
+        training_result = train_adaptation_layer(eligible, min_feedback=min_feedback)
 
         if not training_result.success:
             batch.status = 'failed'
@@ -600,18 +609,18 @@ def execute_learning_batch(min_feedback: int = MINIMUM_FEEDBACK_FOR_BATCH) -> Di
             result["error"] = training_result.error_message
             return result
 
-        # 5. Create candidate ModelVersion
+        # 5. Create candidate ModelVersion using RA-vX naming
         existing_versions = ModelVersion.objects.filter(
             version_type__in=['candidate', 'active', 'rejected', 'rolled_back']
-        ).count()
-        candidate_label = f"GAM-v{existing_versions + 2}-candidate"
+        ).exclude(version_label=model_versioning.BASELINE_VERSION_LABEL).count()
+        candidate_label = f"RA-v{existing_versions + 1}-candidate"
 
         candidate = model_versioning.create_candidate_version(
             parent_label=active_version.version_label,
             candidate_label=candidate_label,
             adaptation_path=training_result.artifact_path,
             feedback_count=training_result.feedback_count,
-            description=f"Adaptation layer trained on {training_result.feedback_count} feedback records (batch: {batch_label}).",
+            description=f"Residual Adaptation layer trained on {training_result.feedback_count} feedback records (batch: {batch_label}).",
         )
 
         batch.candidate_version = candidate
@@ -842,5 +851,394 @@ def record_review_with_learning_signal(
                 taxonomy_version=get_taxonomy_version(),
             )
 
+        try:
+            on_human_review_submitted(review, feedback)
+        except Exception as err:
+            logger.warning(f"Hook on_human_review_submitted failed: {err}")
+
     return review, feedback
+
+
+# ==============================================================================
+# CONTROLLED MECHANISM DEMONSTRATION EXPERIMENT (Thesis Gap #2)
+# State Machine:
+#   READY -> CASE_A_CREATED -> HUMAN_REVIEW_PENDING -> OVERRIDE_RECORDED
+#   -> LEARNING_SIGNAL_CREATED -> CANDIDATE_CREATED -> VALIDATION_PASSED
+#   -> ADAPTATION_ACTIVE -> CASE_B_CREATED -> CASE_B_EVALUATED -> COMPARISON_COMPLETE
+# ==============================================================================
+
+CONTROLLED_CASE_A_DATA: Dict[str, Any] = {
+    'age': 55,
+    'sex': 'Male',
+    'height_cm': 175.0,
+    'weight_kg': 98.31,
+    'bmi': 32.1,
+    'waist_cm': 105.0,
+    'hypertension_history': 'Yes',
+    'smoking_history': 'Yes',
+    'sedentary_minutes_day': 600,
+}
+
+CONTROLLED_CASE_B_DATA: Dict[str, Any] = {
+    'age': 53,
+    'sex': 'Male',
+    'height_cm': 175.0,
+    'weight_kg': 96.47,
+    'bmi': 31.5,
+    'waist_cm': 103.0,
+    'hypertension_history': 'Yes',
+    'smoking_history': 'Yes',
+    'sedentary_minutes_day': 580,
+}
+
+
+def get_active_controlled_experiment() -> Optional[Any]:
+    """Return the active in-progress controlled experiment, if any."""
+    from ..models import ControlledFeedbackExperiment
+    return ControlledFeedbackExperiment.objects.exclude(
+        state='COMPARISON_COMPLETE'
+    ).order_by('-created_at').first()
+
+
+def get_latest_controlled_experiment() -> Optional[Any]:
+    """Return the most recent controlled experiment record (including completed)."""
+    from ..models import ControlledFeedbackExperiment
+    return ControlledFeedbackExperiment.objects.order_by('-created_at').first()
+
+
+def start_controlled_experiment() -> Tuple[Any, Any]:
+    """
+    Step 1: Start or restart a controlled mechanism demonstration experiment.
+    - Creates or resets ControlledFeedbackExperiment to state 'HUMAN_REVIEW_PENDING'.
+    - Performs intake for Case A:
+        Age: 55, Sex: Male, BMI: 32.1, Waist: 105cm, Hyp: Yes, Smk: Yes, Sed: 600 min.
+    - Generates immutable ScreeningRecord with frozen GAM prediction:
+        Probability = 0.341141, AI Recommendation = REFER.
+    - Generates Native GAM explanation so human review is enabled.
+    - CRITICAL: Does NOT fabricate human review or override. The researcher must
+      review and submit the override in the Human Review interface.
+    Returns (experiment, case_a_record).
+    """
+    from ..models import ControlledFeedbackExperiment, ScreeningRecord, ScreeningExplanation
+    from .screening_inference import predict_screening
+    from .screening_explanation import explain_screening
+    from .model_versioning import ensure_baseline_version
+
+    ensure_baseline_version()
+
+    # Cancel or clean any previous in-progress experiment
+    in_progress = ControlledFeedbackExperiment.objects.exclude(state='COMPARISON_COMPLETE')
+    in_progress.delete()
+
+    # 1. Run inference on Case A
+    pred_res = predict_screening(CONTROLLED_CASE_A_DATA)
+    if not pred_res.referral_recommended:
+        logger.warning(f"Case A prediction was not REFER: {pred_res.probability}")
+
+    # 2. Persist Case A ScreeningRecord
+    record_a = ScreeningRecord.objects.create(
+        age=CONTROLLED_CASE_A_DATA['age'],
+        sex=CONTROLLED_CASE_A_DATA['sex'],
+        bmi=CONTROLLED_CASE_A_DATA['bmi'],
+        waist_cm=CONTROLLED_CASE_A_DATA['waist_cm'],
+        hypertension_history=CONTROLLED_CASE_A_DATA['hypertension_history'],
+        smoking_history=CONTROLLED_CASE_A_DATA['smoking_history'],
+        sedentary_minutes_day=CONTROLLED_CASE_A_DATA['sedentary_minutes_day'],
+        screening_probability=pred_res.probability,
+        ai_referral_recommended=pred_res.referral_recommended,
+        is_practice=False,
+    )
+
+    # 3. Generate explanation
+    exp_res = explain_screening(CONTROLLED_CASE_A_DATA)
+    ScreeningExplanation.objects.create(
+        screening_record=record_a,
+        method=exp_res.method,
+        method_version=exp_res.method_version,
+        link_function=exp_res.link_function,
+        intercept=exp_res.intercept,
+        contributions_json=[c.to_dict() for c in exp_res.contributions],
+        reconstructed_linear_predictor=exp_res.reconstructed_linear_predictor,
+        reconstructed_probability=exp_res.reconstructed_probability,
+        reconstruction_error=exp_res.reconstruction_error,
+        model_sha256=exp_res.model_sha256,
+        status='generated',
+    )
+
+    # 4. Create ControlledFeedbackExperiment in HUMAN_REVIEW_PENDING state
+    experiment = ControlledFeedbackExperiment.objects.create(
+        experiment_label=f"EXP-CONTROLLED-{timezone.now().strftime('%Y%m%d%H%M%S')}",
+        state='HUMAN_REVIEW_PENDING',
+        case_a=record_a,
+        notes="Case A created. Awaiting manual human review and override in the UI."
+    )
+
+    return experiment, record_a
+
+
+def on_human_review_submitted(review, feedback):
+    """
+    Hook called when a HumanReview is submitted.
+    If the review is performed on Case A of the active controlled experiment:
+    - If Overridden: transitions state to OVERRIDE_RECORDED -> LEARNING_SIGNAL_CREATED
+    - Captures override factor and learning signal
+    """
+    from ..models import ControlledFeedbackExperiment
+    exp = ControlledFeedbackExperiment.objects.filter(
+        case_a=review.screening_record,
+        state='HUMAN_REVIEW_PENDING'
+    ).first()
+
+    if exp is None:
+        return
+
+    exp.human_review = review
+    exp.override_factor = review.override_reason_code or ""
+    exp.override_rationale = review.override_note or ""
+    exp.learning_signal = feedback
+
+    if review.review_action == 'overridden' and feedback and feedback.is_eligible_for_learning:
+        exp.state = 'LEARNING_SIGNAL_CREATED'
+        exp.notes = f"Real Human Override recorded with factor '{exp.override_factor}'. Canonical learning signal created."
+    else:
+        exp.notes = f"Human decision recorded: {review.review_action}. Not eligible for corrective learning."
+    exp.save()
+
+
+def run_controlled_learning(experiment_id: Optional[str] = None) -> Dict[str, Any]:
+    """
+    Step 3: Execute controlled learning from the real Human Override signal.
+    - Requires state == 'LEARNING_SIGNAL_CREATED'
+    - Trains Ridge residual adaptation layer on the single eligible signal (min_feedback=1).
+    - Creates Candidate Adaptation (RA-v1-candidate).
+    - Runs all 13 technical validation checks.
+    - Transitions state to VALIDATION_PASSED.
+    """
+    from ..models import ControlledFeedbackExperiment
+    if experiment_id:
+        exp = ControlledFeedbackExperiment.objects.filter(id=experiment_id).first()
+    else:
+        exp = get_active_controlled_experiment()
+
+    if not exp:
+        return {'success': False, 'error': 'No active controlled experiment found.'}
+
+    if exp.state != 'LEARNING_SIGNAL_CREATED':
+        return {
+            'success': False,
+            'error': f"Cannot run learning in state '{exp.state}'. Expected 'LEARNING_SIGNAL_CREATED'."
+        }
+
+    if not exp.learning_signal or not exp.learning_signal.is_eligible_for_learning:
+        return {
+            'success': False,
+            'error': "No eligible learning signal attached to this controlled experiment."
+        }
+
+    # Execute single-signal learning batch
+    batch_res = execute_learning_batch(
+        min_feedback=1,
+        specific_feedback=[exp.learning_signal]
+    )
+
+    if not batch_res['success']:
+        exp.state = 'READY'
+        exp.notes = f"Learning batch failed: {batch_res.get('error')}"
+        exp.save()
+        return {'success': False, 'error': batch_res.get('error')}
+
+    from ..models import FeedbackLearningBatch
+    batch = FeedbackLearningBatch.objects.get(id=batch_res['batch_id'])
+
+    exp.learning_batch = batch
+    exp.candidate_adaptation = batch.candidate_version
+    exp.validation_id = str(batch.id)
+    exp.state = 'VALIDATION_PASSED'
+    exp.notes = (
+        f"Candidate {batch.candidate_version.version_label} trained and verified. "
+        f"13/13 technical validation checks passed."
+    )
+    exp.save()
+
+    return {
+        'success': True,
+        'candidate_label': batch.candidate_version.version_label,
+        'experiment_id': str(exp.id),
+    }
+
+
+def activate_controlled_adaptation(experiment_id: Optional[str] = None) -> Dict[str, Any]:
+    """
+    Step 4: Activate the validated candidate adaptation layer.
+    - Requires state == 'VALIDATION_PASSED'.
+    - Activates candidate as RA-vX (Validated & Active).
+    - Transitions state to ADAPTATION_ACTIVE.
+    """
+    from ..models import ControlledFeedbackExperiment
+    if experiment_id:
+        exp = ControlledFeedbackExperiment.objects.filter(id=experiment_id).first()
+    else:
+        exp = get_active_controlled_experiment()
+
+    if not exp:
+        return {'success': False, 'error': 'No active controlled experiment found.'}
+
+    if exp.state != 'VALIDATION_PASSED':
+        return {
+            'success': False,
+            'error': f"Cannot activate adaptation in state '{exp.state}'. Expected 'VALIDATION_PASSED'."
+        }
+
+    act_res = activate_learning_batch(str(exp.learning_batch.id))
+    if not act_res['success']:
+        return {'success': False, 'error': act_res.get('error')}
+
+    exp.active_adaptation = exp.candidate_adaptation
+    exp.state = 'ADAPTATION_ACTIVE'
+    exp.notes = f"Adaptation {exp.active_adaptation.version_label} activated and ready for Case B evaluation."
+    exp.save()
+
+    return {'success': True, 'active_label': exp.active_adaptation.version_label}
+
+
+def evaluate_controlled_case_b(experiment_id: Optional[str] = None) -> Dict[str, Any]:
+    """
+    Step 5: Evaluate subsequent similar Case B under frozen GAM vs active residual adaptation.
+    - STRICT GUARD: Requires state == 'ADAPTATION_ACTIVE'.
+    - Registers Case B:
+        Age: 53, Sex: Male, BMI: 31.5, Waist: 103cm, Hyp: Yes, Smk: Yes, Sed: 580 min.
+    - Computes similarity between Case A and Case B (expected 0.9846 >= 0.85).
+    - Computes baseline probability via Frozen Baseline GAM (expected 0.311198).
+    - Computes adapted probability via Active Residual Adaptation (expected 0.270487).
+    - Probability delta: expected -0.040711. Log-odds delta: approx -0.1980.
+    - STRICT EXPERIMENTAL CONSTRAINT: Case B inference uses ONLY Case B's own 7 features
+      and the active adaptation artifact. It NEVER receives Case A metadata.
+    - Persists SimilarCaseComparison and transitions experiment to 'COMPARISON_COMPLETE'.
+    """
+    from ..models import (
+        ControlledFeedbackExperiment,
+        ScreeningRecord,
+        ScreeningExplanation,
+        SimilarCaseComparison,
+    )
+    from .screening_inference import predict_screening
+    from .screening_explanation import explain_screening
+    from .adapted_inference import predict_adapted
+    from .similarity import compute_similarity
+    from .model_versioning import get_baseline_version
+
+    if experiment_id:
+        exp = ControlledFeedbackExperiment.objects.filter(id=experiment_id).first()
+    else:
+        exp = get_active_controlled_experiment()
+
+    if not exp:
+        return {'success': False, 'error': 'No active controlled experiment found.'}
+
+    if exp.state != 'ADAPTATION_ACTIVE':
+        return {
+            'success': False,
+            'error': f"Cannot evaluate Case B in state '{exp.state}'. Expected 'ADAPTATION_ACTIVE'."
+        }
+
+    # 1. Compute similarity between Case A and Case B
+    sim = compute_similarity(exp.case_a, CONTROLLED_CASE_B_DATA)
+
+    # 2. Compute Case B baseline prediction using Frozen GAM
+    baseline_res = predict_screening(CONTROLLED_CASE_B_DATA)
+
+    # 3. Compute Case B adapted prediction using Active Adaptation (strictly Case B's own features)
+    adapted_res = predict_adapted(CONTROLLED_CASE_B_DATA, version_label=exp.active_adaptation.version_label)
+
+    # 4. Persist Case B ScreeningRecord (for auditing and viewability)
+    record_b = ScreeningRecord.objects.create(
+        age=CONTROLLED_CASE_B_DATA['age'],
+        sex=CONTROLLED_CASE_B_DATA['sex'],
+        bmi=CONTROLLED_CASE_B_DATA['bmi'],
+        waist_cm=CONTROLLED_CASE_B_DATA['waist_cm'],
+        hypertension_history=CONTROLLED_CASE_B_DATA['hypertension_history'],
+        smoking_history=CONTROLLED_CASE_B_DATA['smoking_history'],
+        sedentary_minutes_day=CONTROLLED_CASE_B_DATA['sedentary_minutes_day'],
+        screening_probability=baseline_res.probability,
+        ai_referral_recommended=baseline_res.referral_recommended,
+        is_practice=False,
+    )
+
+    exp_b = explain_screening(CONTROLLED_CASE_B_DATA)
+    ScreeningExplanation.objects.create(
+        screening_record=record_b,
+        method=exp_b.method,
+        method_version=exp_b.method_version,
+        link_function=exp_b.link_function,
+        intercept=exp_b.intercept,
+        contributions_json=[c.to_dict() for c in exp_b.contributions],
+        reconstructed_linear_predictor=exp_b.reconstructed_linear_predictor,
+        reconstructed_probability=exp_b.reconstructed_probability,
+        reconstruction_error=exp_b.reconstruction_error,
+        model_sha256=exp_b.model_sha256,
+        status='generated',
+    )
+
+    # 5. Persist SimilarCaseComparison
+    prob_delta = adapted_res.adapted_probability - baseline_res.probability
+    comparison = SimilarCaseComparison.objects.create(
+        source_case=exp.case_a,
+        target_case=record_b,
+        similarity_score=sim.similarity_score,
+        similarity_method=sim.method,
+        similarity_features_used=sim.features_used,
+        similarity_normalization_version=sim.normalization_bounds_version,
+        baseline_version=get_baseline_version(),
+        baseline_probability=baseline_res.probability,
+        baseline_recommendation=baseline_res.referral_recommended,
+        updated_version=exp.active_adaptation,
+        updated_probability=adapted_res.adapted_probability,
+        updated_recommendation=adapted_res.adapted_recommendation,
+        probability_delta=prob_delta,
+        recommendation_changed=(
+            adapted_res.adapted_recommendation != baseline_res.referral_recommended
+        ),
+        feedback_category=exp.override_factor,
+        learning_batch=exp.learning_batch,
+    )
+
+    # 6. Finalize ControlledFeedbackExperiment provenance
+    exp.case_b = record_b
+    exp.case_b_similarity = round(sim.similarity_score, 4)
+    exp.case_b_baseline_probability = round(baseline_res.probability, 6)
+    exp.case_b_adapted_probability = round(adapted_res.adapted_probability, 6)
+    exp.case_b_probability_delta = round(prob_delta, 6)
+    exp.case_b_log_odds_delta = round(adapted_res.delta_log_odds, 6)
+    exp.state = 'COMPARISON_COMPLETE'
+    exp.completed_at = timezone.now()
+    exp.notes = (
+        f"Demonstration completed successfully. "
+        f"Case B baseline={exp.case_b_baseline_probability:.6f}, "
+        f"adapted={exp.case_b_adapted_probability:.6f}, "
+        f"delta={exp.case_b_probability_delta:+.6f}, "
+        f"similarity={exp.case_b_similarity:.4f}."
+    )
+    exp.save()
+
+    return {
+        'success': True,
+        'experiment': exp,
+        'comparison': comparison,
+        'baseline_probability': exp.case_b_baseline_probability,
+        'adapted_probability': exp.case_b_adapted_probability,
+        'probability_delta': exp.case_b_probability_delta,
+        'log_odds_delta': exp.case_b_log_odds_delta,
+        'similarity_score': exp.case_b_similarity,
+    }
+
+
+def reset_controlled_experiment(include_completed: bool = False) -> bool:
+    """Reset or cancel the active controlled experiment."""
+    from ..models import ControlledFeedbackExperiment
+    if include_completed:
+        ControlledFeedbackExperiment.objects.all().delete()
+    else:
+        ControlledFeedbackExperiment.objects.exclude(state='COMPARISON_COMPLETE').delete()
+    return True
+
 

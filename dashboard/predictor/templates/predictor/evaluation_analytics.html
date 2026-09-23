@@ -1,0 +1,343 @@
+{% extends 'predictor/base.html' %}
+
+{% block title %}Evaluation Analytics — Researcher Portal{% endblock %}
+{% block breadcrumb %}Evaluation Analytics{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="ui-page-header" style="margin-bottom: 2rem;">
+    <div class="ui-page-header-row" style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
+        <div>
+            <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem;">
+                <h1 class="ui-page-title" style="margin: 0;">Evaluation Study Analytics</h1>
+                <span class="ui-badge ui-badge-emerald">Researcher Portal</span>
+                <span class="ui-badge ui-badge-outline">Protocol E1 v1.0.3</span>
+            </div>
+            <p class="ui-page-description">
+                Real-time participant recruitment, questionnaire progress, psychometric metrics, and protocol compliance tracking.
+            </p>
+        </div>
+        <div style="display: flex; gap: 0.75rem; align-items: center;">
+            <a href="{% url 'predictor:evaluation_export' %}" class="ui-button ui-button-primary" id="btn-export-zip" style="display: inline-flex; align-items: center; gap: 0.5rem; text-decoration: none; padding: 0.5rem 1rem; border-radius: var(--radius); font-weight: 500;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                Download Research Dataset (ZIP)
+            </a>
+        </div>
+    </div>
+</div>
+
+{% if session_message %}
+<div class="ui-alert ui-alert-info" style="margin-bottom: 1.5rem;">
+    <div class="ui-alert-content">
+        <p class="ui-alert-body">{{ session_message }}</p>
+    </div>
+</div>
+{% endif %}
+
+<!-- Research Governance Notice -->
+<div class="ui-alert ui-alert-info" role="region" aria-label="Research Governance Note" style="margin-bottom: 2rem;">
+    <svg class="ui-alert-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="16" x2="12"/><line x1="12" x2="12.01" y1="8" y2="8"/>
+    </svg>
+    <div class="ui-alert-content">
+        <p class="ui-alert-title">Dataset Isolation & Methodology Governance</p>
+        <p class="ui-alert-body">
+            All statistics on this page are computed dynamically from the participant evaluation database (<code>db_evaluation.sqlite3</code>). This cohort is strictly isolated from Feedback Lab adaptive learning. Practice case P0 runs are segregated and excluded from research screening counts. Target recruitment ($N=40$) represents the operational project sampling target, not a statistical power minimum.
+        </p>
+    </div>
+</div>
+
+<!-- SECTION 1: EXECUTIVE PROGRESS CARDS (4 METRICS) -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+    <!-- 1. Total Registered Respondents -->
+    <div class="ui-metric-card" id="card-total-respondents">
+        <span class="ui-metric-label">Registered Respondents</span>
+        <div class="ui-metric-value tabular-nums">{{ stats.total_respondents }}</div>
+        <div class="ui-metric-helper">Distinct participants consented</div>
+    </div>
+
+    <!-- 2. Total Sessions -->
+    <div class="ui-metric-card" id="card-total-sessions">
+        <span class="ui-metric-label">Evaluation Sessions</span>
+        <div class="ui-metric-value tabular-nums">{{ stats.total_sessions }}</div>
+        <div class="ui-metric-helper">
+            <span style="color: hsl(var(--emerald-600, 142 71% 45%)); font-weight: 500;">{{ stats.sessions_completed }} completed</span> · 
+            {{ stats.sessions_in_progress }} active · 
+            {{ stats.sessions_abandoned }} abandoned
+        </div>
+    </div>
+
+    <!-- 3. Questionnaires Submitted -->
+    <div class="ui-metric-card" id="card-questionnaires-submitted">
+        <span class="ui-metric-label">Questionnaires Submitted</span>
+        <div class="ui-metric-value tabular-nums">{{ stats.questionnaires_submitted }}</div>
+        <div class="ui-metric-helper">
+            {% if stats.questionnaire_submission_rate.percentage is not None %}
+                {{ stats.questionnaire_submission_rate.percentage }}% of started ({{ stats.questionnaires_started }})
+            {% else %}
+                0 started
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- 4. Valid Research Respondents -->
+    <div class="ui-metric-card" id="card-valid-respondents" style="border-left: 4px solid hsl(var(--primary));">
+        <span class="ui-metric-label">Valid Research Respondents</span>
+        <div class="ui-metric-value tabular-nums" style="color: hsl(var(--primary));">
+            {{ stats.valid_research_respondents }} <span style="font-size: 1rem; font-weight: 400; color: hsl(var(--muted-foreground));">/ {{ stats.target_respondents }} target</span>
+        </div>
+        <div class="ui-metric-helper">
+            {% if stats.target_progress_pct is not None %}
+                {{ stats.target_progress_pct }}% of recruitment target achieved
+            {% else %}
+                Recruitment pending
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- SECTION 2: WORKFLOW & COMPLETION DETAILED BREAKDOWN -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+    <!-- Left Card: Completion Rates & Funnel -->
+    <div class="ui-card">
+        <div class="ui-card-header">
+            <h2 class="ui-card-title">Study Completion & Validity Rates</h2>
+            <p class="ui-card-description">Decoupled respondent vs session level completion indicators</p>
+        </div>
+        <div class="ui-card-content" style="display: flex; flex-direction: column; gap: 1.25rem;">
+            <div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem; font-size: 0.875rem;">
+                    <span>Respondent Completion Rate</span>
+                    <span class="tabular-nums" style="font-weight: 600;">
+                        {{ stats.respondent_completion_rate.percentage|default:"0.0" }}%
+                    </span>
+                </div>
+                <div style="font-size: 0.75rem; color: hsl(var(--muted-foreground));">
+                    {{ stats.respondent_completion_rate.numerator }} of {{ stats.respondent_completion_rate.denominator }} registered respondents completed ≥1 session
+                </div>
+            </div>
+
+            <div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem; font-size: 0.875rem;">
+                    <span>Session Completion Rate</span>
+                    <span class="tabular-nums" style="font-weight: 600;">
+                        {{ stats.session_completion_rate.percentage|default:"0.0" }}%
+                    </span>
+                </div>
+                <div style="font-size: 0.75rem; color: hsl(var(--muted-foreground));">
+                    {{ stats.session_completion_rate.numerator }} of {{ stats.session_completion_rate.denominator }} total sessions completed
+                </div>
+            </div>
+
+            <div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem; font-size: 0.875rem;">
+                    <span>Full Evaluation Flow Completed</span>
+                    <span class="tabular-nums" style="font-weight: 600;">
+                        {{ stats.full_evaluation_completed_sessions }} sessions ({{ stats.full_evaluation_completed_respondents }} respondents)
+                    </span>
+                </div>
+                <div style="font-size: 0.75rem; color: hsl(var(--muted-foreground));">
+                    Satisfies Consent → Practice P0 → Stage 1 Task → Human Review → Questionnaire submission
+                </div>
+            </div>
+
+            <div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem; font-size: 0.875rem;">
+                    <span>Protocol Excluded Sessions (§6.2)</span>
+                    <span class="tabular-nums" style="font-weight: 600; color: {% if stats.sessions_excluded > 0 %}hsl(var(--destructive)){% else %}hsl(var(--foreground)){% endif %};">
+                        {{ stats.sessions_excluded }}
+                    </span>
+                </div>
+                <div style="font-size: 0.75rem; color: hsl(var(--muted-foreground));">
+                    Sessions marked invalid per pre-specified protocol exclusion rules
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Card: Questionnaire Psychometric & Section Summary -->
+    <div class="ui-card">
+        <div class="ui-card-header">
+            <h2 class="ui-card-title">Questionnaire Component Status</h2>
+            <p class="ui-card-description">Summary psychometrics from submitted post-task instruments</p>
+        </div>
+        <div class="ui-card-content" style="display: flex; flex-direction: column; gap: 1.25rem;">
+            <!-- Section A -->
+            <div style="padding-bottom: 0.75rem; border-bottom: 1px solid hsl(var(--border));">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
+                    <span style="font-weight: 600; font-size: 0.875rem;">Seksi A: Pemahaman Objektif (C1–C8)</span>
+                    <span class="ui-badge ui-badge-outline">{{ stats.comprehension_completed_count }} / {{ stats.questionnaires_submitted }}</span>
+                </div>
+                <div style="font-size: 0.8125rem; color: hsl(var(--muted-foreground));">
+                    {% if stats.mean_comprehension_score is not None %}
+                        Skor Rata-rata: <strong>{{ stats.mean_comprehension_score }}/8</strong> · Median: <strong>{{ stats.median_comprehension_score }}</strong> (Rentang: {{ stats.min_comprehension_score }}–{{ stats.max_comprehension_score }})
+                    {% else %}
+                        Belum ada data respons
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Section B -->
+            <div style="padding-bottom: 0.75rem; border-bottom: 1px solid hsl(var(--border));">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
+                    <span style="font-weight: 600; font-size: 0.875rem;">Seksi B: System Usability Scale (SUS 1–10)</span>
+                    <span class="ui-badge ui-badge-outline">{{ stats.sus_completed_count }} / {{ stats.questionnaires_submitted }}</span>
+                </div>
+                <div style="font-size: 0.8125rem; color: hsl(var(--muted-foreground));">
+                    {% if stats.mean_sus_score is not None %}
+                        Skor Rata-rata: <strong>{{ stats.mean_sus_score }}</strong> (SD: {{ stats.std_sus_score|default:"—" }}) · Median: <strong>{{ stats.median_sus_score }}</strong> (Rentang: {{ stats.min_sus_score }}–{{ stats.max_sus_score }})
+                    {% else %}
+                        Belum ada data respons
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Section C -->
+            <div style="padding-bottom: 0.75rem; border-bottom: 1px solid hsl(var(--border));">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
+                    <span style="font-weight: 600; font-size: 0.875rem;">Seksi C: Kejelasan Representasi (DQ1–DQ5)</span>
+                    <span class="ui-badge ui-badge-outline">{{ stats.clarity_completed_count }} / {{ stats.questionnaires_submitted }}</span>
+                </div>
+                <div style="font-size: 0.8125rem; color: hsl(var(--muted-foreground));">
+                    5 butir skala Likert diskret 1–5 dianalisis per-butir sesuai rencana analisis.
+                </div>
+            </div>
+
+            <!-- Section D -->
+            <div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
+                    <span style="font-weight: 600; font-size: 0.875rem;">Seksi D: Umpan Balik Kualitatif (OQ1–OQ3)</span>
+                    <span class="ui-badge ui-badge-outline">{{ stats.open_ended_completed_count }} / {{ stats.questionnaires_submitted }}</span>
+                </div>
+                <div style="font-size: 0.8125rem; color: hsl(var(--muted-foreground));">
+                    Teks terbuka kualitatif dianalisis secara tematik pragmatis (Braun & Clarke 2006).
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- SECTION 3: PROTOCOL EXCLUSION GOVERNANCE (§6.2) -->
+<div class="ui-card" style="margin-bottom: 2rem;">
+    <div class="ui-card-header">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+            <div>
+                <h2 class="ui-card-title">Session Invalidation Governance (E1 Protocol §6.2)</h2>
+                <p class="ui-card-description">
+                    Audit log of pre-specified protocol session exclusions. Raw records remain permanently preserved in export datasets.
+                </p>
+            </div>
+        </div>
+    </div>
+    <div class="ui-card-content">
+        {% if stats.excluded_sessions %}
+        <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 0.875rem;">
+                <thead>
+                    <tr style="border-bottom: 1px solid hsl(var(--border)); text-align: left; color: hsl(var(--muted-foreground));">
+                        <th style="padding: 0.5rem;">Session ID</th>
+                        <th style="padding: 0.5rem;">Respondent Code</th>
+                        <th style="padding: 0.5rem;">Pre-specified Reason</th>
+                        <th style="padding: 0.5rem;">Notes</th>
+                        <th style="padding: 0.5rem;">Timestamp</th>
+                        <th style="padding: 0.5rem; text-align: right;">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in stats.excluded_sessions %}
+                    <tr style="border-bottom: 1px solid hsl(var(--border)/0.5);">
+                        <td style="padding: 0.5rem; font-family: monospace;">{{ item.session_id|slice:":8" }}...</td>
+                        <td style="padding: 0.5rem; font-weight: 500;">{{ item.respondent_code }}</td>
+                        <td style="padding: 0.5rem;">
+                            <span class="ui-badge ui-badge-destructive">{{ item.reason_display }}</span>
+                        </td>
+                        <td style="padding: 0.5rem; color: hsl(var(--muted-foreground));">{{ item.notes|default:"—" }}</td>
+                        <td style="padding: 0.5rem; font-size: 0.8125rem;">{{ item.excluded_at|date:"Y-m-d H:i"|default:"—" }}</td>
+                        <td style="padding: 0.5rem; text-align: right;">
+                            <form method="post" action="{% url 'predictor:evaluation_exclude_session' session_id=item.session_id %}" style="display: inline;">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="reinstate">
+                                <button type="submit" class="ui-button ui-button-outline" style="font-size: 0.75rem; padding: 0.25rem 0.5rem;">Reinstate</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div style="padding: 1.5rem; text-align: center; color: hsl(var(--muted-foreground)); font-size: 0.875rem;">
+            Zero session exclusions recorded. All completed sessions currently qualify as valid.
+        </div>
+        {% endif %}
+
+        <!-- Exclude Form for Researcher -->
+        <div style="margin-top: 1.5rem; padding-top: 1.25rem; border-top: 1px solid hsl(var(--border));">
+            <details style="font-size: 0.875rem;">
+                <summary style="cursor: pointer; font-weight: 500; color: hsl(var(--foreground));">Record Post-Collection Session Exclusion (§6.2)</summary>
+                <form method="post" action="{% url 'predictor:evaluation_exclude_session' session_id='00000000-0000-0000-0000-000000000000' %}" style="margin-top: 1rem; display: flex; flex-direction: column; gap: 0.75rem; max-width: 600px;" id="form-exclude-session">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="exclude">
+                    <div>
+                        <label for="session_id_input" style="font-size: 0.8125rem; font-weight: 500;">Session ID (UUID):</label>
+                        <input type="text" id="session_id_input" name="session_id" required class="ui-input" style="width: 100%; margin-top: 0.25rem; font-family: monospace;" placeholder="e.g. c3f4a9b2-...">
+                    </div>
+                    <div>
+                        <label for="exclusion_reason_select" style="font-size: 0.8125rem; font-weight: 500;">Exclusion Reason (§6.2 Criterion):</label>
+                        <select id="exclusion_reason_select" name="exclusion_reason" required class="ui-select" style="width: 100%; margin-top: 0.25rem;">
+                            <option value="">-- Select Pre-specified Criterion --</option>
+                            <option value="technical_failure">Catastrophic technical failure before Task 4 completed</option>
+                            <option value="procedural_error">Uncorrectable procedural error by moderator</option>
+                            <option value="eligibility_violation">Discovery of participant eligibility violation</option>
+                            <option value="withdrawal">Participant withdrew prior to study completion</option>
+                            <option value="other">Other documented protocol exclusion</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="exclusion_notes_input" style="font-size: 0.8125rem; font-weight: 500;">Exclusion Audit Note:</label>
+                        <textarea id="exclusion_notes_input" name="exclusion_notes" rows="2" class="ui-input" style="width: 100%; margin-top: 0.25rem;" placeholder="Specific rationale documenting why this session is excluded..."></textarea>
+                    </div>
+                    <div>
+                        <button type="submit" class="ui-button ui-button-destructive" style="padding: 0.5rem 1rem;">Record Session Exclusion</button>
+                    </div>
+                </form>
+            </details>
+        </div>
+    </div>
+</div>
+
+<!-- SECTION 4: SUBMISSION TIMELINE -->
+{% if stats.daily_submissions %}
+<div class="ui-card" style="margin-bottom: 2rem;">
+    <div class="ui-card-header">
+        <h2 class="ui-card-title">Submission Activity Timeline</h2>
+        <p class="ui-card-description">
+            First submission: {{ stats.earliest_submission|date:"Y-m-d H:i"|default:"—" }} · Latest submission: {{ stats.latest_submission|date:"Y-m-d H:i"|default:"—" }}
+        </p>
+    </div>
+    <div class="ui-card-content">
+        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            {% for d in stats.daily_submissions %}
+            <div style="padding: 0.5rem 0.75rem; border: 1px solid hsl(var(--border)); border-radius: var(--radius); text-align: center;">
+                <div style="font-size: 0.75rem; color: hsl(var(--muted-foreground));">{{ d.date }}</div>
+                <div style="font-size: 1.125rem; font-weight: 600;" class="tabular-nums">{{ d.count }}</div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<script>
+// Dynamic action URL replacement for the exclusion form
+document.getElementById('form-exclude-session')?.addEventListener('submit', function(e) {
+    const input = document.getElementById('session_id_input');
+    if (input && input.value.trim()) {
+        const sid = input.value.trim();
+        this.action = "{% url 'predictor:evaluation_exclude_session' session_id='00000000-0000-0000-0000-000000000000' %}".replace('00000000-0000-0000-0000-000000000000', sid);
+    }
+});
+</script>
+{% endblock %}

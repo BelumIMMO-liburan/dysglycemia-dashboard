@@ -27,6 +27,7 @@ from predictor.models import (
     HumanFeedback,
     FeedbackLearningBatch,
     SimilarCaseComparison,
+    ControlledFeedbackExperiment,
     EvaluationRespondent,
     EvaluationSession,
     EvaluationEvent,
@@ -106,6 +107,7 @@ class Command(BaseCommand):
             "HumanFeedback": HumanFeedback.objects.count(),
             "FeedbackLearningBatch": FeedbackLearningBatch.objects.count(),
             "SimilarCaseComparison": SimilarCaseComparison.objects.count(),
+            "ControlledFeedbackExperiment": ControlledFeedbackExperiment.objects.count(),
             "ModelVersion": ModelVersion.objects.count(),
             "Prediction (legacy)": Prediction.objects.count(),
             "Override (legacy)": Override.objects.count(),
@@ -118,6 +120,7 @@ class Command(BaseCommand):
 
         # 6. Perform atomic reset in db.sqlite3
         with transaction.atomic():
+            ControlledFeedbackExperiment.objects.all().delete()
             SimilarCaseComparison.objects.all().delete()
             FeedbackLearningBatch.objects.all().delete()
             HumanFeedback.objects.all().delete()
@@ -146,6 +149,10 @@ class Command(BaseCommand):
                 except Exception as e:
                     self.stdout.write(f"Warning removing {pkl}: {e}")
 
+        # Seed fresh baseline GAM-v1
+        from predictor.services.model_versioning import ensure_baseline_version
+        ensure_baseline_version()
+
         # 8. Verify post-reset counts
         post_counts = {
             "ScreeningRecord": ScreeningRecord.objects.count(),
@@ -155,6 +162,7 @@ class Command(BaseCommand):
             "HumanFeedback": HumanFeedback.objects.count(),
             "FeedbackLearningBatch": FeedbackLearningBatch.objects.count(),
             "SimilarCaseComparison": SimilarCaseComparison.objects.count(),
+            "ControlledFeedbackExperiment": ControlledFeedbackExperiment.objects.count(),
             "ModelVersion": ModelVersion.objects.count(),
             "Prediction (legacy)": Prediction.objects.count(),
             "Override (legacy)": Override.objects.count(),
@@ -201,9 +209,13 @@ class Command(BaseCommand):
         self.stdout.write(f"  gam_final.pkl Intact:    {gam_intact} ({current_gam_hash[:16]}...)")
         self.stdout.write(f"  preprocessor.pkl Intact: {prep_intact} ({current_prep_hash[:16]}...)")
 
-        if all(v == 0 for v in post_counts.values()) and eval_untouched and gam_intact and prep_intact:
+        all_zero_except_baseline = all(
+            v == 0 for k, v in post_counts.items() if k != "ModelVersion"
+        ) and (post_counts["ModelVersion"] <= 1)
+
+        if all_zero_except_baseline and eval_untouched and gam_intact and prep_intact:
             self.stdout.write(
-                self.style.SUCCESS("\n[SUCCESS] Feedback Lab database cleanly reset to zero records.")
+                self.style.SUCCESS("\n[SUCCESS] Feedback Lab database cleanly reset. Baseline GAM-v1 ready.")
             )
         else:
             raise CommandError("Post-reset validation check failed.")

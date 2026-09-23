@@ -179,6 +179,7 @@ def compute_research_analytics(
     queryset: Optional[QuerySet] = None,
     date_from: Optional[date] = None,
     date_to: Optional[date] = None,
+    include_practice: bool = False,
 ) -> ResearchAnalyticsSnapshot:
     """
     Compute all research-safe aggregate analytics from authoritative ScreeningRecord rows.
@@ -187,12 +188,17 @@ def compute_research_analytics(
         queryset: Optional base ScreeningRecord queryset (defaults to ScreeningRecord.objects.all()).
         date_from: Optional inclusive start date for ScreeningRecord.created_at.
         date_to: Optional inclusive end date for ScreeningRecord.created_at.
+        include_practice: Whether to include practice onboarding case P0 (defaults to False).
 
     Returns:
         Immutable ResearchAnalyticsSnapshot containing all verified metrics.
     """
     if queryset is None:
         queryset = ScreeningRecord.objects.all()
+
+    # Research Governance: Practice onboarding cases (P0) must never contaminate research analytics
+    if not include_practice:
+        queryset = queryset.filter(is_practice=False)
 
     # Apply date filters consistently to primary ScreeningRecord intake date
     if date_from:

@@ -430,6 +430,10 @@ def activate_version(version_label: str) -> bool:
             av.save()
 
         # Activate the new version
+        if version.version_label.endswith("-candidate"):
+            clean_label = version.version_label[:-10]
+            if not ModelVersion.objects.filter(version_label=clean_label).exclude(id=version.id).exists():
+                version.version_label = clean_label
         version.is_active = True
         version.version_type = "active"
         version.activated_at = now
@@ -480,3 +484,39 @@ def get_version_history() -> list:
     """Return all model versions ordered by creation time."""
     from ..models import ModelVersion
     return list(ModelVersion.objects.all().order_by('-created_at'))
+
+
+def get_model_status_summary() -> Dict[str, Any]:
+    """
+    Return the standardized model and adaptation status display according to research terminology:
+      - Baseline Model: GAM-v1 · Frozen
+      - Active Adaptation: RA-vX · Validated & Active (or 'None')
+      - Candidate Adaptation: RA-vY · Pending Validation (or 'None')
+    """
+    from ..models import ModelVersion
+
+    active_adaptation = ModelVersion.objects.filter(
+        is_active=True
+    ).exclude(version_label=BASELINE_VERSION_LABEL).first()
+
+    candidate_adaptation = ModelVersion.objects.filter(
+        version_type='candidate'
+    ).first()
+
+    active_display = (
+        f"{active_adaptation.version_label} · Validated & Active"
+        if active_adaptation else "None"
+    )
+    candidate_display = (
+        f"{candidate_adaptation.version_label} · Pending Validation"
+        if candidate_adaptation else "None"
+    )
+
+    return {
+        "baseline_model": "GAM-v1 · Frozen",
+        "active_adaptation": active_display,
+        "candidate_adaptation": candidate_display,
+        "raw_active_adaptation": active_adaptation,
+        "raw_candidate_adaptation": candidate_adaptation,
+    }
+

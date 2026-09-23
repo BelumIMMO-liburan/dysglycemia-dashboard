@@ -1,13 +1,15 @@
 import logging
 from django.conf import settings
 from django.shortcuts import render, redirect, get_object_or_404
-from django.http import JsonResponse, HttpResponseForbidden
+from django.http import JsonResponse, HttpResponseForbidden, HttpResponse
+from django.contrib import messages
 from django.db.models import Count, Q, Avg
 from django.db import transaction
 from django.utils import timezone
 from .models import (
     Prediction, Override, ScreeningRecord, ScreeningExplanation, HumanReview,
     Stage2Assessment,
+    ControlledFeedbackExperiment,
     OVERRIDE_REASONS_REFER_TO_NO_REFER, OVERRIDE_REASONS_NO_REFER_TO_REFER,
     ALL_OVERRIDE_REASONS_DICT,
     EvaluationRespondent, EvaluationSession, EvaluationEvent, QuestionnaireResponse,
@@ -31,7 +33,7 @@ from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
-from .decorators import require_app_mode
+from .decorators import require_app_mode, require_researcher_access
 from .forms import (
     Stage1ScreeningForm, HumanReviewAcceptForm, HumanReviewOverrideForm,
     Stage2EntryForm, Stage2ConfirmForm,
@@ -261,6 +263,13 @@ def run_screening_view(request):
     try:
         if request.POST.get('_simulate_db_error') == '1':
             raise RuntimeError("Simulated database write failure for verification.")
+
+        # Resolve active evaluation session if operating in participant evaluation flow
+        eval_session = None
+        eval_token = request.session.get('evaluation_session_token')
+        if eval_token:
+            eval_session = EvaluationSession.objects.filter(session_token=eval_token, status='in_progress').first()
+
         with transaction.atomic():
             record = ScreeningRecord.objects.create(
                 age=form.cleaned_data['age'],
@@ -278,6 +287,7 @@ def run_screening_view(request):
                 preprocessor_sha256=screening_inference.EXPECTED_PREPROCESSOR_SHA256,
                 input_schema_version="1.0",
                 idempotency_token=idempotency_token if idempotency_token else None,
+                evaluation_session=eval_session,
             )
     except Exception as db_err:
         logger.error(f"Failed to persist ScreeningRecord: {db_err}", exc_info=True)
@@ -333,6 +343,13 @@ def run_screening_view(request):
             logger.error(f"Could not persist failed explanation state: {failed_save_err}", exc_info=True)
 
     # 3. Post-Redirect-Get (302 Redirect to stable result detail route)
+    if eval_session:
+        _log_eval_event(request, 'stage1_completed', {
+            'record_id': str(record.id),
+            'probability': record.screening_probability,
+            'ai_referral': record.ai_referral_recommended,
+        })
+
     return redirect('predictor:screening_result', screening_id=record.id)
 
 
@@ -467,6 +484,7 @@ def screening_result_view(request, screening_id):
         'feedback_error': feedback_error,
         'experiment_message': experiment_message,
         'similar_comparisons': similar_comparisons,
+        'active_exp': ControlledFeedbackExperiment.objects.filter(case_a=record).order_by('-created_at').first(),
     }
     return render(request, 'predictor/screening_result.html', context)
 
@@ -527,6 +545,16 @@ def unified_review_view(request, screening_id):
             'has_feedback': feedback is not None,
             'is_eligible': feedback.is_eligible_for_learning if feedback else False,
         })
+        _log_eval_event(request, 'human_review_completed', {
+            'record_id': str(screening_record.id),
+            'action': review.review_action,
+            'final_referral': review.final_referral_recommended,
+        })
+        if review.review_action == 'overridden':
+            _log_eval_event(request, 'override_recorded', {
+                'record_id': str(screening_record.id),
+                'reason': review.override_reason_code,
+            })
     except Exception as e:
         logger.error(f"Failed to record unified review for {screening_record.id}: {e}", exc_info=True)
         request.session['review_error'] = f"The review could not be saved: {e}"
@@ -574,11 +602,16 @@ def accept_review_view(request, screening_id):
     # 4. Delegate to unified service helper
     try:
         from .services.feedback_learning import record_review_with_learning_signal
-        record_review_with_learning_signal(
+        review, feedback = record_review_with_learning_signal(
             screening_record=screening_record,
             reviewer_code=cleaned_reviewer_code,
             human_decision='accept',
         )
+        _log_eval_event(request, 'human_review_completed', {
+            'record_id': str(screening_record.id),
+            'action': review.review_action,
+            'final_referral': review.final_referral_recommended,
+        })
     except Exception as e:
         logger.error(f"Failed to persist HumanReview for {screening_record.id}: {e}", exc_info=True)
         request.session['review_error'] = "The review could not be saved. Please try again."
@@ -636,13 +669,22 @@ def override_review_view(request, screening_id):
     # 4. Delegate to unified service helper
     try:
         from .services.feedback_learning import record_review_with_learning_signal
-        record_review_with_learning_signal(
+        review, feedback = record_review_with_learning_signal(
             screening_record=screening_record,
             reviewer_code=cleaned_reviewer_code,
             human_decision='override',
             override_factor=cleaned_reason_code,
             rationale=cleaned_note,
         )
+        _log_eval_event(request, 'human_review_completed', {
+            'record_id': str(screening_record.id),
+            'action': review.review_action,
+            'final_referral': review.final_referral_recommended,
+        })
+        _log_eval_event(request, 'override_recorded', {
+            'record_id': str(screening_record.id),
+            'reason': review.override_reason_code,
+        })
     except Exception as e:
         logger.error(f"Failed to persist HumanReview override for {screening_record.id}: {e}", exc_info=True)
         request.session['override_error'] = "The override could not be saved. Please try again."
@@ -807,6 +849,13 @@ def stage2_confirm_view(request, screening_id):
         logger.error(f"Failed to persist Stage2Assessment for {screening_record.id}: {e}", exc_info=True)
         request.session['stage2_error'] = "The laboratory assessment could not be saved. Please try again."
         return redirect('predictor:stage2', screening_id=screening_record.id)
+
+    # Log evaluation event if session is active
+    _log_eval_event(request, 'stage2_completed', {
+        'record_id': str(screening_record.id),
+        'hba1c': float(cleaned_hba1c),
+        'range': range_result.range_code,
+    })
 
     return redirect('predictor:stage2', screening_id=screening_record.id)
 
@@ -1078,6 +1127,17 @@ def history_view(request):
     Read-only surface: 0 writes, 0 ML, 0 XAI.
     """
     qs = ScreeningRecord.objects.select_related('explanation', 'human_review__stage2_assessment')
+
+    # Exclude practice cases (P0) by default to prevent research contamination
+    include_practice = request.GET.get('include_practice', '0') == '1'
+    if not include_practice:
+        qs = qs.filter(is_practice=False)
+
+    # In evaluation mode, restrict participants to their own evaluation session records
+    app_mode = getattr(settings, 'APP_MODE', 'feedback_lab')
+    eval_token = request.session.get('evaluation_session_token')
+    if app_mode == 'evaluation' and eval_token and not (request.user.is_authenticated and request.user.is_staff):
+        qs = qs.filter(evaluation_session__session_token=eval_token)
 
     # 1. Search by Screening UUID (full or prefix/substring)
     search_query = request.GET.get('search', '').strip()
@@ -1393,10 +1453,13 @@ def feedback_experiment_view(request):
     """
     Feedback Learning Experiment Dashboard.
     Displays feedback accumulation, model versions, learning batches,
-    and before/after comparison results.
+    controlled mechanism experiment, and before/after comparison results.
 
     Read-only surface: 0 writes, 0 ML execution.
     """
+    from .services.model_versioning import get_model_status_summary
+    from .services.feedback_learning import get_latest_controlled_experiment
+
     # Feedback summary
     total_feedback = HumanFeedback.objects.count()
     eligible_feedback = HumanFeedback.objects.filter(is_eligible_for_learning=True).count()
@@ -1413,9 +1476,13 @@ def feedback_experiment_view(request):
         .order_by('-count')
     )
 
-    # Model versions
+    # Model versions and status
     versions = list(ModelVersion.objects.all().order_by('-created_at'))
     active_version = ModelVersion.objects.filter(is_active=True).first()
+    model_status = get_model_status_summary()
+
+    # Controlled Mechanism Experiment (Thesis Gap #2)
+    controlled_exp = get_latest_controlled_experiment()
 
     # Learning batches
     batches = list(FeedbackLearningBatch.objects.all().order_by('-created_at')[:10])
@@ -1439,12 +1506,118 @@ def feedback_experiment_view(request):
         'category_breakdown': category_breakdown,
         'versions': versions,
         'active_version': active_version,
+        'model_status': model_status,
+        'controlled_exp': controlled_exp,
         'batches': batches,
         'comparisons': comparisons,
         'experiment_message': experiment_message,
         'experiment_error': experiment_error,
     }
     return render(request, 'predictor/feedback_experiment.html', context)
+
+
+@require_app_mode('feedback_lab')
+def start_controlled_experiment_view(request):
+    """
+    Step 1: Start or restart a Controlled Mechanism Demonstration Experiment.
+    Creates Case A and redirects researcher directly to review Case A.
+    """
+    if request.method != 'POST':
+        return redirect('predictor:feedback_experiment')
+
+    from .services.feedback_learning import start_controlled_experiment
+    try:
+        exp, case_a = start_controlled_experiment()
+        request.session['experiment_message'] = (
+            "Controlled Mechanism Experiment initiated. Case A created. "
+            "Please review the Native GAM explanation and record your human decision."
+        )
+        return redirect('predictor:screening_result', screening_id=case_a.id)
+    except Exception as e:
+        logger.error(f"Failed to start controlled experiment: {e}", exc_info=True)
+        request.session['experiment_error'] = f"Failed to start controlled experiment: {e}"
+        return redirect('predictor:feedback_experiment')
+
+
+@require_app_mode('feedback_lab')
+def run_controlled_learning_view(request):
+    """
+    Step 3: Execute controlled learning from the real Human Override signal.
+    """
+    if request.method != 'POST':
+        return redirect('predictor:feedback_experiment')
+
+    from .services.feedback_learning import run_controlled_learning
+    res = run_controlled_learning()
+
+    if res['success']:
+        request.session['experiment_message'] = (
+            f"Controlled Learning succeeded: Candidate Adaptation {res['candidate_label']} "
+            f"trained and passed all 13 technical validation checks."
+        )
+    else:
+        request.session['experiment_error'] = f"Controlled learning failed: {res.get('error')}"
+
+    return redirect('predictor:feedback_experiment')
+
+
+@require_app_mode('feedback_lab')
+def activate_controlled_adaptation_view(request):
+    """
+    Step 4: Activate the validated candidate adaptation layer.
+    """
+    if request.method != 'POST':
+        return redirect('predictor:feedback_experiment')
+
+    from .services.feedback_learning import activate_controlled_adaptation
+    res = activate_controlled_adaptation()
+
+    if res['success']:
+        request.session['experiment_message'] = (
+            f"Residual Adaptation {res['active_label']} is now Validated & Active. "
+            f"Ready to evaluate subsequent similar Case B."
+        )
+    else:
+        request.session['experiment_error'] = f"Activation failed: {res.get('error')}"
+
+    return redirect('predictor:feedback_experiment')
+
+
+@require_app_mode('feedback_lab')
+def evaluate_controlled_case_b_view(request):
+    """
+    Step 5: Evaluate subsequent similar Case B under frozen GAM vs active residual adaptation.
+    """
+    if request.method != 'POST':
+        return redirect('predictor:feedback_experiment')
+
+    from .services.feedback_learning import evaluate_controlled_case_b
+    res = evaluate_controlled_case_b()
+
+    if res['success']:
+        request.session['experiment_message'] = (
+            f"Case B evaluated! Baseline P={res['baseline_probability']:.4f} vs "
+            f"Adapted P={res['adapted_probability']:.4f} (Δ={res['probability_delta']:+.4f}, "
+            f"Similarity={res['similarity_score']:.4f}). Comparison complete."
+        )
+    else:
+        request.session['experiment_error'] = f"Case B evaluation failed: {res.get('error')}"
+
+    return redirect('predictor:feedback_experiment')
+
+
+@require_app_mode('feedback_lab')
+def reset_controlled_experiment_view(request):
+    """
+    Reset in-progress controlled experiment state back to READY.
+    """
+    if request.method != 'POST':
+        return redirect('predictor:feedback_experiment')
+
+    from .services.feedback_learning import reset_controlled_experiment
+    reset_controlled_experiment()
+    request.session['experiment_message'] = "Controlled experiment state reset."
+    return redirect('predictor:feedback_experiment')
 
 
 @require_app_mode('feedback_lab')
@@ -1745,6 +1918,7 @@ def evaluation_practice_view(request):
                 input_schema_version="1.0",
                 idempotency_token=practice_token,
                 is_practice=True,
+                evaluation_session=session,
             )
             exp_res = screening_explanation.explain_screening(p0_data)
             ScreeningExplanation.objects.create(
@@ -1881,4 +2055,80 @@ def evaluation_complete_view(request):
         'respondent_code': resp_code or "PARTICIPANT-ANON",
         'session': session,
     })
+
+
+@require_researcher_access
+def evaluation_analytics_view(request):
+    """
+    Researcher-only Evaluation Analytics View.
+    Displays live recruitment stats, completion funnel, psychometrics,
+    and protocol session exclusion management.
+    """
+    from .services.evaluation_analytics import compute_evaluation_analytics
+
+    include_excluded = request.GET.get('include_excluded', '0') == '1'
+    analytics = compute_evaluation_analytics(include_excluded=include_excluded)
+
+    # Fetch recent sessions for audit/management
+    sessions = (
+        EvaluationSession.objects.select_related('respondent')
+        .prefetch_related('questionnaire_responses', 'events')
+        .order_by('-started_at')[:50]
+    )
+
+    context = {
+        'stats': analytics,
+        'analytics': analytics,
+        'sessions': sessions,
+        'include_excluded': include_excluded,
+    }
+    return render(request, 'predictor/evaluation_analytics.html', context)
+
+
+@require_researcher_access
+def evaluation_export_view(request):
+    """
+    Researcher-only Evaluation Data Export View.
+    Generates and returns an atomic ZIP archive containing 7 de-identified CSVs,
+    SHA-256 manifest.json, and documentation README.txt.
+    """
+    from .services.evaluation_export import generate_evaluation_export_zip
+
+    zip_bytes, filename, _manifest = generate_evaluation_export_zip()
+
+    response = HttpResponse(zip_bytes, content_type='application/zip')
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    response['Content-Length'] = len(zip_bytes)
+    return response
+
+
+@require_researcher_access
+def evaluation_exclude_session_view(request, session_id):
+    """
+    Toggle protocol exclusion status on an EvaluationSession.
+    Only allows pre-specified protocol reasons per E1_ANALYSIS_PLAN.md §6.2.
+    """
+    session_obj = get_object_or_404(EvaluationSession, id=session_id)
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        if action == 'exclude':
+            reason = request.POST.get('exclusion_reason', 'other')
+            notes = request.POST.get('exclusion_notes', '').strip()
+            session_obj.is_excluded = True
+            session_obj.exclusion_reason = reason
+            session_obj.exclusion_notes = notes
+            session_obj.excluded_at = timezone.now()
+            session_obj.save(update_fields=['is_excluded', 'exclusion_reason', 'exclusion_notes', 'excluded_at'])
+            messages.success(request, f"Session {session_obj.id} marked as excluded ({reason}).")
+        elif action == 'reinstate':
+            session_obj.is_excluded = False
+            session_obj.exclusion_reason = ''
+            session_obj.exclusion_notes = ''
+            session_obj.excluded_at = None
+            session_obj.save(update_fields=['is_excluded', 'exclusion_reason', 'exclusion_notes', 'excluded_at'])
+            messages.success(request, f"Session {session_obj.id} reinstated.")
+
+    return redirect('predictor:evaluation_analytics')
+
 

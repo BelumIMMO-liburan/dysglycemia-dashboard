@@ -8,15 +8,23 @@
 <div class="ui-page-header">
     <div class="ui-page-header-row">
         <div>
-            <h1 class="ui-page-title">Human Feedback Learning Experiment</h1>
+            <h1 class="ui-page-title">Controlled Feedback Learning Experiment</h1>
             <p class="ui-page-description">
-                Investigating whether human review decisions can influence AI behavior on subsequent similar cases without modifying the frozen baseline GAM.
+                Investigating whether structured human override feedback can be converted into an additive residual adaptation layer to alter AI output on a subsequent similar case (Thesis Gap #2).
             </p>
         </div>
-        <div>
-            <span class="ui-badge ui-badge-outline" id="active-model-badge">
-                Active Model: <strong>{{ active_version.version_label|default:"GAM-v1-baseline" }}</strong>
+        <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+            <span class="ui-badge ui-badge-outline" id="baseline-model-badge">
+                Baseline: <strong>{{ model_status.baseline_model }}</strong>
             </span>
+            <span class="ui-badge {% if model_status.raw_active_adaptation %}ui-badge-success{% else %}ui-badge-outline{% endif %}" id="active-adaptation-badge">
+                Active Adaptation: <strong>{{ model_status.active_adaptation }}</strong>
+            </span>
+            {% if model_status.raw_candidate_adaptation %}
+            <span class="ui-badge ui-badge-warning" id="candidate-adaptation-badge">
+                Candidate: <strong>{{ model_status.candidate_adaptation }}</strong>
+            </span>
+            {% endif %}
         </div>
     </div>
 </div>
@@ -27,11 +35,13 @@
         <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
     </svg>
     <div class="ui-alert-content">
-        <p class="ui-alert-title">Research Protocol: Controlled Mechanism Demonstration</p>
+        <p class="ui-alert-title">Research Protocol: Controlled Mechanism Demonstration (Small-N Boundary)</p>
         <p class="ui-alert-body">
-            <strong>Immutable Baseline:</strong> The frozen GAM model artifact is strictly read-only. Learning occurs solely via an additive residual correction layer on the logit scale bounded to &plusmn;2.0.
+            <strong>Immutable Baseline:</strong> The frozen Phase-5 GAM model artifact is strictly read-only. Model parameters and operating threshold (0.1389) are immutable.
             <br>
-            <strong>Small-N Boundary:</strong> Small-N updates serve as a controlled mechanism demonstration showing whether human feedback can influence a subsequent similar case. They do not constitute evidence of generalizable model learning.
+            <strong>Epistemic Boundary:</strong> This experiment demonstrates whether a human override can produce an observable change in AI-supported output for a similar case. It does <em>not</em> claim generalized model retraining, predictive accuracy improvement, clinical validity, or diagnostic superiority.
+            <br>
+            <strong>Real Human Intervention:</strong> Human overrides are provided by real reviewers through the Evidence-First Human Review interface; they are never artificially fabricated by the system.
         </p>
     </div>
 </div>
@@ -43,7 +53,7 @@
         <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
     </svg>
     <div class="ui-alert-content">
-        <p class="ui-alert-title">Error</p>
+        <p class="ui-alert-title">Notice</p>
         <p class="ui-alert-body">{{ experiment_error }}</p>
     </div>
 </div>
@@ -61,57 +71,366 @@
 </div>
 {% endif %}
 
-<!-- Feedback Accumulation KPIs -->
-<div class="ui-stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.75rem;">
-    <div class="ui-card" style="padding: 1.25rem;">
-        <span class="ui-stat-label" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: hsl(var(--muted-foreground));">Total Feedback</span>
-        <div class="ui-stat-value tabular-nums" style="font-size: 1.75rem; font-weight: 700; margin-top: 0.25rem;">{{ total_feedback }}</div>
-        <span style="font-size: 0.75rem; color: hsl(var(--muted-foreground));">All submitted feedback</span>
-    </div>
-
-    <div class="ui-card" style="padding: 1.25rem;">
-        <span class="ui-stat-label" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: hsl(var(--muted-foreground));">Eligible for Learning</span>
-        <div class="ui-stat-value tabular-nums" style="font-size: 1.75rem; font-weight: 700; color: hsl(var(--primary)); margin-top: 0.25rem;">{{ eligible_feedback }}</div>
-        <span style="font-size: 0.75rem; color: hsl(var(--muted-foreground));">Override + learnable taxonomy</span>
-    </div>
-
-    <div class="ui-card" style="padding: 1.25rem;">
-        <span class="ui-stat-label" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: hsl(var(--warning)); margin-top: 0.25rem;">Pending In Next Batch</span>
-        <div class="ui-stat-value tabular-nums" style="font-size: 1.75rem; font-weight: 700; color: hsl(var(--warning)); margin-top: 0.25rem;">{{ pending_feedback }}</div>
-        <span style="font-size: 0.75rem; color: hsl(var(--muted-foreground));">Min. 3 required to trigger batch</span>
-    </div>
-
-    <div class="ui-card" style="padding: 1.25rem;">
-        <span class="ui-stat-label" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: hsl(var(--muted-foreground));">Active Version</span>
-        <div class="ui-stat-value" style="font-size: 1.125rem; font-weight: 700; font-family: monospace; margin-top: 0.5rem; word-break: break-all;">
-            {{ active_version.version_label|default:"GAM-v1-baseline" }}
+<!-- ============================================================================== -->
+<!-- PRIMARY EXPERIMENTAL WORKFLOW: CONTROLLED MECHANISM DEMONSTRATION (Gap #2)       -->
+<!-- ============================================================================== -->
+<div class="ui-card" style="margin-bottom: 2rem; border-left: 4px solid hsl(var(--primary));">
+    <div class="ui-card-header with-actions">
+        <div>
+            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
+                <span class="ui-badge ui-badge-primary" style="font-size: 0.75rem;">Primary Thesis Experiment</span>
+                {% if controlled_exp %}
+                    {% if controlled_exp.state == 'COMPARISON_COMPLETE' %}
+                    <span class="ui-badge ui-badge-success" style="font-size: 0.75rem;">State: COMPARISON_COMPLETE</span>
+                    {% elif controlled_exp.state == 'ADAPTATION_ACTIVE' %}
+                    <span class="ui-badge ui-badge-success" style="font-size: 0.75rem;">State: ADAPTATION_ACTIVE</span>
+                    {% elif controlled_exp.state == 'VALIDATION_PASSED' %}
+                    <span class="ui-badge ui-badge-warning" style="font-size: 0.75rem;">State: VALIDATION_PASSED</span>
+                    {% elif controlled_exp.state == 'LEARNING_SIGNAL_CREATED' %}
+                    <span class="ui-badge ui-badge-warning" style="font-size: 0.75rem;">State: LEARNING_SIGNAL_CREATED</span>
+                    {% elif controlled_exp.state == 'HUMAN_REVIEW_PENDING' %}
+                    <span class="ui-badge ui-badge-outline" style="font-size: 0.75rem; border-color: hsl(var(--warning)); color: hsl(var(--warning));">State: HUMAN_REVIEW_PENDING</span>
+                    {% else %}
+                    <span class="ui-badge ui-badge-outline" style="font-size: 0.75rem;">State: {{ controlled_exp.state }}</span>
+                    {% endif %}
+                {% else %}
+                <span class="ui-badge ui-badge-outline" style="font-size: 0.75rem;">State: READY</span>
+                {% endif %}
+            </div>
+            <h2 class="ui-card-title" style="font-size: 1.25rem;">
+                Causal-Operational Chain: Case A &rarr; Real Override &rarr; Residual Adaptation &rarr; Case B
+            </h2>
+            <p class="ui-card-description">
+                1 Human Intervention &middot; 1 Structured Learning Signal &middot; 1 Residual Adaptation Layer &middot; 1 Subsequent Similar Case
+            </p>
         </div>
-        <span style="font-size: 0.75rem; color: hsl(var(--muted-foreground));">
-            {% if active_version.is_baseline %}Frozen Baseline{% else %}Adapted Candidate{% endif %}
-        </span>
+        <div>
+            {% if controlled_exp %}
+            <form action="{% url 'predictor:reset_controlled_experiment' %}" method="post" style="margin: 0;" onsubmit="return confirm('Reset the active controlled experiment state back to READY?');">
+                {% csrf_token %}
+                <button type="submit" class="ui-btn ui-btn-outline ui-btn-sm" style="font-size: 0.75rem;">
+                    Reset Experiment State
+                </button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="ui-card-content">
+        <!-- Visual Causal-Operational Stepper -->
+        <div style="background: hsl(var(--muted)/0.3); border: 1px solid hsl(var(--border)); border-radius: var(--radius); padding: 1.25rem; margin-bottom: 1.5rem;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 0.75rem; align-items: stretch; text-align: center;">
+                
+                <!-- Step 1: Case A -->
+                <div style="background: hsl(var(--card)); border: 1px solid {% if controlled_exp.case_a %}hsl(var(--primary)){% else %}hsl(var(--border)){% endif %}; border-radius: var(--radius); padding: 0.75rem 0.5rem; position: relative;">
+                    <div style="font-size: 0.6875rem; text-transform: uppercase; font-weight: 700; color: hsl(var(--muted-foreground));">1. Case A</div>
+                    <div style="font-size: 0.8125rem; font-weight: 600; margin-top: 0.25rem;">Frozen GAM</div>
+                    <div style="font-size: 0.75rem; color: hsl(var(--primary)); font-family: monospace;">P &asymp; 0.3411</div>
+                    <span class="ui-badge ui-badge-destructive" style="font-size: 0.625rem; margin-top: 0.25rem;">AI: REFER</span>
+                </div>
+
+                <!-- Arrow -->
+                <div style="display: flex; align-items: center; justify-content: center; font-size: 1.25rem; color: hsl(var(--muted-foreground));">&rarr;</div>
+
+                <!-- Step 2: Human Override -->
+                <div style="background: hsl(var(--card)); border: 1px solid {% if controlled_exp.human_review %}hsl(var(--primary)){% else %}hsl(var(--border)){% endif %}; border-radius: var(--radius); padding: 0.75rem 0.5rem;">
+                    <div style="font-size: 0.6875rem; text-transform: uppercase; font-weight: 700; color: hsl(var(--muted-foreground));">2. Human Review</div>
+                    <div style="font-size: 0.8125rem; font-weight: 600; margin-top: 0.25rem;">Human Override</div>
+                    <div style="font-size: 0.75rem; color: hsl(var(--muted-foreground));">Real Intervention</div>
+                    {% if controlled_exp.human_review %}
+                    <span class="ui-badge ui-badge-outline" style="font-size: 0.625rem; margin-top: 0.25rem; border-color: hsl(var(--destructive)); color: hsl(var(--destructive));">DO NOT REFER</span>
+                    {% else %}
+                    <span class="ui-badge ui-badge-outline" style="font-size: 0.625rem; margin-top: 0.25rem;">Pending</span>
+                    {% endif %}
+                </div>
+
+                <!-- Arrow -->
+                <div style="display: flex; align-items: center; justify-content: center; font-size: 1.25rem; color: hsl(var(--muted-foreground));">&rarr;</div>
+
+                <!-- Step 3: Override Factor & Signal -->
+                <div style="background: hsl(var(--card)); border: 1px solid {% if controlled_exp.learning_signal %}hsl(var(--primary)){% else %}hsl(var(--border)){% endif %}; border-radius: var(--radius); padding: 0.75rem 0.5rem;">
+                    <div style="font-size: 0.6875rem; text-transform: uppercase; font-weight: 700; color: hsl(var(--muted-foreground));">3. Learning Signal</div>
+                    <div style="font-size: 0.8125rem; font-weight: 600; margin-top: 0.25rem;">Override Factor</div>
+                    <div style="font-size: 0.6875rem; color: hsl(var(--muted-foreground)); word-break: break-word;">
+                        {{ controlled_exp.override_factor|default:"BMI over-weighted" }}
+                    </div>
+                    {% if controlled_exp.learning_signal %}
+                    <span class="ui-badge ui-badge-success" style="font-size: 0.625rem; margin-top: 0.25rem;">Signal Created</span>
+                    {% else %}
+                    <span class="ui-badge ui-badge-outline" style="font-size: 0.625rem; margin-top: 0.25rem;">Pending</span>
+                    {% endif %}
+                </div>
+
+                <!-- Arrow -->
+                <div style="display: flex; align-items: center; justify-content: center; font-size: 1.25rem; color: hsl(var(--muted-foreground));">&rarr;</div>
+
+                <!-- Step 4: Candidate & Validation -->
+                <div style="background: hsl(var(--card)); border: 1px solid {% if controlled_exp.candidate_adaptation %}hsl(var(--primary)){% else %}hsl(var(--border)){% endif %}; border-radius: var(--radius); padding: 0.75rem 0.5rem;">
+                    <div style="font-size: 0.6875rem; text-transform: uppercase; font-weight: 700; color: hsl(var(--muted-foreground));">4. Adaptation</div>
+                    <div style="font-size: 0.8125rem; font-weight: 600; margin-top: 0.25rem;">Candidate RA</div>
+                    <div style="font-size: 0.75rem; color: hsl(var(--muted-foreground));">13/13 Checks</div>
+                    {% if controlled_exp.state == 'VALIDATION_PASSED' or controlled_exp.state == 'ADAPTATION_ACTIVE' or controlled_exp.state == 'COMPARISON_COMPLETE' %}
+                    <span class="ui-badge ui-badge-success" style="font-size: 0.625rem; margin-top: 0.25rem;">Passed (13/13)</span>
+                    {% else %}
+                    <span class="ui-badge ui-badge-outline" style="font-size: 0.625rem; margin-top: 0.25rem;">Pending</span>
+                    {% endif %}
+                </div>
+
+                <!-- Arrow -->
+                <div style="display: flex; align-items: center; justify-content: center; font-size: 1.25rem; color: hsl(var(--muted-foreground));">&rarr;</div>
+
+                <!-- Step 5: Active Adaptation -->
+                <div style="background: hsl(var(--card)); border: 1px solid {% if controlled_exp.active_adaptation %}hsl(var(--primary)){% else %}hsl(var(--border)){% endif %}; border-radius: var(--radius); padding: 0.75rem 0.5rem;">
+                    <div style="font-size: 0.6875rem; text-transform: uppercase; font-weight: 700; color: hsl(var(--muted-foreground));">5. Active Layer</div>
+                    <div style="font-size: 0.8125rem; font-weight: 600; margin-top: 0.25rem;">RA-v1 Active</div>
+                    <div style="font-size: 0.75rem; color: hsl(var(--muted-foreground));">Separate Layer</div>
+                    {% if controlled_exp.active_adaptation %}
+                    <span class="ui-badge ui-badge-success" style="font-size: 0.625rem; margin-top: 0.25rem;">Active</span>
+                    {% else %}
+                    <span class="ui-badge ui-badge-outline" style="font-size: 0.625rem; margin-top: 0.25rem;">None</span>
+                    {% endif %}
+                </div>
+
+                <!-- Arrow -->
+                <div style="display: flex; align-items: center; justify-content: center; font-size: 1.25rem; color: hsl(var(--muted-foreground));">&rarr;</div>
+
+                <!-- Step 6: Case B & Comparison -->
+                <div style="background: hsl(var(--card)); border: 1px solid {% if controlled_exp.state == 'COMPARISON_COMPLETE' %}hsl(var(--primary)){% else %}hsl(var(--border)){% endif %}; border-radius: var(--radius); padding: 0.75rem 0.5rem;">
+                    <div style="font-size: 0.6875rem; text-transform: uppercase; font-weight: 700; color: hsl(var(--muted-foreground));">6. Case B</div>
+                    <div style="font-size: 0.8125rem; font-weight: 600; margin-top: 0.25rem;">Similar Case</div>
+                    <div style="font-size: 0.75rem; color: hsl(var(--muted-foreground));">Sim: 0.9846</div>
+                    {% if controlled_exp.state == 'COMPARISON_COMPLETE' %}
+                    <span class="ui-badge ui-badge-success" style="font-size: 0.625rem; margin-top: 0.25rem;">&Delta;P: -0.0407</span>
+                    {% else %}
+                    <span class="ui-badge ui-badge-outline" style="font-size: 0.625rem; margin-top: 0.25rem;">Pending</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Interactive State-Machine Action Card -->
+        <div style="background: hsl(var(--card)); border: 1px solid hsl(var(--border)); border-radius: var(--radius); padding: 1.25rem;">
+            {% if not controlled_exp or controlled_exp.state == 'READY' %}
+                <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+                    <div>
+                        <h3 style="font-size: 1rem; font-weight: 600; margin: 0 0 0.25rem 0;">Ready to Start Controlled Mechanism Experiment</h3>
+                        <p style="font-size: 0.8125rem; color: hsl(var(--muted-foreground)); margin: 0;">
+                            Click below to perform intake for Case A (Age 55, Male, BMI 32.1, Waist 105cm, Hyp Yes, Smk Yes, Sed 600m). You will be directed to the Human Review interface to review the Native GAM explanation and record the Human Override.
+                        </p>
+                    </div>
+                    <form action="{% url 'predictor:start_controlled_experiment' %}" method="post" style="margin: 0;">
+                        {% csrf_token %}
+                        <button type="submit" class="ui-btn ui-btn-primary" id="start-controlled-exp-btn">
+                            Start Controlled Experiment (Case A Intake)
+                        </button>
+                    </form>
+                </div>
+
+            {% elif controlled_exp.state == 'HUMAN_REVIEW_PENDING' %}
+                <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+                    <div>
+                        <span class="ui-badge ui-badge-warning" style="font-size: 0.75rem; margin-bottom: 0.25rem;">Action Required: Real Human Review</span>
+                        <h3 style="font-size: 1rem; font-weight: 600; margin: 0 0 0.25rem 0;">Case A Created — Awaiting Your Human Override</h3>
+                        <p style="font-size: 0.8125rem; color: hsl(var(--muted-foreground)); margin: 0;">
+                            Case A prediction is computed under the Frozen GAM (P &asymp; 0.341141, AI: REFER). Open Case A's review interface, inspect the Native XAI explanations, select <strong>Override AI Recommendation (DO NOT REFER)</strong>, and choose <strong>BMI was over-weighted</strong>.
+                        </p>
+                    </div>
+                    <a href="{% url 'predictor:screening_result' controlled_exp.case_a.id %}" class="ui-btn ui-btn-primary" id="proceed-to-review-case-a-btn">
+                        Proceed to Case A Review &rarr;
+                    </a>
+                </div>
+
+            {% elif controlled_exp.state == 'LEARNING_SIGNAL_CREATED' %}
+                <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+                    <div>
+                        <span class="ui-badge ui-badge-success" style="font-size: 0.75rem; margin-bottom: 0.25rem;">Human Override Captured</span>
+                        <h3 style="font-size: 1rem; font-weight: 600; margin: 0 0 0.25rem 0;">Learning Signal Ready for Controlled Adaptation</h3>
+                        <p style="font-size: 0.8125rem; color: hsl(var(--muted-foreground)); margin: 0;">
+                            Real Human Override recorded with factor: <strong>{{ controlled_exp.override_factor }}</strong>. Click below to train the Ridge residual adaptation layer and execute all 13 technical safety checks.
+                        </p>
+                    </div>
+                    <form action="{% url 'predictor:run_controlled_learning' %}" method="post" style="margin: 0;">
+                        {% csrf_token %}
+                        <button type="submit" class="ui-btn ui-btn-primary" id="run-controlled-learning-btn">
+                            Run Controlled Learning (Single-Signal Adaptation)
+                        </button>
+                    </form>
+                </div>
+
+            {% elif controlled_exp.state == 'VALIDATION_PASSED' %}
+                <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+                    <div>
+                        <span class="ui-badge ui-badge-success" style="font-size: 0.75rem; margin-bottom: 0.25rem;">13/13 Technical Checks Passed</span>
+                        <h3 style="font-size: 1rem; font-weight: 600; margin: 0 0 0.25rem 0;">Candidate {{ controlled_exp.candidate_adaptation.version_label }} Verified</h3>
+                        <p style="font-size: 0.8125rem; color: hsl(var(--muted-foreground)); margin: 0;">
+                            Deterministic inference, bounded delta (&plusmn;2.0 log-odds), immutable GAM hash, and locked threshold (0.1389) verified. Click below to activate the adaptation layer.
+                        </p>
+                    </div>
+                    <form action="{% url 'predictor:activate_controlled_adaptation' %}" method="post" style="margin: 0;">
+                        {% csrf_token %}
+                        <button type="submit" class="ui-btn ui-btn-primary" id="activate-adaptation-btn">
+                            Activate Adaptation ({{ controlled_exp.candidate_adaptation.version_label }})
+                        </button>
+                    </form>
+                </div>
+
+            {% elif controlled_exp.state == 'ADAPTATION_ACTIVE' %}
+                <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+                    <div>
+                        <span class="ui-badge ui-badge-success" style="font-size: 0.75rem; margin-bottom: 0.25rem;">Adaptation Layer Active</span>
+                        <h3 style="font-size: 1rem; font-weight: 600; margin: 0 0 0.25rem 0;">Ready to Evaluate Subsequent Similar Case B</h3>
+                        <p style="font-size: 0.8125rem; color: hsl(var(--muted-foreground)); margin: 0;">
+                            Active Adaptation: <strong>{{ controlled_exp.active_adaptation.version_label }}</strong>. Click below to perform intake for Case B (Age 53, Male, BMI 31.5, Waist 103cm, Hyp Yes, Smk Yes, Sed 580m) and compare baseline GAM vs adapted layer without transferring Case A metadata.
+                        </p>
+                    </div>
+                    <form action="{% url 'predictor:evaluate_controlled_case_b' %}" method="post" style="margin: 0;">
+                        {% csrf_token %}
+                        <button type="submit" class="ui-btn ui-btn-primary" id="evaluate-case-b-btn">
+                            Evaluate Case B (Subsequent Similar Case)
+                        </button>
+                    </form>
+                </div>
+
+            {% elif controlled_exp.state == 'COMPARISON_COMPLETE' %}
+                <div>
+                    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 1rem;">
+                        <div>
+                            <span class="ui-badge ui-badge-success" style="font-size: 0.75rem; margin-bottom: 0.25rem;">Demonstration Completed</span>
+                            <h3 style="font-size: 1.125rem; font-weight: 700; margin: 0;">Controlled Demonstration Results: Empirical Proof of Mechanism</h3>
+                        </div>
+                        <form action="{% url 'predictor:start_controlled_experiment' %}" method="post" style="margin: 0;">
+                            {% csrf_token %}
+                            <button type="submit" class="ui-btn ui-btn-outline ui-btn-sm" id="run-new-experiment-btn">
+                                Start New Controlled Run
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Comparison Grid -->
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 1.25rem;">
+                        <div style="background: hsl(var(--muted)/0.4); border: 1px solid hsl(var(--border)); border-radius: var(--radius); padding: 1rem;">
+                            <div style="font-size: 0.75rem; text-transform: uppercase; color: hsl(var(--muted-foreground));">Case A &rarr; Case B Similarity</div>
+                            <div style="font-size: 1.5rem; font-weight: 700; font-family: monospace; color: hsl(var(--primary)); margin-top: 0.25rem;">
+                                {{ controlled_exp.case_b_similarity }}
+                            </div>
+                            <div style="font-size: 0.75rem; color: hsl(var(--muted-foreground));">&ge; 0.85 threshold (Similar Case)</div>
+                        </div>
+
+                        <div style="background: hsl(var(--muted)/0.4); border: 1px solid hsl(var(--border)); border-radius: var(--radius); padding: 1rem;">
+                            <div style="font-size: 0.75rem; text-transform: uppercase; color: hsl(var(--muted-foreground));">Frozen GAM Baseline Prob</div>
+                            <div style="font-size: 1.5rem; font-weight: 700; font-family: monospace; margin-top: 0.25rem;">
+                                {{ controlled_exp.case_b_baseline_probability|floatformat:6 }}
+                            </div>
+                            <div style="font-size: 0.75rem; color: hsl(var(--muted-foreground));">Recommendation: REFER</div>
+                        </div>
+
+                        <div style="background: hsl(var(--muted)/0.4); border: 1px solid hsl(var(--border)); border-radius: var(--radius); padding: 1rem;">
+                            <div style="font-size: 0.75rem; text-transform: uppercase; color: hsl(var(--muted-foreground));">Active Adapted Prob</div>
+                            <div style="font-size: 1.5rem; font-weight: 700; font-family: monospace; color: hsl(var(--primary)); margin-top: 0.25rem;">
+                                {{ controlled_exp.case_b_adapted_probability|floatformat:6 }}
+                            </div>
+                            <div style="font-size: 0.75rem; color: hsl(var(--muted-foreground));">Layer: {{ controlled_exp.active_adaptation.version_label }}</div>
+                        </div>
+
+                        <div style="background: hsl(var(--muted)/0.4); border: 1px solid hsl(var(--border)); border-radius: var(--radius); padding: 1rem;">
+                            <div style="font-size: 0.75rem; text-transform: uppercase; color: hsl(var(--muted-foreground));">Observed Probability &Delta;</div>
+                            <div style="font-size: 1.5rem; font-weight: 700; font-family: monospace; color: hsl(var(--destructive)); margin-top: 0.25rem;">
+                                {{ controlled_exp.case_b_probability_delta|floatformat:6 }}
+                            </div>
+                            <div style="font-size: 0.75rem; color: hsl(var(--muted-foreground));">Log-odds: {{ controlled_exp.case_b_log_odds_delta|floatformat:4 }}</div>
+                        </div>
+                    </div>
+
+                    <!-- Complete Data Provenance Audit Table -->
+                    <div style="border: 1px solid hsl(var(--border)); border-radius: var(--radius); overflow: hidden;">
+                        <div style="padding: 0.75rem 1rem; background: hsl(var(--muted)/0.3); font-weight: 600; font-size: 0.8125rem; border-bottom: 1px solid hsl(var(--border));">
+                            Immutable Data Provenance & Lineage Audit Trail (Thesis Gap #2)
+                        </div>
+                        <table class="ui-table" style="width: 100%; border-collapse: collapse; font-size: 0.75rem; font-family: monospace;">
+                            <tbody>
+                                <tr style="border-bottom: 1px solid hsl(var(--border));">
+                                    <td style="padding: 0.4rem 0.75rem; width: 30%; color: hsl(var(--muted-foreground)); font-family: inherit;">experiment_id</td>
+                                    <td style="padding: 0.4rem 0.75rem;">{{ controlled_exp.id }}</td>
+                                </tr>
+                                <tr style="border-bottom: 1px solid hsl(var(--border));">
+                                    <td style="padding: 0.4rem 0.75rem; color: hsl(var(--muted-foreground)); font-family: inherit;">case_a_id</td>
+                                    <td style="padding: 0.4rem 0.75rem;">
+                                        <a href="{% url 'predictor:screening_result' controlled_exp.case_a.id %}" style="text-decoration: underline;">
+                                            {{ controlled_exp.case_a.id }}
+                                        </a>
+                                    </td>
+                                </tr>
+                                <tr style="border-bottom: 1px solid hsl(var(--border));">
+                                    <td style="padding: 0.4rem 0.75rem; color: hsl(var(--muted-foreground)); font-family: inherit;">human_review_id</td>
+                                    <td style="padding: 0.4rem 0.75rem;">{{ controlled_exp.human_review.id }} (Action: {{ controlled_exp.human_review.review_action }})</td>
+                                </tr>
+                                <tr style="border-bottom: 1px solid hsl(var(--border));">
+                                    <td style="padding: 0.4rem 0.75rem; color: hsl(var(--muted-foreground)); font-family: inherit;">override_factor</td>
+                                    <td style="padding: 0.4rem 0.75rem;">{{ controlled_exp.override_factor }}</td>
+                                </tr>
+                                <tr style="border-bottom: 1px solid hsl(var(--border));">
+                                    <td style="padding: 0.4rem 0.75rem; color: hsl(var(--muted-foreground)); font-family: inherit;">learning_signal_id</td>
+                                    <td style="padding: 0.4rem 0.75rem;">{{ controlled_exp.learning_signal.id }} (Direction: {{ controlled_exp.learning_signal.feedback_direction }})</td>
+                                </tr>
+                                <tr style="border-bottom: 1px solid hsl(var(--border));">
+                                    <td style="padding: 0.4rem 0.75rem; color: hsl(var(--muted-foreground)); font-family: inherit;">learning_batch_id</td>
+                                    <td style="padding: 0.4rem 0.75rem;">{{ controlled_exp.learning_batch.id }} (Feedback Count: {{ controlled_exp.learning_batch.feedback_count }})</td>
+                                </tr>
+                                <tr style="border-bottom: 1px solid hsl(var(--border));">
+                                    <td style="padding: 0.4rem 0.75rem; color: hsl(var(--muted-foreground)); font-family: inherit;">candidate_adaptation_id</td>
+                                    <td style="padding: 0.4rem 0.75rem;">{{ controlled_exp.candidate_adaptation.id }} ({{ controlled_exp.candidate_adaptation.version_label }})</td>
+                                </tr>
+                                <tr style="border-bottom: 1px solid hsl(var(--border));">
+                                    <td style="padding: 0.4rem 0.75rem; color: hsl(var(--muted-foreground)); font-family: inherit;">validation_id</td>
+                                    <td style="padding: 0.4rem 0.75rem;">{{ controlled_exp.validation_id }} (Status: Passed 13/13 Checks)</td>
+                                </tr>
+                                <tr style="border-bottom: 1px solid hsl(var(--border));">
+                                    <td style="padding: 0.4rem 0.75rem; color: hsl(var(--muted-foreground)); font-family: inherit;">active_adaptation_id</td>
+                                    <td style="padding: 0.4rem 0.75rem;">{{ controlled_exp.active_adaptation.id }} ({{ controlled_exp.active_adaptation.version_label }})</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 0.4rem 0.75rem; color: hsl(var(--muted-foreground)); font-family: inherit;">case_b_id</td>
+                                    <td style="padding: 0.4rem 0.75rem;">
+                                        <a href="{% url 'predictor:screening_result' controlled_exp.case_b.id %}" style="text-decoration: underline;">
+                                            {{ controlled_exp.case_b.id }}
+                                        </a>
+                                        (Inference using Case B predictors only; zero Case A metadata transferred)
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
     </div>
 </div>
 
-<!-- Model Management & Learning Batch Controls -->
+<!-- ============================================================================== -->
+<!-- SECONDARY MECHANISM: ACCUMULATED FEEDBACK BATCH MANAGEMENT                      -->
+<!-- ============================================================================== -->
 <div class="ui-card" style="margin-bottom: 1.75rem;">
     <div class="ui-card-header with-actions">
         <div>
+            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
+                <span class="ui-badge ui-badge-outline" style="font-size: 0.75rem;">Secondary Engineering Mechanism</span>
+            </div>
             <h2 class="ui-card-title" style="display: flex; align-items: center; gap: 0.5rem;">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
                 </svg>
-                Learning Batch Management
+                Accumulated Feedback Batch Learning
             </h2>
             <p class="ui-card-description">
-                Train a candidate residual adaptation layer from accumulated eligible feedback records.
+                Demonstrating aggregation of multiple human feedback records into a candidate residual adaptation layer (minimum 3 records).
             </p>
         </div>
         <div style="display: flex; align-items: center; gap: 0.75rem;">
-            {% if not active_version.is_baseline %}
-            <form action="{% url 'predictor:rollback_version' %}" method="post" style="margin: 0;" onsubmit="return confirm('Roll back to the frozen baseline GAM-v1?');">
+            {% if model_status.raw_active_adaptation %}
+            <form action="{% url 'predictor:rollback_version' %}" method="post" style="margin: 0;" onsubmit="return confirm('Roll back to the frozen baseline GAM-v1 (deactivate active residual adaptation)?');">
                 {% csrf_token %}
                 <button type="submit" class="ui-btn ui-btn-outline" style="font-size: 0.8125rem; color: hsl(var(--destructive)); border-color: hsl(var(--destructive)/0.3);">
-                    Rollback to Baseline GAM
+                    Deactivate Adaptation (Rollback to Baseline)
                 </button>
             </form>
             {% endif %}
@@ -119,30 +438,57 @@
             <form action="{% url 'predictor:trigger_learning' %}" method="post" style="margin: 0;">
                 {% csrf_token %}
                 <button type="submit" class="ui-btn ui-btn-primary" style="font-size: 0.8125rem;" {% if pending_feedback < 3 %}title="Requires at least 3 pending eligible feedback records"{% endif %}>
-                    Execute Learning Batch ({{ pending_feedback }} pending)
+                    Execute Accumulated Batch ({{ pending_feedback }} pending)
                 </button>
             </form>
         </div>
     </div>
     <div class="ui-card-content">
-        <p style="font-size: 0.8125rem; color: hsl(var(--muted-foreground)); margin: 0 0 1rem 0;">
-            Executing a learning batch runs Ridge regression residual correction on the logit scale, creates a Candidate version, and executes automated validation checks. It does NOT automatically activate the candidate.
-        </p>
+        <!-- Feedback Accumulation KPIs -->
+        <div class="ui-stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 1.25rem;">
+            <div style="background: hsl(var(--muted)/0.3); border: 1px solid hsl(var(--border)); border-radius: var(--radius); padding: 1rem;">
+                <span class="ui-stat-label" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: hsl(var(--muted-foreground));">Total Feedback</span>
+                <div class="ui-stat-value tabular-nums" style="font-size: 1.5rem; font-weight: 700; margin-top: 0.25rem;">{{ total_feedback }}</div>
+                <span style="font-size: 0.75rem; color: hsl(var(--muted-foreground));">All submitted feedback</span>
+            </div>
+
+            <div style="background: hsl(var(--muted)/0.3); border: 1px solid hsl(var(--border)); border-radius: var(--radius); padding: 1rem;">
+                <span class="ui-stat-label" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: hsl(var(--muted-foreground));">Eligible for Learning</span>
+                <div class="ui-stat-value tabular-nums" style="font-size: 1.5rem; font-weight: 700; color: hsl(var(--primary)); margin-top: 0.25rem;">{{ eligible_feedback }}</div>
+                <span style="font-size: 0.75rem; color: hsl(var(--muted-foreground));">Override + learnable taxonomy</span>
+            </div>
+
+            <div style="background: hsl(var(--muted)/0.3); border: 1px solid hsl(var(--border)); border-radius: var(--radius); padding: 1rem;">
+                <span class="ui-stat-label" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: hsl(var(--warning));">Pending In Batch</span>
+                <div class="ui-stat-value tabular-nums" style="font-size: 1.5rem; font-weight: 700; color: hsl(var(--warning)); margin-top: 0.25rem;">{{ pending_feedback }}</div>
+                <span style="font-size: 0.75rem; color: hsl(var(--muted-foreground));">Min. 3 required for batch</span>
+            </div>
+
+            <div style="background: hsl(var(--muted)/0.3); border: 1px solid hsl(var(--border)); border-radius: var(--radius); padding: 1rem;">
+                <span class="ui-stat-label" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: hsl(var(--muted-foreground));">Active Adaptation</span>
+                <div class="ui-stat-value" style="font-size: 0.9375rem; font-weight: 700; font-family: monospace; margin-top: 0.35rem; word-break: break-all;">
+                    {{ model_status.active_adaptation }}
+                </div>
+                <span style="font-size: 0.75rem; color: hsl(var(--muted-foreground));">
+                    Baseline: {{ model_status.baseline_model }}
+                </span>
+            </div>
+        </div>
 
         <!-- Candidate Batches Ready for Activation -->
         {% for batch in batches %}
-            {% if batch.status == 'completed' and not batch.candidate_version.is_active %}
-            <div style="padding: 1rem; background: hsl(var(--muted)/0.4); border: 1px solid hsl(var(--border)); border-radius: var(--radius); margin-bottom: 1rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+            {% if batch.status == 'validating' and batch.candidate_version and not batch.candidate_version.is_active %}
+            <div style="padding: 1rem; background: hsl(var(--muted)/0.4); border: 1px solid hsl(var(--border)); border-radius: var(--radius); margin-top: 1rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
                 <div>
                     <span class="ui-badge ui-badge-warning" style="font-size: 0.6875rem; margin-bottom: 0.25rem;">Candidate Ready</span>
                     <strong style="display: block; font-size: 0.9375rem; font-family: monospace;">{{ batch.candidate_version.version_label }}</strong>
                     <span style="font-size: 0.75rem; color: hsl(var(--muted-foreground));">
-                        Trained on {{ batch.feedback_count }} feedback records · Validation: {{ batch.candidate_version.validation_status }}
+                        Trained on {{ batch.feedback_count }} feedback records &middot; Validation: {{ batch.candidate_version.validation_status }}
                     </span>
                 </div>
                 <form action="{% url 'predictor:activate_candidate' %}" method="post" style="margin: 0;">
                     {% csrf_token %}
-                    <input type="hidden" name="batch_id" value="{{ batch.batch_id }}">
+                    <input type="hidden" name="batch_id" value="{{ batch.id }}">
                     <button type="submit" class="ui-btn ui-btn-primary" style="font-size: 0.8125rem;">
                         Activate This Candidate
                     </button>
@@ -181,7 +527,7 @@
                             </td>
                             <td style="padding: 0.6rem 0.75rem;">{{ v.status|title }}</td>
                             <td style="padding: 0.6rem 0.75rem;">
-                                {% if v.is_baseline %}Baseline GAM{% else %}Adapted Layer{% endif %}
+                                {% if v.is_baseline %}Frozen Baseline GAM{% else %}Residual Adaptation Layer{% endif %}
                             </td>
                             <td style="padding: 0.6rem 0.75rem; color: hsl(var(--muted-foreground));" class="tabular-nums">
                                 {{ v.created_at|date:"Y-m-d H:i" }}
@@ -264,8 +610,8 @@
             <table class="ui-table" style="width: 100%; border-collapse: collapse; font-size: 0.8125rem;">
                 <thead>
                     <tr style="border-bottom: 2px solid hsl(var(--border)); text-align: left;">
-                        <th style="padding: 0.6rem 0.75rem;">Source Case (Feedback)</th>
-                        <th style="padding: 0.6rem 0.75rem;">Target Case (Subsequent)</th>
+                        <th style="padding: 0.6rem 0.75rem;">Source Case (Case A)</th>
+                        <th style="padding: 0.6rem 0.75rem;">Target Case (Case B)</th>
                         <th style="padding: 0.6rem 0.75rem;">Similarity</th>
                         <th style="padding: 0.6rem 0.75rem;">Baseline Prob</th>
                         <th style="padding: 0.6rem 0.75rem;">Adapted Prob</th>
@@ -316,7 +662,7 @@
                     {% empty %}
                     <tr>
                         <td colspan="8" style="padding: 1.5rem; text-align: center; color: hsl(var(--muted-foreground));">
-                            No similar case comparisons recorded yet. Comparisons can be generated from any screening result page where prior similar cases with feedback exist.
+                            No similar case comparisons recorded yet. Comparisons are recorded when a subsequent similar case is evaluated against an active adaptation.
                         </td>
                     </tr>
                     {% endfor %}

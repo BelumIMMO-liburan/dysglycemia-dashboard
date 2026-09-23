@@ -259,6 +259,7 @@ class FeedbackLearningServiceTests(TestCase):
         act_res = activate_learning_batch(str(batch.id))
         self.assertTrue(act_res['success'])
 
+        batch.refresh_from_db()
         new_active = get_active_version()
         self.assertFalse(new_active.is_baseline)
         self.assertEqual(new_active.version_label, batch.candidate_version.version_label)

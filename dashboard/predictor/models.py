@@ -243,12 +243,21 @@ class ScreeningRecord(models.Model):
         default=False,
         help_text="True if record is from onboarding practice case P0 (excluded from research analysis and learning)"
     )
+    evaluation_session = models.ForeignKey(
+        'EvaluationSession',
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='screenings',
+        help_text="Evaluation session that created this screening record (for participant evaluation study)"
+    )
     
     class Meta:
         ordering = ['-created_at']
         indexes = [
             models.Index(fields=['-created_at']),
             models.Index(fields=['idempotency_token']),
+            models.Index(fields=['evaluation_session']),
         ]
         
     def __str__(self):
@@ -1108,6 +1117,174 @@ class SimilarCaseComparison(models.Model):
         )
 
 
+class ControlledFeedbackExperiment(models.Model):
+    """
+    Tracks a controlled mechanism demonstration for Thesis Gap #2:
+    Case A -> Frozen GAM -> Native XAI -> Human Review -> Human Override
+    -> Override Factor -> Learning Signal -> Residual Adaptation
+    -> Technical Validation -> Active Adaptation -> Case B -> Comparison.
+
+    GOVERNANCE:
+    - Human intervention is real: the backend NEVER fabricates or auto-generates human decisions.
+    - Governed by an explicit 11-step State Machine.
+    - Case B strictly accesses Case B's own 7 predictors and the active adaptation artifact.
+    - Historical AI predictions remain immutable.
+    """
+    STATE_CHOICES = [
+        ('READY', 'Ready to Start'),
+        ('CASE_A_CREATED', 'Case A Created'),
+        ('HUMAN_REVIEW_PENDING', 'Human Review Pending'),
+        ('OVERRIDE_RECORDED', 'Human Override Recorded'),
+        ('LEARNING_SIGNAL_CREATED', 'Learning Signal Created'),
+        ('CANDIDATE_CREATED', 'Candidate Adaptation Created'),
+        ('VALIDATION_PASSED', 'Technical Validation Passed (13/13)'),
+        ('ADAPTATION_ACTIVE', 'Adaptation Active'),
+        ('CASE_B_CREATED', 'Case B Created'),
+        ('CASE_B_EVALUATED', 'Case B Evaluated'),
+        ('COMPARISON_COMPLETE', 'Comparison Complete'),
+    ]
+
+    id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False,
+        help_text="Unique controlled experiment identifier"
+    )
+    experiment_label = models.CharField(
+        max_length=64,
+        default="EXP-CONTROLLED-001",
+        help_text="Human-readable experiment label"
+    )
+    state = models.CharField(
+        max_length=32,
+        choices=STATE_CHOICES,
+        default='READY',
+        help_text="Current state in the 11-step experiment state machine"
+    )
+    case_a = models.ForeignKey(
+        'ScreeningRecord',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='controlled_experiments_as_case_a',
+        help_text="Case A: source of human intervention"
+    )
+    case_b = models.ForeignKey(
+        'ScreeningRecord',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='controlled_experiments_as_case_b',
+        help_text="Case B: subsequent similar case"
+    )
+    human_review = models.ForeignKey(
+        'HumanReview',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='controlled_experiments',
+        help_text="Actual human review with override on Case A"
+    )
+    override_factor = models.CharField(
+        max_length=64,
+        blank=True,
+        default="",
+        help_text="Override factor selected by human reviewer (e.g., bmi_overweighted)"
+    )
+    override_rationale = models.TextField(
+        blank=True,
+        default="",
+        help_text="Optional rationale note provided by human reviewer"
+    )
+    learning_signal = models.ForeignKey(
+        'HumanFeedback',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='controlled_experiments',
+        help_text="Canonical learning signal created from human override"
+    )
+    learning_batch = models.ForeignKey(
+        'FeedbackLearningBatch',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='controlled_experiments',
+        help_text="Single-feedback controlled learning batch"
+    )
+    candidate_adaptation = models.ForeignKey(
+        'ModelVersion',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='controlled_experiments_as_candidate',
+        help_text="Candidate adaptation version (e.g. RA-v1-candidate)"
+    )
+    validation_id = models.CharField(
+        max_length=64,
+        blank=True,
+        default="",
+        help_text="Technical validation run identifier"
+    )
+    active_adaptation = models.ForeignKey(
+        'ModelVersion',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='controlled_experiments_as_active',
+        help_text="Activated adaptation version (e.g. RA-v1)"
+    )
+    case_b_similarity = models.FloatField(
+        null=True,
+        blank=True,
+        help_text="Similarity score between Case A and Case B (expected 0.9846)"
+    )
+    case_b_baseline_probability = models.FloatField(
+        null=True,
+        blank=True,
+        help_text="Case B probability from Frozen Baseline GAM (expected 0.311198)"
+    )
+    case_b_adapted_probability = models.FloatField(
+        null=True,
+        blank=True,
+        help_text="Case B probability from Active Residual Adaptation (expected 0.270487)"
+    )
+    case_b_probability_delta = models.FloatField(
+        null=True,
+        blank=True,
+        help_text="Difference: adapted - baseline (expected -0.040711)"
+    )
+    case_b_log_odds_delta = models.FloatField(
+        null=True,
+        blank=True,
+        help_text="Log-odds adaptation applied to Case B (expected approx -0.1980)"
+    )
+    notes = models.TextField(
+        blank=True,
+        default="",
+        help_text="Audit or experimental notes"
+    )
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        help_text="Timestamp of experiment creation"
+    )
+    updated_at = models.DateTimeField(
+        auto_now=True,
+        help_text="Timestamp of last state update"
+    )
+    completed_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Timestamp when comparison completed"
+    )
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"ControlledFeedbackExperiment {self.experiment_label} [{self.state}]"
+
+
 # ==============================================================================
 # EVALUATION STUDY & DASHBOARD QUESTIONNAIRE MODELS (Protocol E1 v1.0.3)
 # ==============================================================================
@@ -1187,8 +1364,44 @@ class EvaluationSession(models.Model):
     started_at = models.DateTimeField(auto_now_add=True)
     completed_at = models.DateTimeField(null=True, blank=True)
 
+    # Protocol Invalidation & Session Exclusion Governance (E1 Protocol §6.2)
+    EXCLUSION_CHOICES = [
+        ('technical_failure', 'Catastrophic technical failure before Task 4 completed'),
+        ('procedural_error', 'Uncorrectable procedural error by moderator'),
+        ('eligibility_violation', 'Discovery of participant eligibility violation'),
+        ('withdrawal', 'Participant withdrew prior to study completion'),
+        ('other', 'Other documented protocol exclusion'),
+    ]
+
+    is_excluded = models.BooleanField(
+        default=False,
+        help_text="True if session is excluded from final reporting per E1 protocol §6.2"
+    )
+    exclusion_reason = models.CharField(
+        max_length=50,
+        choices=EXCLUSION_CHOICES,
+        blank=True,
+        default="",
+        help_text="Pre-specified protocol exclusion criterion code"
+    )
+    exclusion_notes = models.TextField(
+        blank=True,
+        default="",
+        help_text="Audit notes documenting the reason for post-collection session exclusion"
+    )
+    excluded_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Timestamp when exclusion status was recorded"
+    )
+
     class Meta:
         ordering = ['-started_at']
+        indexes = [
+            models.Index(fields=['status']),
+            models.Index(fields=['is_excluded']),
+            models.Index(fields=['questionnaire_completed']),
+        ]
 
     def __str__(self):
         return f"Session {str(self.id)[:8]} ({self.status}) - {self.respondent.respondent_code}"

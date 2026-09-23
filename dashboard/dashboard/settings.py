@@ -91,14 +91,25 @@ WSGI_APPLICATION = 'dashboard.wsgi.application'
 # Evaluation mode uses db_evaluation.sqlite3, keeping participant data completely separated.
 # Feedback Lab uses db.sqlite3, preserving historical research evidence, model versions, and Case A/B results.
 if APP_MODE == 'evaluation':
-    DB_NAME = os.environ.get('DB_NAME', 'db_evaluation.sqlite3')
+    raw_db_name = os.environ.get('DB_NAME', 'db_evaluation.sqlite3')
 else:
-    DB_NAME = os.environ.get('DB_NAME', 'db.sqlite3')
+    raw_db_name = os.environ.get('DB_NAME', 'db.sqlite3')
+
+# Support absolute paths (e.g. Railway persistent volume /data/db_evaluation.sqlite3)
+db_path = Path(raw_db_name)
+if not db_path.is_absolute():
+    db_path = BASE_DIR / db_path
+
+# Ensure parent directory exists for volume mounts
+try:
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+except Exception:
+    pass
 
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / DB_NAME,
+        'NAME': db_path,
     }
 }
 

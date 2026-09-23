@@ -447,7 +447,19 @@ function toggleAllFactors() {
                 </div>
             </div>
             {% endif %}
-            {% if is_feedback_lab and is_corrective_signal %}
+            {% if active_exp and active_exp.case_a.id == record.id and active_exp.state == 'LEARNING_SIGNAL_CREATED' %}
+            <div class="ui-review-item" style="grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem; background: hsl(var(--primary)/0.08); padding: 0.75rem 1rem; border-radius: var(--radius); border: 1px solid hsl(var(--primary)/0.25); margin-top: 0.5rem;">
+                <div>
+                    <strong style="display: block; font-size: 0.8125rem;">Controlled Mechanism Demonstration: Real Human Override Captured</strong>
+                    <span style="font-size: 0.75rem; color: hsl(var(--muted-foreground));">
+                        Factor: '{{ active_exp.override_factor }}'. Canonical learning signal registered.
+                    </span>
+                </div>
+                <a href="{% url 'predictor:feedback_experiment' %}" class="ui-btn ui-btn-primary ui-btn-sm" style="font-size: 0.8125rem;">
+                    Return to Feedback Lab to Run Controlled Learning &rarr;
+                </a>
+            </div>
+            {% elif is_feedback_lab and is_corrective_signal %}
             <div class="ui-review-item" style="grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem; background: hsl(var(--primary)/0.08); padding: 0.75rem 1rem; border-radius: var(--radius); border: 1px solid hsl(var(--primary)/0.25); margin-top: 0.5rem;">
                 <div style="display: flex; align-items: center; gap: 0.5rem;">
                     <span class="ui-badge ui-badge-primary" id="learning-signal-status-badge" style="font-size: 0.8125rem; font-weight: 600;">
@@ -757,6 +769,21 @@ function toggleAllFactors() {
         {% endif %}
 
         <!-- AI Recommendation Summary Banner -->
+        {% if active_exp and active_exp.case_a.id == record.id and active_exp.state == 'HUMAN_REVIEW_PENDING' %}
+        <div class="ui-alert ui-alert-info" style="margin-bottom: 1.25rem;">
+            <svg class="ui-alert-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+            </svg>
+            <div class="ui-alert-content">
+                <p class="ui-alert-title">Controlled Experiment: Case A Human Review</p>
+                <p class="ui-alert-body">
+                    This screening record is <strong>Case A</strong> of the Primary Controlled Mechanism Demonstration.
+                    Inspect the Native GAM explanations above, select <strong>Override AI Recommendation (DO NOT REFER)</strong>, choose <strong>BMI was over-weighted</strong> as the override factor, and submit the review to generate the learning signal.
+                </p>
+            </div>
+        </div>
+        {% endif %}
+
         <div style="padding: 1.25rem; background: hsl(var(--muted)/0.5); border-radius: var(--radius); border: 1px solid hsl(var(--border)); margin-bottom: 1.5rem;">
             <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 0.5rem;">
                 <span style="font-size: 0.75rem; font-weight: 600; color: hsl(var(--muted-foreground)); text-transform: uppercase; letter-spacing: 0.05em;">
