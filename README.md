@@ -2,7 +2,7 @@
 
 [![Python](https://img.shields.io/badge/Python-3.10-blue.svg)](https://www.python.org/)
 [![Django](https://img.shields.io/badge/Django-5.2-green.svg)](https://www.djangoproject.com/)
-[![Tests](https://img.shields.io/badge/Tests-185%20Passing-brightgreen.svg)]()
+[![Tests](https://img.shields.io/badge/Tests-224%20Passing-brightgreen.svg)]()
 [![Notebooks](https://img.shields.io/badge/CRISP--DM%20Notebooks-9%20Passing-brightgreen.svg)]()
 [![Model Baseline](https://img.shields.io/badge/GAM--v1-Frozen%20Locked-orange.svg)]()
 
@@ -17,13 +17,14 @@ An academic research prototype and clinical decision-support system for non-labo
 - **Primary Screening Model:** Generalized Additive Model (`LogisticGAM`) with cubic splines on continuous features and factor terms on categorical features.
   - Intercept ($\beta_0$): `-0.729147`
   - SHA-256 Model Hash: `204a94ff072ef4f1edecebf5a643738c006bbf010f3817b4bb798d3ea6fef41d`
-  - SHA-256 Preprocessor Hash: `6e56a01993a4a6979a40879c948332eb4715f5c490a6e551f335b2e11894d8cb8a3fe1d02c37db185`
+  - SHA-256 Preprocessor Hash: `6e56a01993a4a6971eb62c82699c49da6f31a3acec2a1169e07862409f42824d`
 - **Locked Operating Point:** Decision threshold $\tau = 0.1389$ (calibrated strictly on the $N=3,232$ Development Cohort to satisfy a $\ge 90\%$ clinical sensitivity floor).
 - **Held-Out Confirmatory Test Performance ($N=812$):**
   - Sensitivity: **86.39%** (95% Bootstrap CI: 81.19% – 90.96%)
-  - Specificity: **42.15%** (95% Bootstrap CI: 38.35% – 46.12%)
-  - ROC-AUC: **0.7289** (95% Bootstrap CI: 0.6908 – 0.7645)
-  - PR-AUC: **0.3809** (95% Bootstrap CI: 0.3168 – 0.4503)
+  - Specificity: **42.51%** (95% Bootstrap CI: 38.57% – 46.37%)
+  - ROC-AUC: **0.7277** (95% Bootstrap CI: 0.6875 – 0.7656)
+  - PR-AUC: **0.4503** (95% Bootstrap CI: 0.3843 – 0.5210)
+  - Brier Score: **0.1587** (95% Bootstrap CI: 0.1438 – 0.1729)
 
 ---
 
@@ -163,7 +164,7 @@ Visit: `http://127.0.0.1:8000/feedback/experiment/`
 ## 6. Testing & Validation
 
 ### Automated Django Test Suite
-Execute the full unit and integration test suite (185 tests covering clinical inference, SHAP explanations, feedback adaptation, validation checks, and evaluation mode protections):
+Execute the full unit and integration test suite (224 tests covering clinical inference, SHAP explanations, feedback adaptation, validation checks, database isolation guards, and evaluation mode protections):
 ```bash
 python dashboard/manage.py test predictor -v2
 ```

@@ -1,0 +1,2 @@
+# Preserve LF line endings on protected prediction artifacts across all platforms
+nhanes_feasibility_2021_2023/predictions_phase5/final_test_predictions.csv text eol=lf

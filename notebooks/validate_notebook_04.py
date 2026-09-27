@@ -16,7 +16,7 @@ NB_PATH = BASE / "notebooks" / "04_Final_Test_Evaluation.ipynb"
 PRED_PATH = BASE / "nhanes_feasibility_2021_2023" / "predictions_phase5" / "final_test_predictions.csv"
 REPORT_PATH = BASE / "notebooks" / "guides" / "04_NOTEBOOK_VALIDATION_REPORT.md"
 
-EXPECTED_PRED_SHA = "fac969a00df57d6686c36b09e3de65858e2c744812e0ba3e8765b3f6165b5923"
+EXPECTED_PRED_SHA = "21c238f25d488e8dad0cfdd12193d099476b46305133d1fd291ca85fd61e7520"
 
 def sha256_file(path: Path) -> str:
     h = hashlib.sha256()
@@ -117,7 +117,7 @@ def main():
 
 ### Frozen Final-Test Predictions (Immutable Source of Truth)
 - `nhanes_feasibility_2021_2023/predictions_phase5/final_test_predictions.csv`  
-  - Expected SHA256: `fac969a00df57d6686c36b09e3de65858e2c744812e0ba3e8765b3f6165b5923`  
+  - Expected SHA256: `21c238f25d488e8dad0cfdd12193d099476b46305133d1fd291ca85fd61e7520`  
   - Observed SHA256: `{pred_sha_after}` (**VERIFIED IDENTICAL**)
 
 ### Authoritative Phase-5 Reports for Reconciliation

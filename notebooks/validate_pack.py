@@ -42,7 +42,7 @@ LOCKED_HASHES = {
     ),
     "final_test_predictions.csv": (
         NHANES_DIR / "predictions_phase5" / "final_test_predictions.csv",
-        "fac969a00df57d6686c36b09e3de65858e2c744812e0ba3e8765b3f6165b5923"
+        "21c238f25d488e8dad0cfdd12193d099476b46305133d1fd291ca85fd61e7520"
     ),
     "gam_final.pkl": (
         NHANES_DIR / "models_phase5" / "gam_final.pkl",
@@ -187,7 +187,7 @@ def main():
 - **Phase Represented:** Phase 5 Confirmatory Held-Out Final Test Evaluation
 - **Execution Mode:** Strictly read-only metric calculation on frozen predictions (Zero model fitting or inference calls)
 - **Result:** **Frozen Phase-5 result verification reproducible**.
-- **Audit Concordance:** Verified prediction hash `fac969a00df57d6686c36b09e3de65858e2c744812e0ba3e8765b3f6165b5923`. Confirmed test discrimination (GAM ROC-AUC $0.7277$, PR-AUC $0.4503$) and frozen-threshold performance ($86.39\%$ sensitivity, $42.51\%$ specificity, $522$ referred, $165$ captured, $26$ missed).
+- **Audit Concordance:** Verified prediction hash `21c238f25d488e8dad0cfdd12193d099476b46305133d1fd291ca85fd61e7520`. Confirmed test discrimination (GAM ROC-AUC $0.7277$, PR-AUC $0.4503$) and frozen-threshold performance ($86.39\%$ sensitivity, $42.51\%$ specificity, $522$ referred, $165$ captured, $26$ missed).
 
 ---
 

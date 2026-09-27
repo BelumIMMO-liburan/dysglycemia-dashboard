@@ -332,3 +332,78 @@ class EvaluationParticipantWorkflowTests(TestCase):
         # Ensure answer key or score is NOT displayed to participant
         self.assertNotContains(complete_res, "100.0%")
         self.assertNotContains(complete_res, "Kunci Jawaban")
+
+
+class DatabaseIsolationGuardTests(TestCase):
+    """
+    Automated verification of database isolation guards (Priority 3).
+    Ensures that Feedback Lab cannot connect to Evaluation PostgreSQL DATABASE_URL,
+    and that evaluation mode cannot accidentally fall back to development db.sqlite3.
+    """
+
+    def test_feedback_lab_with_database_url_raises_improperly_configured(self):
+        """1. APP_MODE=feedback_lab + DATABASE_URL -> configuration failure."""
+        import os, runpy
+        from unittest import mock
+        from django.core.exceptions import ImproperlyConfigured
+
+        env = os.environ.copy()
+        env['APP_MODE'] = 'feedback_lab'
+        env['DATABASE_URL'] = 'postgresql://postgres:secret@roundhouse.proxy.rlwy.net:5432/railway'
+        with mock.patch.dict(os.environ, env, clear=True):
+            with self.assertRaises(ImproperlyConfigured) as ctx:
+                runpy.run_module('dashboard.settings', run_name='__main__')
+            self.assertIn("Feedback Lab requires local research storage", str(ctx.exception))
+
+    def test_feedback_lab_without_database_url_uses_local_sqlite(self):
+        """2. APP_MODE=feedback_lab without DATABASE_URL -> local Feedback Lab configuration works."""
+        import os, runpy
+        from unittest import mock
+
+        env = os.environ.copy()
+        env['APP_MODE'] = 'feedback_lab'
+        env.pop('DATABASE_URL', None)
+        with mock.patch.dict(os.environ, env, clear=True):
+            settings_dict = runpy.run_module('dashboard.settings', run_name='__main__')
+            default_db = settings_dict['DATABASES']['default']
+            self.assertEqual(default_db['ENGINE'], 'django.db.backends.sqlite3')
+            self.assertTrue(str(default_db['NAME']).endswith('db.sqlite3'))
+
+    def test_evaluation_with_database_url_configures_postgresql(self):
+        """3. APP_MODE=evaluation + DATABASE_URL -> Evaluation configuration works with PostgreSQL."""
+        import os, runpy
+        from unittest import mock
+
+        env = os.environ.copy()
+        env['APP_MODE'] = 'evaluation'
+        env['DATABASE_URL'] = 'postgresql://postgres:secret@roundhouse.proxy.rlwy.net:5432/railway'
+        with mock.patch.dict(os.environ, env, clear=True):
+            settings_dict = runpy.run_module('dashboard.settings', run_name='__main__')
+            default_db = settings_dict['DATABASES']['default']
+            self.assertEqual(default_db['ENGINE'], 'django.db.backends.postgresql')
+            self.assertEqual(default_db['NAME'], 'railway')
+
+    def test_database_isolation_guard_preserves_403_route_protection(self):
+        """4. The guard does not break existing 403 route protection."""
+        from django.test import override_settings
+        with override_settings(APP_MODE='evaluation'):
+            url = reverse('predictor:feedback_experiment')
+            res = self.client.get(url)
+            self.assertEqual(res.status_code, 403)
+            self.assertIn("Access Denied", res.content.decode())
+
+    def test_evaluation_cannot_fallback_to_unsafe_development_database(self):
+        """Inverse safety case: APP_MODE=evaluation cannot use development 'db.sqlite3'."""
+        import os, runpy
+        from unittest import mock
+        from django.core.exceptions import ImproperlyConfigured
+
+        env = os.environ.copy()
+        env['APP_MODE'] = 'evaluation'
+        env['DB_NAME'] = 'db.sqlite3'
+        env.pop('DATABASE_URL', None)
+        with mock.patch.dict(os.environ, env, clear=True):
+            with self.assertRaises(ImproperlyConfigured) as ctx:
+                runpy.run_module('dashboard.settings', run_name='__main__')
+            self.assertIn("cannot use development database 'db.sqlite3'", str(ctx.exception))
+

@@ -94,6 +94,15 @@ WSGI_APPLICATION = 'dashboard.wsgi.application'
 #    - Feedback Lab uses db.sqlite3 (localhost)
 database_url = os.environ.get('DATABASE_URL')
 
+# Fail-Closed Database Isolation Guard:
+# Feedback Lab must NEVER connect through the production/evaluation DATABASE_URL.
+if APP_MODE == 'feedback_lab' and database_url:
+    from django.core.exceptions import ImproperlyConfigured
+    raise ImproperlyConfigured(
+        "Database isolation violation: APP_MODE='feedback_lab' must not be configured "
+        "with a production/evaluation DATABASE_URL. Feedback Lab requires local research storage."
+    )
+
 if database_url:
     try:
         import dj_database_url
@@ -119,8 +128,15 @@ if database_url:
             }
         }
 else:
+    # Inverse Safety Case: Ensure evaluation mode never falls back to development 'db.sqlite3'
     if APP_MODE == 'evaluation':
         raw_db_name = os.environ.get('DB_NAME', 'db_evaluation.sqlite3')
+        if Path(raw_db_name).name == 'db.sqlite3':
+            from django.core.exceptions import ImproperlyConfigured
+            raise ImproperlyConfigured(
+                "Database isolation violation: APP_MODE='evaluation' cannot use development "
+                "database 'db.sqlite3'. Configure DATABASE_URL or use 'db_evaluation.sqlite3'."
+            )
     else:
         raw_db_name = os.environ.get('DB_NAME', 'db.sqlite3')
 

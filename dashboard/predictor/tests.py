@@ -3209,9 +3209,9 @@ class PhaseD3SystemAuditTests(TestCase):
         expected_spec_hash = "7d2a5eb9c349dabfca4f5387161c78833c8e996dc302e16955a4d588d68d9ec5"
         self.assertEqual(compute_file_sha256(spec_path), expected_spec_hash)
 
-        # Final test predictions hash
+        # Final test predictions hash (canonical LF SHA-256)
         pred_path = Path(__file__).resolve().parent.parent.parent / 'nhanes_feasibility_2021_2023' / 'predictions_phase5' / 'final_test_predictions.csv'
-        expected_pred_hash = "fac969a00df57d6686c36b09e3de65858e2c744812e0ba3e8765b3f6165b5923"
+        expected_pred_hash = "21c238f25d488e8dad0cfdd12193d099476b46305133d1fd291ca85fd61e7520"
         self.assertEqual(compute_file_sha256(pred_path), expected_pred_hash)
 
     def test_decision_threshold_single_authority(self):

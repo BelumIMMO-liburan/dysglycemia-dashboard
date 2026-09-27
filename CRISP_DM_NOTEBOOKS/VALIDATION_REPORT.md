@@ -1,21 +1,21 @@
 # CRISP-DM Notebook Suite — Validation Report
 
-**Execution Date:** 2026-09-17 23:29:52
-**Total Suite Execution Time:** 6.81 seconds
+**Execution Date:** 2026-09-27 12:17:09
+**Total Suite Execution Time:** 5.91 seconds
 **Status:** PASS — All Notebooks Clean
 
 ## Notebook Execution Results
 
 | # | Notebook | Status | Code Cells | Runtime (s) | Cell Errors |
 |:--|:---------|:-------|:-----------|:------------|:------------|
-| 00 | `00_README_CRISP_DM.ipynb` | **PASS** | 1 | 2.17 | 0 |
+| 00 | `00_README_CRISP_DM.ipynb` | **PASS** | 1 | 1.88 | 0 |
 | 01 | `01_BUSINESS_UNDERSTANDING.ipynb` | **PASS** | 0 | 0.00 | 0 |
-| 02 | `02_DATA_UNDERSTANDING.ipynb` | **PASS** | 8 | 1.08 | 0 |
-| 03 | `03_DATA_PREPARATION.ipynb` | **PASS** | 8 | 0.22 | 0 |
-| 04 | `04_MODELING.ipynb` | **PASS** | 6 | 0.09 | 0 |
-| 05 | `05_THRESHOLD_SELECTION.ipynb` | **PASS** | 6 | 1.26 | 0 |
+| 02 | `02_DATA_UNDERSTANDING.ipynb` | **PASS** | 8 | 0.84 | 0 |
+| 03 | `03_DATA_PREPARATION.ipynb` | **PASS** | 8 | 0.18 | 0 |
+| 04 | `04_MODELING.ipynb` | **PASS** | 6 | 0.06 | 0 |
+| 05 | `05_THRESHOLD_SELECTION.ipynb` | **PASS** | 6 | 1.14 | 0 |
 | 06 | `06_FINAL_EVALUATION.ipynb` | **PASS** | 8 | 0.22 | 0 |
-| 07 | `07_XAI_HUMAN_REVIEW.ipynb` | **PASS** | 5 | 1.76 | 0 |
+| 07 | `07_XAI_HUMAN_REVIEW.ipynb` | **PASS** | 5 | 1.59 | 0 |
 | 08 | `08_STAGE2_USER_EVALUATION.ipynb` | **PASS** | 1 | 0.01 | 0 |
 
 ## Immutable Artifact Integrity Checks
@@ -28,7 +28,7 @@
 | `FINAL_MODEL_SPECIFICATION_LOCKED.md` | `7d2a5eb9c349dabf...` | **PASS (Byte-Identical)** |
 | `COMPARATOR_SPECIFICATION_LOCKED.md` | `b2527b0681cc0ab3...` | **PASS (Byte-Identical)** |
 | `PHASE5_EVALUATION_PROTOCOL_LOCKED.md` | `13bc7de29cde2d6b...` | **PASS (Byte-Identical)** |
-| `final_test_predictions.csv` | `fac969a00df57d66...` | **PASS (Byte-Identical)** |
+| `final_test_predictions.csv` | `21c238f25d488e8d...` | **PASS (Byte-Identical)** |
 | `gam_final.pkl` | `204a94ff072ef4f1...` | **PASS (Byte-Identical)** |
 | `logistic_final.pkl` | `4260bef53a88fb4e...` | **PASS (Byte-Identical)** |
 | `dlnn_final.keras` | `e084f7c8711c3dd9...` | **PASS (Byte-Identical)** |

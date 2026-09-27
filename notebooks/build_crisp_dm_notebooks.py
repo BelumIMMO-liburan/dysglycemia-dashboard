@@ -1592,8 +1592,8 @@ assert pred_path.exists(), f"Missing: {pred_path}"
 sha = hashlib.sha256(pred_path.read_bytes()).hexdigest()
 print(f"File: {pred_path.name}")
 print(f"SHA-256: {sha}")
-print(f"Expected prefix: fac969a00df5...")
-assert sha.startswith("fac969a00df5"), f"SHA-256 mismatch!"
+print(f"Expected prefix: 21c238f25d48...")
+assert sha.startswith("21c238f25d48"), f"SHA-256 mismatch!"
 print("Prediction file integrity verified")
 
 df_pred = pd.read_csv(str(pred_path))

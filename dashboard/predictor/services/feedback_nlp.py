@@ -305,7 +305,6 @@ class FeedbackNLPInterpreter:
             )),
             ("clf", LogisticRegression(
                 max_iter=1000,
-                multi_class="multinomial",
                 solver="lbfgs",
                 C=1.0,
                 random_state=42,

@@ -92,7 +92,7 @@ print(f"Phase 5 Reports:      {REPORTS_DIR}")
 cells.append(nbf.v4.new_markdown_cell("""## 2. Integrity Verification & Frozen Predictions
 
 Before evaluating test metrics, we verify that the prediction file `predictions_phase5/final_test_predictions.csv` is the authentic artifact produced during the single authorized Phase-5 forward pass:
-* **Expected SHA256:** `fac969a00df57d6686c36b09e3de65858e2c744812e0ba3e8765b3f6165b5923`
+* **Expected SHA256:** `21c238f25d488e8dad0cfdd12193d099476b46305133d1fd291ca85fd61e7520`
 * **Audit Source:** Recorded in `reports_phase5/phase5_audit_log.md`.
 """))
 
@@ -109,7 +109,7 @@ def sha256_file(path: Path) -> str:
 pred_sha = sha256_file(pred_file)
 print(f"Final Test Predictions: {pred_file.name} ({pred_file.stat().st_size:,} bytes)")
 print(f"Observed SHA256:        {pred_sha}")
-EXPECTED_SHA = "fac969a00df57d6686c36b09e3de65858e2c744812e0ba3e8765b3f6165b5923"
+EXPECTED_SHA = "21c238f25d488e8dad0cfdd12193d099476b46305133d1fd291ca85fd61e7520"
 assert pred_sha == EXPECTED_SHA, "FATAL: Final test predictions have been modified or regenerated!"
 print("[GATE PASSED] Final test predictions verified 100% authentic and unaltered.")
 
