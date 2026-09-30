@@ -434,14 +434,14 @@ function toggleAllFactors() {
             </div>
             {% if human_review.review_action == 'overridden' %}
             <div class="ui-review-item" style="grid-column: 1 / -1;">
-                <span class="ui-review-item-label">Override Reason / Learning Signal</span>
+                <span class="ui-review-item-label">Override Rationale</span>
                 <span class="ui-review-item-value" id="override-reason-display" style="font-weight: 500;">
                     {{ override_factor_display|default:human_review.override_reason_display }}
                 </span>
             </div>
             {% if human_review.override_note %}
             <div class="ui-review-item" style="grid-column: 1 / -1;">
-                <span class="ui-review-item-label">Clinical Rationale / Context Note</span>
+                <span class="ui-review-item-label">Decision Rationale / Context Note</span>
                 <div class="ui-review-item-value" id="override-note-display" style="font-size: 0.8125rem; font-style: italic; background: hsl(var(--muted)/0.3); padding: 0.5rem 0.75rem; border-radius: var(--radius); border-left: 2px solid hsl(var(--border)); margin-top: 0.25rem;">
                     &ldquo;{{ human_review.override_note }}&rdquo;
                 </div>
@@ -869,54 +869,125 @@ function toggleAllFactors() {
                                 Override AI Recommendation
                             </span>
                             <span style="display: block; font-size: 0.8125rem; color: hsl(var(--muted-foreground)); margin-top: 0.25rem;">
-                                Clinical intervention: change final decision to {% if record.ai_referral_recommended %}<strong>Do not refer</strong>{% else %}<strong>Refer for Stage-2 HbA1c</strong>{% endif %}.
+                                Human override: change final decision to {% if record.ai_referral_recommended %}<strong>Do not refer</strong>{% else %}<strong>Refer for Stage-2 HbA1c</strong>{% endif %}.
                             </span>
                         </div>
                     </label>
                 </div>
             </div>
 
-            <!-- Conditional Override Factor & Learning Signal Section -->
+            <!-- Conditional Override Factor / Learning Signal Section -->
             <div id="override-factor-container" style="display: none; background: hsl(var(--muted)/0.35); border: 1px solid hsl(var(--border)); border-radius: var(--radius); padding: 1.25rem; margin-bottom: 1.5rem;">
                 <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: hsl(var(--primary));"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
                     <span style="font-size: 0.875rem; font-weight: 600; color: hsl(var(--foreground));">
-                        Override Factor / Structured Learning Signal <span style="color: hsl(var(--destructive));">*</span>
+                        {% if IS_FEEDBACK_LAB_MODE %}
+                        Structured Learning Signal <span style="color: hsl(var(--destructive));">*</span>
+                        {% else %}
+                        Human Override Rationale <span style="color: hsl(var(--destructive));">*</span>
+                        {% endif %}
                     </span>
                 </div>
                 <p style="font-size: 0.8125rem; color: hsl(var(--muted-foreground)); margin-bottom: 1rem; line-height: 1.4;">
-                    Select which factor motivated this clinical override. In the Feedback Lab, this factor provides the canonical signal for candidate adaptation without any secondary submission step.
+                    {% if IS_FEEDBACK_LAB_MODE %}
+                    Select the target factor and direction of adjustment. This structured signal is the canonical input for the residual adaptation layer.
+                    {% else %}
+                    Select which factor motivated this human override. This rationale is recorded for audit and research analysis only; it does not trigger model adaptation.
+                    {% endif %}
                 </p>
 
-                <!-- 9 Canonical Choices -->
+                {% if IS_FEEDBACK_LAB_MODE %}
+                <!-- ===== FEEDBACK LAB: Two-Step Structured Learning Signal ===== -->
+
+                <!-- Step A: "Which factor is involved?" -->
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; font-size: 0.8125rem; font-weight: 600; margin-bottom: 0.5rem; color: hsl(var(--foreground));">
+                        Step A: Which factor is involved?
+                    </label>
+                    <div style="display: grid; grid-template-columns: 1fr; gap: 0.5rem;" id="feedback-lab-target-options">
+                        <label class="ui-factor-option" style="display: flex; align-items: center; gap: 0.65rem; padding: 0.65rem 0.85rem; border: 1px solid hsl(var(--border)); border-radius: var(--radius); background: hsl(var(--background)); cursor: pointer; transition: background 0.15s ease;">
+                            <input type="radio" name="override_factor" value="bmi_overweighted" class="ui-radio-input" data-target="bmi" onchange="handleFeedbackLabTarget(this)">
+                            <span style="font-size: 0.875rem; font-weight: 500; color: hsl(var(--foreground));">1. BMI</span>
+                        </label>
+                        <label class="ui-factor-option" style="display: flex; align-items: center; gap: 0.65rem; padding: 0.65rem 0.85rem; border: 1px solid hsl(var(--border)); border-radius: var(--radius); background: hsl(var(--background)); cursor: pointer; transition: background 0.15s ease;">
+                            <input type="radio" name="override_factor" value="age_overweighted" class="ui-radio-input" data-target="age" onchange="handleFeedbackLabTarget(this)">
+                            <span style="font-size: 0.875rem; font-weight: 500; color: hsl(var(--foreground));">2. Age</span>
+                        </label>
+                        <label class="ui-factor-option" style="display: flex; align-items: center; gap: 0.65rem; padding: 0.65rem 0.85rem; border: 1px solid hsl(var(--border)); border-radius: var(--radius); background: hsl(var(--background)); cursor: pointer; transition: background 0.15s ease;">
+                            <input type="radio" name="override_factor" value="waist_overweighted" class="ui-radio-input" data-target="waist" onchange="handleFeedbackLabTarget(this)">
+                            <span style="font-size: 0.875rem; font-weight: 500; color: hsl(var(--foreground));">3. Waist circumference</span>
+                        </label>
+                        <label class="ui-factor-option" style="display: flex; align-items: center; gap: 0.65rem; padding: 0.65rem 0.85rem; border: 1px solid hsl(var(--border)); border-radius: var(--radius); background: hsl(var(--background)); cursor: pointer; transition: background 0.15s ease;">
+                            <input type="radio" name="override_factor" value="hypertension_overweighted" class="ui-radio-input" data-target="hypertension" onchange="handleFeedbackLabTarget(this)">
+                            <span style="font-size: 0.875rem; font-weight: 500; color: hsl(var(--foreground));">4. Hypertension history</span>
+                        </label>
+                        <label class="ui-factor-option" style="display: flex; align-items: center; gap: 0.65rem; padding: 0.65rem 0.85rem; border: 1px solid hsl(var(--border)); border-radius: var(--radius); background: hsl(var(--background)); cursor: pointer; transition: background 0.15s ease;">
+                            <input type="radio" name="override_factor" value="smoking_overweighted" class="ui-radio-input" data-target="smoking" onchange="handleFeedbackLabTarget(this)">
+                            <span style="font-size: 0.875rem; font-weight: 500; color: hsl(var(--foreground));">5. Smoking history</span>
+                        </label>
+                        <label class="ui-factor-option" style="display: flex; align-items: center; gap: 0.65rem; padding: 0.65rem 0.85rem; border: 1px solid hsl(var(--border)); border-radius: var(--radius); background: hsl(var(--background)); cursor: pointer; transition: background 0.15s ease;">
+                            <input type="radio" name="override_factor" value="sedentary_overweighted" class="ui-radio-input" data-target="sedentary" onchange="handleFeedbackLabTarget(this)">
+                            <span style="font-size: 0.875rem; font-weight: 500; color: hsl(var(--foreground));">6. Sedentary time</span>
+                        </label>
+                        <label class="ui-factor-option" style="display: flex; align-items: center; gap: 0.65rem; padding: 0.65rem 0.85rem; border: 1px solid hsl(var(--border)); border-radius: var(--radius); background: hsl(var(--background)); cursor: pointer; transition: background 0.15s ease;">
+                            <input type="radio" name="override_factor" value="multiple_factors_overweighted" class="ui-radio-input" data-target="multiple" onchange="handleFeedbackLabTarget(this)">
+                            <span style="font-size: 0.875rem; font-weight: 500; color: hsl(var(--foreground));">7. Multiple factors</span>
+                        </label>
+                        <label class="ui-factor-option" style="display: flex; align-items: center; gap: 0.65rem; padding: 0.65rem 0.85rem; border: 1px solid hsl(var(--border)); border-radius: var(--radius); background: hsl(var(--background)); cursor: pointer; transition: background 0.15s ease;">
+                            <input type="radio" name="override_factor" value="other" class="ui-radio-input" data-target="other" onchange="handleFeedbackLabTarget(this)">
+                            <span style="font-size: 0.875rem; font-weight: 500; color: hsl(var(--foreground));">8. Other (requires brief explanation below)</span>
+                        </label>
+                        <label class="ui-factor-option" style="display: flex; align-items: center; gap: 0.65rem; padding: 0.65rem 0.85rem; border: 1px solid hsl(var(--border)); border-radius: var(--radius); background: hsl(var(--background)); cursor: pointer; transition: background 0.15s ease;">
+                            <input type="radio" name="override_factor" value="no_learning_signal" class="ui-radio-input" data-target="none" onchange="handleFeedbackLabTarget(this)">
+                            <span style="font-size: 0.875rem; font-weight: 500; color: hsl(var(--foreground));">9. No learning signal</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Step B: "What direction of adjustment is intended?" -->
+                <div id="feedback-lab-direction-container" style="display: none; margin-bottom: 1rem; background: hsl(var(--primary)/0.05); border: 1px solid hsl(var(--primary)/0.2); border-radius: var(--radius); padding: 1rem;">
+                    <input type="hidden" name="target_feature" id="feedback-lab-target-input" value="">
+                    <input type="hidden" name="signal_scope" id="feedback-lab-scope-input" value="">
+                    <label style="display: block; font-size: 0.8125rem; font-weight: 600; margin-bottom: 0.5rem; color: hsl(var(--foreground));">
+                        Step B: What direction of adjustment is intended?
+                    </label>
+                    <div id="feedback-lab-direction-options" style="display: grid; grid-template-columns: 1fr; gap: 0.5rem;">
+                        <!-- Dynamically populated by JS based on Step A selection -->
+                    </div>
+                </div>
+
+                {% else %}
+                <!-- ===== EVALUATION DASHBOARD: Human Override Rationale (Audit Only) ===== -->
+
+                <!-- 9 Canonical Rationale Choices -->
                 <div style="display: grid; grid-template-columns: 1fr; gap: 0.5rem; margin-bottom: 1.25rem;" id="override-factor-options">
                     <label class="ui-factor-option" style="display: flex; align-items: center; gap: 0.65rem; padding: 0.65rem 0.85rem; border: 1px solid hsl(var(--border)); border-radius: var(--radius); background: hsl(var(--background)); cursor: pointer; transition: background 0.15s ease;">
                         <input type="radio" name="override_factor" value="bmi_overweighted" class="ui-radio-input" onchange="handleFactorChange(this)">
-                        <span style="font-size: 0.875rem; font-weight: 500; color: hsl(var(--foreground));">1. BMI was over-weighted</span>
+                        <span style="font-size: 0.875rem; font-weight: 500; color: hsl(var(--foreground));">1. BMI appears over-weighted</span>
                     </label>
                     <label class="ui-factor-option" style="display: flex; align-items: center; gap: 0.65rem; padding: 0.65rem 0.85rem; border: 1px solid hsl(var(--border)); border-radius: var(--radius); background: hsl(var(--background)); cursor: pointer; transition: background 0.15s ease;">
                         <input type="radio" name="override_factor" value="age_overweighted" class="ui-radio-input" onchange="handleFactorChange(this)">
-                        <span style="font-size: 0.875rem; font-weight: 500; color: hsl(var(--foreground));">2. Age was over-weighted</span>
+                        <span style="font-size: 0.875rem; font-weight: 500; color: hsl(var(--foreground));">2. Age appears over-weighted</span>
                     </label>
                     <label class="ui-factor-option" style="display: flex; align-items: center; gap: 0.65rem; padding: 0.65rem 0.85rem; border: 1px solid hsl(var(--border)); border-radius: var(--radius); background: hsl(var(--background)); cursor: pointer; transition: background 0.15s ease;">
                         <input type="radio" name="override_factor" value="waist_overweighted" class="ui-radio-input" onchange="handleFactorChange(this)">
-                        <span style="font-size: 0.875rem; font-weight: 500; color: hsl(var(--foreground));">3. Waist circumference was over-weighted</span>
+                        <span style="font-size: 0.875rem; font-weight: 500; color: hsl(var(--foreground));">3. Waist circumference appears over-weighted</span>
                     </label>
                     <label class="ui-factor-option" style="display: flex; align-items: center; gap: 0.65rem; padding: 0.65rem 0.85rem; border: 1px solid hsl(var(--border)); border-radius: var(--radius); background: hsl(var(--background)); cursor: pointer; transition: background 0.15s ease;">
                         <input type="radio" name="override_factor" value="hypertension_overweighted" class="ui-radio-input" onchange="handleFactorChange(this)">
-                        <span style="font-size: 0.875rem; font-weight: 500; color: hsl(var(--foreground));">4. Hypertension history was over-weighted</span>
+                        <span style="font-size: 0.875rem; font-weight: 500; color: hsl(var(--foreground));">4. Hypertension history appears over-weighted</span>
                     </label>
                     <label class="ui-factor-option" style="display: flex; align-items: center; gap: 0.65rem; padding: 0.65rem 0.85rem; border: 1px solid hsl(var(--border)); border-radius: var(--radius); background: hsl(var(--background)); cursor: pointer; transition: background 0.15s ease;">
                         <input type="radio" name="override_factor" value="smoking_overweighted" class="ui-radio-input" onchange="handleFactorChange(this)">
-                        <span style="font-size: 0.875rem; font-weight: 500; color: hsl(var(--foreground));">5. Smoking history was over-weighted</span>
+                        <span style="font-size: 0.875rem; font-weight: 500; color: hsl(var(--foreground));">5. Smoking history appears over-weighted</span>
                     </label>
                     <label class="ui-factor-option" style="display: flex; align-items: center; gap: 0.65rem; padding: 0.65rem 0.85rem; border: 1px solid hsl(var(--border)); border-radius: var(--radius); background: hsl(var(--background)); cursor: pointer; transition: background 0.15s ease;">
                         <input type="radio" name="override_factor" value="sedentary_overweighted" class="ui-radio-input" onchange="handleFactorChange(this)">
-                        <span style="font-size: 0.875rem; font-weight: 500; color: hsl(var(--foreground));">6. Sedentary time was over-weighted</span>
+                        <span style="font-size: 0.875rem; font-weight: 500; color: hsl(var(--foreground));">6. Sedentary time appears over-weighted</span>
                     </label>
                     <label class="ui-factor-option" style="display: flex; align-items: center; gap: 0.65rem; padding: 0.65rem 0.85rem; border: 1px solid hsl(var(--border)); border-radius: var(--radius); background: hsl(var(--background)); cursor: pointer; transition: background 0.15s ease;">
                         <input type="radio" name="override_factor" value="multiple_factors_overweighted" class="ui-radio-input" onchange="handleFactorChange(this)">
-                        <span style="font-size: 0.875rem; font-weight: 500; color: hsl(var(--foreground));">7. Multiple factors were over-weighted</span>
+                        <span style="font-size: 0.875rem; font-weight: 500; color: hsl(var(--foreground));">7. Multiple factors appear over-weighted</span>
                     </label>
                     <label class="ui-factor-option" style="display: flex; align-items: center; gap: 0.65rem; padding: 0.65rem 0.85rem; border: 1px solid hsl(var(--border)); border-radius: var(--radius); background: hsl(var(--background)); cursor: pointer; transition: background 0.15s ease;">
                         <input type="radio" name="override_factor" value="other" class="ui-radio-input" onchange="handleFactorChange(this)">
@@ -928,17 +999,19 @@ function toggleAllFactors() {
                     </label>
                 </div>
 
+                {% endif %}
+
                 <!-- Contextual Rationale / Free-text Field -->
                 <div>
                     <label for="unified-rationale-input" class="ui-label" style="display: block; font-size: 0.8125rem; font-weight: 600; margin-bottom: 0.35rem; color: hsl(var(--foreground));">
-                        Clinical Rationale / Contextual Note <span id="rationale-required-indicator" style="display: none; color: hsl(var(--destructive));">*</span>
+                        Decision Rationale / Contextual Note <span id="rationale-required-indicator" style="display: none; color: hsl(var(--destructive));">*</span>
                     </label>
                     <textarea name="rationale" 
                               id="unified-rationale-input" 
                               class="ui-input" 
                               rows="3" 
                               maxlength="500" 
-                              placeholder="Optional brief clinical rationale (max 500 characters)..." 
+                              placeholder="Optional brief decision rationale (max 500 characters)..." 
                               style="width: 100%; resize: vertical; min-height: 64px;"
                               oninput="updateRationaleCounter(this)"></textarea>
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.25rem;">
@@ -954,8 +1027,12 @@ function toggleAllFactors() {
 
             <!-- Footer & Single Submit Action Button -->
             <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; border-top: 1px solid hsl(var(--border)); padding-top: 1.25rem;">
-                <span style="font-size: 0.75rem; color: hsl(var(--muted-foreground)); max-width: 440px; line-height: 1.4;">
+                <span style="font-size: 0.75rem; color: hsl(var(--muted-foreground)); max-width: 440px; line-height: 1.4;" id="unified-review-footer-notice">
+                    {% if IS_FEEDBACK_LAB_MODE %}
                     Decisions are immutable once submitted. Human overrides generate the learning signal directly within this unified review action.
+                    {% else %}
+                    Evaluation Mode uses a frozen model. Human overrides are recorded for research analysis only and do not trigger model adaptation.
+                    {% endif %}
                 </span>
                 <button type="submit" 
                         class="ui-btn ui-btn-primary" 
@@ -970,6 +1047,79 @@ function toggleAllFactors() {
 </div>
 
 <script>
+// Direction choices for Feedback Lab two-step UI
+var feedbackLabDirections = {
+    'bmi': [['reduce', 'feature_specific', 'Reduce influence'], ['increase', 'feature_specific', 'Increase influence']],
+    'age': [['reduce', 'feature_specific', 'Reduce influence'], ['increase', 'feature_specific', 'Increase influence']],
+    'waist': [['reduce', 'feature_specific', 'Reduce influence'], ['increase', 'feature_specific', 'Increase influence']],
+    'hypertension': [['reduce', 'feature_specific', 'Reduce influence'], ['increase', 'feature_specific', 'Increase influence']],
+    'smoking': [['reduce', 'feature_specific', 'Reduce influence'], ['increase', 'feature_specific', 'Increase influence']],
+    'sedentary': [['reduce', 'feature_specific', 'Reduce influence'], ['increase', 'feature_specific', 'Increase influence']],
+    'multiple': [['adjust', 'multiple_features', 'Adjust multiple features']],
+    'other': [['contextual', 'contextual', 'Contextual / manual interpretation required']],
+    'none': [['none', 'none', 'No learning signal']]
+};
+
+function handleFeedbackLabTarget(radio) {
+    var target = radio.getAttribute('data-target');
+    var targetInput = document.getElementById('feedback-lab-target-input');
+    var scopeInput = document.getElementById('feedback-lab-scope-input');
+    if (targetInput) targetInput.value = target || '';
+
+    var dirContainer = document.getElementById('feedback-lab-direction-container');
+    var dirOptions = document.getElementById('feedback-lab-direction-options');
+    if (!dirContainer || !dirOptions) return;
+
+    if (target === 'none') {
+        // "No learning signal" clears/disables direction selection so it cannot combine with reduce/increase
+        dirOptions.innerHTML = '<input type="hidden" name="signal_direction" id="signal-direction-none" value="none">';
+        dirContainer.style.display = 'none';
+        if (scopeInput) scopeInput.value = 'none';
+        if (targetInput) targetInput.value = 'none';
+        handleFactorChange(radio);
+        return;
+    }
+
+    var choices = feedbackLabDirections[target] || [];
+    dirOptions.innerHTML = '';
+
+    if (choices.length === 0) {
+        dirContainer.style.display = 'none';
+        return;
+    }
+
+    if (scopeInput && choices.length > 0) {
+        scopeInput.value = choices[0][1];
+    }
+
+    choices.forEach(function(choice, idx) {
+        var label = document.createElement('label');
+        label.className = 'ui-factor-option';
+        label.style.cssText = 'display: flex; align-items: center; gap: 0.65rem; padding: 0.65rem 0.85rem; border: 1px solid hsl(var(--border)); border-radius: var(--radius); background: hsl(var(--background)); cursor: pointer; transition: background 0.15s ease;';
+        var input = document.createElement('input');
+        input.type = 'radio';
+        input.name = 'signal_direction';
+        input.value = choice[0];
+        input.className = 'ui-radio-input';
+        input.setAttribute('data-scope', choice[1]);
+        input.onchange = function() {
+            if (scopeInput) scopeInput.value = this.getAttribute('data-scope');
+        };
+        if (idx === 0) input.checked = true;
+        var span = document.createElement('span');
+        span.style.cssText = 'font-size: 0.875rem; font-weight: 500; color: hsl(var(--foreground));';
+        span.textContent = choice[2];
+        label.appendChild(input);
+        label.appendChild(span);
+        dirOptions.appendChild(label);
+    });
+
+    dirContainer.style.display = 'block';
+
+    // Handle Other requiring rationale
+    handleFactorChange(radio);
+}
+
 function handleDecisionToggle(decision) {
     const overrideContainer = document.getElementById('override-factor-container');
     const labelAccept = document.getElementById('label-decision-accept');
@@ -988,7 +1138,11 @@ function handleDecisionToggle(decision) {
         const checkedFactor = document.querySelector('input[name="override_factor"]:checked');
         if (!checkedFactor && factorInputs.length > 0) {
             factorInputs[0].checked = true;
-            handleFactorChange(factorInputs[0]);
+            if (typeof handleFeedbackLabTarget === 'function' && factorInputs[0].hasAttribute('data-target')) {
+                handleFeedbackLabTarget(factorInputs[0]);
+            } else {
+                handleFactorChange(factorInputs[0]);
+            }
         }
     } else {
         if (overrideContainer) overrideContainer.style.display = 'none';
@@ -1010,14 +1164,16 @@ function handleFactorChange(radio) {
     const rationaleInput = document.getElementById('unified-rationale-input');
     if (!reqIndicator || !rationaleInput) return;
 
-    if (radio.value === 'other') {
+    var val = radio.value;
+    var target = radio.getAttribute('data-target');
+    if (val === 'other' || target === 'other') {
         reqIndicator.style.display = 'inline';
         rationaleInput.setAttribute('required', 'required');
         rationaleInput.placeholder = 'Provide a brief explanation for Other (required)...';
     } else {
         reqIndicator.style.display = 'none';
         rationaleInput.removeAttribute('required');
-        rationaleInput.placeholder = 'Optional brief clinical rationale (max 500 characters)...';
+        rationaleInput.placeholder = 'Optional brief decision rationale (max 500 characters)...';
     }
 }
 

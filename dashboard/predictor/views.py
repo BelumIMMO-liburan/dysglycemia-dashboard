@@ -528,6 +528,9 @@ def unified_review_view(request, screening_id):
     human_decision = form.cleaned_data['human_decision']
     override_factor = form.cleaned_data.get('override_factor')
     rationale = form.cleaned_data.get('rationale', '')
+    target_feature = form.cleaned_data.get('target_feature') or request.POST.get('target_feature')
+    signal_direction = form.cleaned_data.get('signal_direction') or request.POST.get('signal_direction')
+    signal_scope = form.cleaned_data.get('signal_scope') or request.POST.get('signal_scope')
 
     try:
         from .services.feedback_learning import record_review_with_learning_signal
@@ -537,6 +540,9 @@ def unified_review_view(request, screening_id):
             human_decision=human_decision,
             override_factor=override_factor,
             rationale=rationale,
+            target_feature=target_feature,
+            signal_direction=signal_direction,
+            signal_scope=signal_scope,
         )
         _log_eval_event(request, 'unified_review_submitted', {
             'record_id': str(screening_record.id),
@@ -665,6 +671,9 @@ def override_review_view(request, screening_id):
     cleaned_reviewer_code = form.cleaned_data['reviewer_code']
     cleaned_reason_code = form.cleaned_data['override_reason_code']
     cleaned_note = form.cleaned_data.get('override_note', '')
+    target_feature = request.POST.get('target_feature')
+    signal_direction = request.POST.get('signal_direction')
+    signal_scope = request.POST.get('signal_scope')
 
     # 4. Delegate to unified service helper
     try:
@@ -675,6 +684,9 @@ def override_review_view(request, screening_id):
             human_decision='override',
             override_factor=cleaned_reason_code,
             rationale=cleaned_note,
+            target_feature=target_feature,
+            signal_direction=signal_direction,
+            signal_scope=signal_scope,
         )
         _log_eval_event(request, 'human_review_completed', {
             'record_id': str(screening_record.id),

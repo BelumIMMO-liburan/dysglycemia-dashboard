@@ -1,1 +1,1 @@
-web: python dashboard/manage.py collectstatic --noinput && python dashboard/manage.py migrate && gunicorn --chdir dashboard dashboard.wsgi:application --bind 0.0.0.0:$PORT
+web: python dashboard/manage.py collectstatic --noinput && python dashboard/manage.py migrate && python dashboard/manage.py seed_feedback_lab_production --skip-if-wrong-mode && gunicorn --chdir dashboard dashboard.wsgi:application --bind 0.0.0.0:$PORT

@@ -46,7 +46,7 @@ HUMAN_READABLE_REASON_LABELS: Dict[str, str] = {
     'input_quality_concern': 'Input quality or measurement concern',
     'repeat_assessment_preferred': 'Repeat assessment preferred',
     'precautionary_referral': 'Precautionary referral',
-    'other': 'Other clinical rationale',
+    'other': 'Other decision rationale',
 }
 
 

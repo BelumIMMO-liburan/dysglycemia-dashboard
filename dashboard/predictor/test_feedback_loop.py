@@ -94,7 +94,7 @@ class FeedbackTaxonomyTests(TestCase):
     """Tests for Master Feedback Taxonomy v1.0."""
 
     def test_taxonomy_version(self):
-        self.assertEqual(get_taxonomy_version(), "1.0")
+        self.assertEqual(get_taxonomy_version(), "2.0")
 
     def test_categories_loaded(self):
         active_cats = get_active_categories()

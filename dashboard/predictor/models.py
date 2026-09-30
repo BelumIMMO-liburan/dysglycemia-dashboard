@@ -512,13 +512,13 @@ OVERRIDE_REASONS_NO_REFER_TO_REFER = [
 ]
 
 OVERRIDE_LEARNING_FACTORS = [
-    ('bmi_overweighted', 'BMI was over-weighted'),
-    ('age_overweighted', 'Age was over-weighted'),
-    ('waist_overweighted', 'Waist circumference was over-weighted'),
-    ('hypertension_overweighted', 'Hypertension was over-weighted'),
-    ('smoking_overweighted', 'Smoking history was over-weighted'),
-    ('sedentary_overweighted', 'Sedentary time was over-weighted'),
-    ('multiple_factors_overweighted', 'Multiple factors were over-weighted'),
+    ('bmi_overweighted', 'BMI appears over-weighted'),
+    ('age_overweighted', 'Age appears over-weighted'),
+    ('waist_overweighted', 'Waist circumference appears over-weighted'),
+    ('hypertension_overweighted', 'Hypertension history appears over-weighted'),
+    ('smoking_overweighted', 'Smoking history appears over-weighted'),
+    ('sedentary_overweighted', 'Sedentary time appears over-weighted'),
+    ('multiple_factors_overweighted', 'Multiple factors appear over-weighted'),
     ('other', 'Other'),
     ('no_learning_signal', 'No learning signal'),
 ]
@@ -856,6 +856,25 @@ class HumanFeedback(models.Model):
     feedback_direction = models.CharField(
         max_length=30,
         help_text="Learning direction: reduce_influence, increase_influence, contextual_adjustment, reduce_global, increase_global, no_learning"
+    )
+    # Direction-aware structured signal fields (Taxonomy v2.0)
+    target_feature = models.CharField(
+        max_length=32,
+        blank=True,
+        null=True,
+        help_text="Canonical target feature: bmi, age, waist, hypertension, smoking, sedentary, multiple, other, none"
+    )
+    direction = models.CharField(
+        max_length=20,
+        blank=True,
+        null=True,
+        help_text="Canonical direction: reduce, increase, adjust, contextual, none"
+    )
+    scope = models.CharField(
+        max_length=32,
+        blank=True,
+        null=True,
+        help_text="Canonical scope: feature_specific, multiple_features, contextual, none"
     )
     # Optional free-text (preserved for audit)
     feedback_text = models.TextField(

@@ -540,6 +540,20 @@ class UnifiedHumanReviewForm(forms.Form):
             'id': 'unified-override-factor-select',
         }),
     )
+    target_feature = forms.CharField(
+        max_length=32,
+        required=False,
+        widget=forms.HiddenInput(attrs={'id': 'feedback-lab-target-input'}),
+    )
+    signal_direction = forms.CharField(
+        max_length=20,
+        required=False,
+    )
+    signal_scope = forms.CharField(
+        max_length=32,
+        required=False,
+        widget=forms.HiddenInput(attrs={'id': 'feedback-lab-scope-input'}),
+    )
     rationale = forms.CharField(
         max_length=500,
         required=False,
@@ -548,7 +562,7 @@ class UnifiedHumanReviewForm(forms.Form):
             'id': 'unified-rationale-input',
             'rows': 3,
             'maxlength': '500',
-            'placeholder': 'Optional brief contextual rationale (max 500 characters)...',
+            'placeholder': 'Optional brief decision rationale (max 500 characters)...',
             'aria-describedby': 'unified-rationale-help',
         }),
         error_messages={
@@ -583,9 +597,25 @@ class UnifiedHumanReviewForm(forms.Form):
                 self.add_error('override_factor', 'Please select an override factor / learning signal.')
             elif factor == 'other' and not rationale:
                 self.add_error('rationale', 'Provide a brief explanation when selecting Other.')
+
+            target_feat = cleaned_data.get('target_feature')
+            sig_dir = cleaned_data.get('signal_direction')
+            if factor == 'no_learning_signal' or target_feat == 'none':
+                if sig_dir and sig_dir not in ('none', ''):
+                    self.add_error(
+                        'signal_direction',
+                        'No learning signal cannot be combined with directional adjustments (reduce/increase).'
+                    )
+                else:
+                    cleaned_data['signal_direction'] = 'none'
+                    cleaned_data['signal_scope'] = 'none'
+                    cleaned_data['target_feature'] = 'none'
         elif decision == 'accept':
             if not factor:
                 cleaned_data['override_factor'] = 'no_learning_signal'
+            cleaned_data['signal_direction'] = 'none'
+            cleaned_data['signal_scope'] = 'none'
+            cleaned_data['target_feature'] = 'none'
 
         return cleaned_data
 

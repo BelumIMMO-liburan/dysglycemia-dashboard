@@ -1,0 +1,1469 @@
+[
+{
+  "model": "predictor.screeningrecord",
+  "pk": "d6df8d34-1a8c-4631-9170-762dd6bd2f6c",
+  "fields": {
+    "age": 55,
+    "sex": "Male",
+    "bmi": "32.10",
+    "waist_cm": "105.0",
+    "hypertension_history": "Yes",
+    "smoking_history": "Yes",
+    "sedentary_minutes_day": 600,
+    "screening_probability": 0.3411405662566889,
+    "ai_referral_recommended": true,
+    "decision_threshold": "0.1389",
+    "model_name": "Phase-5 GAM (λ=10.0, Splines=10)",
+    "model_sha256": "204a94ff072ef4f1edecebf5a643738c006bbf010f3817b4bb798d3ea6fef41d",
+    "preprocessor_sha256": "6e56a01993a4a6971eb62c82699c49da6f31a3acec2a1169e07862409f42824d",
+    "input_schema_version": "1.0",
+    "created_at": "2026-09-17T17:18:52.625Z",
+    "idempotency_token": null,
+    "is_practice": false,
+    "evaluation_session": null
+  }
+},
+{
+  "model": "predictor.screeningrecord",
+  "pk": "b23d65b4-1c12-4454-b437-b34e939d85bb",
+  "fields": {
+    "age": 53,
+    "sex": "Male",
+    "bmi": "31.50",
+    "waist_cm": "103.0",
+    "hypertension_history": "Yes",
+    "smoking_history": "Yes",
+    "sedentary_minutes_day": 580,
+    "screening_probability": 0.3111976743449569,
+    "ai_referral_recommended": true,
+    "decision_threshold": "0.1389",
+    "model_name": "Phase-5 GAM (λ=10.0, Splines=10)",
+    "model_sha256": "204a94ff072ef4f1edecebf5a643738c006bbf010f3817b4bb798d3ea6fef41d",
+    "preprocessor_sha256": "6e56a01993a4a6971eb62c82699c49da6f31a3acec2a1169e07862409f42824d",
+    "input_schema_version": "1.0",
+    "created_at": "2026-09-17T17:18:53.074Z",
+    "idempotency_token": null,
+    "is_practice": false,
+    "evaluation_session": null
+  }
+},
+{
+  "model": "predictor.screeningrecord",
+  "pk": "c114228d-f450-4d2a-900b-cbc6012c1999",
+  "fields": {
+    "age": 55,
+    "sex": "male",
+    "bmi": "32.10",
+    "waist_cm": "105.0",
+    "hypertension_history": "yes",
+    "smoking_history": "yes",
+    "sedentary_minutes_day": 600,
+    "screening_probability": 0.3411405662566889,
+    "ai_referral_recommended": true,
+    "decision_threshold": "0.1389",
+    "model_name": "Phase-5 GAM (λ=10.0, Splines=10)",
+    "model_sha256": "204a94ff072ef4f1edecebf5a643738c006bbf010f3817b4bb798d3ea6fef41d",
+    "preprocessor_sha256": "preproc_sha",
+    "input_schema_version": "1.0",
+    "created_at": "2026-09-27T05:17:09.002Z",
+    "idempotency_token": null,
+    "is_practice": false,
+    "evaluation_session": null
+  }
+},
+{
+  "model": "predictor.screeningrecord",
+  "pk": "f6741e39-bc56-4d24-9b19-4628876abe7b",
+  "fields": {
+    "age": 55,
+    "sex": "male",
+    "bmi": "32.30",
+    "waist_cm": "104.0",
+    "hypertension_history": "yes",
+    "smoking_history": "yes",
+    "sedentary_minutes_day": 590,
+    "screening_probability": 0.3411405662566889,
+    "ai_referral_recommended": true,
+    "decision_threshold": "0.1389",
+    "model_name": "Phase-5 GAM",
+    "model_sha256": "204a94ff072ef4f1edecebf5a643738c006bbf010f3817b4bb798d3ea6fef41d",
+    "preprocessor_sha256": "sha",
+    "input_schema_version": "1.0",
+    "created_at": "2026-09-27T05:17:09.058Z",
+    "idempotency_token": null,
+    "is_practice": false,
+    "evaluation_session": null
+  }
+},
+{
+  "model": "predictor.screeningrecord",
+  "pk": "40690bf3-a099-4b14-ae19-650fdc9b8e39",
+  "fields": {
+    "age": 56,
+    "sex": "male",
+    "bmi": "32.60",
+    "waist_cm": "104.0",
+    "hypertension_history": "yes",
+    "smoking_history": "yes",
+    "sedentary_minutes_day": 590,
+    "screening_probability": 0.3411405662566889,
+    "ai_referral_recommended": true,
+    "decision_threshold": "0.1389",
+    "model_name": "Phase-5 GAM",
+    "model_sha256": "204a94ff072ef4f1edecebf5a643738c006bbf010f3817b4bb798d3ea6fef41d",
+    "preprocessor_sha256": "sha",
+    "input_schema_version": "1.0",
+    "created_at": "2026-09-27T05:17:09.082Z",
+    "idempotency_token": null,
+    "is_practice": false,
+    "evaluation_session": null
+  }
+},
+{
+  "model": "predictor.screeningrecord",
+  "pk": "aff32ad8-3b04-4bdb-b1a2-2e0822b37759",
+  "fields": {
+    "age": 53,
+    "sex": "male",
+    "bmi": "31.50",
+    "waist_cm": "103.0",
+    "hypertension_history": "yes",
+    "smoking_history": "yes",
+    "sedentary_minutes_day": 580,
+    "screening_probability": 0.3111976743449569,
+    "ai_referral_recommended": true,
+    "decision_threshold": "0.1389",
+    "model_name": "Phase-5 GAM",
+    "model_sha256": "204a94ff072ef4f1edecebf5a643738c006bbf010f3817b4bb798d3ea6fef41d",
+    "preprocessor_sha256": "sha",
+    "input_schema_version": "1.0",
+    "created_at": "2026-09-27T05:17:09.360Z",
+    "idempotency_token": null,
+    "is_practice": false,
+    "evaluation_session": null
+  }
+},
+{
+  "model": "predictor.screeningrecord",
+  "pk": "c9b6d348-ca88-4ac8-8d0c-628a412ddd39",
+  "fields": {
+    "age": 55,
+    "sex": "Male",
+    "bmi": "32.10",
+    "waist_cm": "105.0",
+    "hypertension_history": "Yes",
+    "smoking_history": "Yes",
+    "sedentary_minutes_day": 600,
+    "screening_probability": 0.3411405662566889,
+    "ai_referral_recommended": true,
+    "decision_threshold": "0.1389",
+    "model_name": "Phase-5 GAM (λ=10.0, Splines=10)",
+    "model_sha256": "204a94ff072ef4f1edecebf5a643738c006bbf010f3817b4bb798d3ea6fef41d",
+    "preprocessor_sha256": "6e56a01993a4a6971eb62c82699c49da6f31a3acec2a1169e07862409f42824d",
+    "input_schema_version": "1.0",
+    "created_at": "2026-09-28T12:42:17.285Z",
+    "idempotency_token": null,
+    "is_practice": false,
+    "evaluation_session": null
+  }
+},
+{
+  "model": "predictor.screeningrecord",
+  "pk": "a9dd0689-1efc-4d77-a49e-d584a70e4975",
+  "fields": {
+    "age": 53,
+    "sex": "Male",
+    "bmi": "31.50",
+    "waist_cm": "103.0",
+    "hypertension_history": "Yes",
+    "smoking_history": "Yes",
+    "sedentary_minutes_day": 580,
+    "screening_probability": 0.3111976743449569,
+    "ai_referral_recommended": true,
+    "decision_threshold": "0.1389",
+    "model_name": "Phase-5 GAM (λ=10.0, Splines=10)",
+    "model_sha256": "204a94ff072ef4f1edecebf5a643738c006bbf010f3817b4bb798d3ea6fef41d",
+    "preprocessor_sha256": "6e56a01993a4a6971eb62c82699c49da6f31a3acec2a1169e07862409f42824d",
+    "input_schema_version": "1.0",
+    "created_at": "2026-09-28T12:42:17.766Z",
+    "idempotency_token": null,
+    "is_practice": false,
+    "evaluation_session": null
+  }
+},
+{
+  "model": "predictor.screeningrecord",
+  "pk": "3f9ee1da-ac5b-477a-aaef-dcea2b133244",
+  "fields": {
+    "age": 55,
+    "sex": "male",
+    "bmi": "32.00",
+    "waist_cm": "100.0",
+    "hypertension_history": "yes",
+    "smoking_history": "yes",
+    "sedentary_minutes_day": 500,
+    "screening_probability": 0.3,
+    "ai_referral_recommended": true,
+    "decision_threshold": "0.1389",
+    "model_name": "GAM",
+    "model_sha256": "test",
+    "preprocessor_sha256": "test",
+    "input_schema_version": "1.0",
+    "created_at": "2026-09-28T12:51:24.863Z",
+    "idempotency_token": null,
+    "is_practice": false,
+    "evaluation_session": null
+  }
+},
+{
+  "model": "predictor.screeningrecord",
+  "pk": "28dd8676-2927-492c-a7ae-5127d02fa5c6",
+  "fields": {
+    "age": 55,
+    "sex": "male",
+    "bmi": "32.00",
+    "waist_cm": "100.0",
+    "hypertension_history": "yes",
+    "smoking_history": "yes",
+    "sedentary_minutes_day": 500,
+    "screening_probability": 0.3,
+    "ai_referral_recommended": false,
+    "decision_threshold": "0.1389",
+    "model_name": "GAM",
+    "model_sha256": "test",
+    "preprocessor_sha256": "test",
+    "input_schema_version": "1.0",
+    "created_at": "2026-09-28T12:51:25.115Z",
+    "idempotency_token": null,
+    "is_practice": false,
+    "evaluation_session": null
+  }
+},
+{
+  "model": "predictor.screeningrecord",
+  "pk": "780b8dad-aedf-44cf-b4f0-3c48a76dc6a0",
+  "fields": {
+    "age": 55,
+    "sex": "male",
+    "bmi": "32.00",
+    "waist_cm": "100.0",
+    "hypertension_history": "yes",
+    "smoking_history": "yes",
+    "sedentary_minutes_day": 500,
+    "screening_probability": 0.3,
+    "ai_referral_recommended": true,
+    "decision_threshold": "0.1389",
+    "model_name": "GAM",
+    "model_sha256": "test",
+    "preprocessor_sha256": "test",
+    "input_schema_version": "1.0",
+    "created_at": "2026-09-28T12:51:25.172Z",
+    "idempotency_token": null,
+    "is_practice": false,
+    "evaluation_session": null
+  }
+},
+{
+  "model": "predictor.screeningexplanation",
+  "pk": "e3f45e35-2781-4bea-b97f-650a0b263c69",
+  "fields": {
+    "screening_record": "d6df8d34-1a8c-4631-9170-762dd6bd2f6c",
+    "method": "gam_native_additive",
+    "method_version": "1.0",
+    "link_function": "logit",
+    "intercept": -0.7291468701637691,
+    "contributions_json": [
+      {
+        "feature_name": "age",
+        "display_name": "Age",
+        "raw_value": 55,
+        "formatted_value": "55 years",
+        "contribution": 0.38548315414276985,
+        "direction": "higher",
+        "abs_contribution": 0.38548315414276985
+      },
+      {
+        "feature_name": "sex",
+        "display_name": "Biological Sex",
+        "raw_value": "Male",
+        "formatted_value": "Male",
+        "contribution": -0.026593122238793697,
+        "direction": "lower",
+        "abs_contribution": 0.026593122238793697
+      },
+      {
+        "feature_name": "bmi",
+        "display_name": "Body Mass Index (BMI)",
+        "raw_value": 32.1,
+        "formatted_value": "32.10 kg/m²",
+        "contribution": 0.03153551466555421,
+        "direction": "higher",
+        "abs_contribution": 0.03153551466555421
+      },
+      {
+        "feature_name": "hypertension_history",
+        "display_name": "History of Hypertension",
+        "raw_value": "Yes",
+        "formatted_value": "Yes",
+        "contribution": 0.1033427779779264,
+        "direction": "higher",
+        "abs_contribution": 0.1033427779779264
+      },
+      {
+        "feature_name": "smoking_history",
+        "display_name": "Smoking History",
+        "raw_value": "Yes",
+        "formatted_value": "Yes (≥100 cigarettes)",
+        "contribution": 0.11761578243866919,
+        "direction": "higher",
+        "abs_contribution": 0.11761578243866919
+      },
+      {
+        "feature_name": "waist_cm",
+        "display_name": "Waist Circumference",
+        "raw_value": 105.0,
+        "formatted_value": "105.0 cm",
+        "contribution": -0.1005600242489728,
+        "direction": "lower",
+        "abs_contribution": 0.1005600242489728
+      },
+      {
+        "feature_name": "sedentary_minutes_day",
+        "display_name": "Sedentary Time",
+        "raw_value": 600,
+        "formatted_value": "600 min/day",
+        "contribution": -0.4398928118548406,
+        "direction": "lower",
+        "abs_contribution": 0.4398928118548406
+      }
+    ],
+    "reconstructed_linear_predictor": -0.6582155992814565,
+    "reconstructed_probability": 0.3411405662566889,
+    "reconstruction_error": 0.0,
+    "model_sha256": "204a94ff072ef4f1edecebf5a643738c006bbf010f3817b4bb798d3ea6fef41d",
+    "status": "generated",
+    "failure_reason": "",
+    "created_at": "2026-09-17T17:18:52.648Z"
+  }
+},
+{
+  "model": "predictor.screeningexplanation",
+  "pk": "a873ca54-48e5-486e-a317-660ec75009ce",
+  "fields": {
+    "screening_record": "b23d65b4-1c12-4454-b437-b34e939d85bb",
+    "method": "gam_native_additive",
+    "method_version": "1.0",
+    "link_function": "logit",
+    "intercept": -0.7291468701637691,
+    "contributions_json": [
+      {
+        "feature_name": "age",
+        "display_name": "Age",
+        "raw_value": 53,
+        "formatted_value": "53 years",
+        "contribution": 0.31225581331922353,
+        "direction": "higher",
+        "abs_contribution": 0.31225581331922353
+      },
+      {
+        "feature_name": "sex",
+        "display_name": "Biological Sex",
+        "raw_value": "Male",
+        "formatted_value": "Male",
+        "contribution": -0.026593122238793697,
+        "direction": "lower",
+        "abs_contribution": 0.026593122238793697
+      },
+      {
+        "feature_name": "bmi",
+        "display_name": "Body Mass Index (BMI)",
+        "raw_value": 31.5,
+        "formatted_value": "31.50 kg/m²",
+        "contribution": 0.013937958340249992,
+        "direction": "higher",
+        "abs_contribution": 0.013937958340249992
+      },
+      {
+        "feature_name": "hypertension_history",
+        "display_name": "History of Hypertension",
+        "raw_value": "Yes",
+        "formatted_value": "Yes",
+        "contribution": 0.1033427779779264,
+        "direction": "higher",
+        "abs_contribution": 0.1033427779779264
+      },
+      {
+        "feature_name": "smoking_history",
+        "display_name": "Smoking History",
+        "raw_value": "Yes",
+        "formatted_value": "Yes (≥100 cigarettes)",
+        "contribution": 0.11761578243866919,
+        "direction": "higher",
+        "abs_contribution": 0.11761578243866919
+      },
+      {
+        "feature_name": "waist_cm",
+        "display_name": "Waist Circumference",
+        "raw_value": 103.0,
+        "formatted_value": "103.0 cm",
+        "contribution": -0.139599894713356,
+        "direction": "lower",
+        "abs_contribution": 0.139599894713356
+      },
+      {
+        "feature_name": "sedentary_minutes_day",
+        "display_name": "Sedentary Time",
+        "raw_value": 580,
+        "formatted_value": "580 min/day",
+        "contribution": -0.4463384553627772,
+        "direction": "lower",
+        "abs_contribution": 0.4463384553627772
+      }
+    ],
+    "reconstructed_linear_predictor": -0.7945260104026268,
+    "reconstructed_probability": 0.3111976743449568,
+    "reconstruction_error": 5.551115123125783e-17,
+    "model_sha256": "204a94ff072ef4f1edecebf5a643738c006bbf010f3817b4bb798d3ea6fef41d",
+    "status": "generated",
+    "failure_reason": "",
+    "created_at": "2026-09-17T17:18:53.099Z"
+  }
+},
+{
+  "model": "predictor.screeningexplanation",
+  "pk": "26c1d1ee-4798-4bb8-a62f-f61295f3cc23",
+  "fields": {
+    "screening_record": "c9b6d348-ca88-4ac8-8d0c-628a412ddd39",
+    "method": "gam_native_additive",
+    "method_version": "1.0",
+    "link_function": "logit",
+    "intercept": -0.7291468701637691,
+    "contributions_json": [
+      {
+        "feature_name": "age",
+        "display_name": "Age",
+        "raw_value": 55,
+        "formatted_value": "55 years",
+        "contribution": 0.38548315414276985,
+        "direction": "higher",
+        "abs_contribution": 0.38548315414276985
+      },
+      {
+        "feature_name": "sex",
+        "display_name": "Biological Sex",
+        "raw_value": "Male",
+        "formatted_value": "Male",
+        "contribution": -0.026593122238793697,
+        "direction": "lower",
+        "abs_contribution": 0.026593122238793697
+      },
+      {
+        "feature_name": "bmi",
+        "display_name": "Body Mass Index (BMI)",
+        "raw_value": 32.1,
+        "formatted_value": "32.10 kg/m²",
+        "contribution": 0.03153551466555421,
+        "direction": "higher",
+        "abs_contribution": 0.03153551466555421
+      },
+      {
+        "feature_name": "hypertension_history",
+        "display_name": "History of Hypertension",
+        "raw_value": "Yes",
+        "formatted_value": "Yes",
+        "contribution": 0.1033427779779264,
+        "direction": "higher",
+        "abs_contribution": 0.1033427779779264
+      },
+      {
+        "feature_name": "smoking_history",
+        "display_name": "Smoking History",
+        "raw_value": "Yes",
+        "formatted_value": "Yes (≥100 cigarettes)",
+        "contribution": 0.11761578243866919,
+        "direction": "higher",
+        "abs_contribution": 0.11761578243866919
+      },
+      {
+        "feature_name": "waist_cm",
+        "display_name": "Waist Circumference",
+        "raw_value": 105.0,
+        "formatted_value": "105.0 cm",
+        "contribution": -0.1005600242489728,
+        "direction": "lower",
+        "abs_contribution": 0.1005600242489728
+      },
+      {
+        "feature_name": "sedentary_minutes_day",
+        "display_name": "Sedentary Time",
+        "raw_value": 600,
+        "formatted_value": "600 min/day",
+        "contribution": -0.4398928118548406,
+        "direction": "lower",
+        "abs_contribution": 0.4398928118548406
+      }
+    ],
+    "reconstructed_linear_predictor": -0.6582155992814565,
+    "reconstructed_probability": 0.3411405662566889,
+    "reconstruction_error": 0.0,
+    "model_sha256": "204a94ff072ef4f1edecebf5a643738c006bbf010f3817b4bb798d3ea6fef41d",
+    "status": "generated",
+    "failure_reason": "",
+    "created_at": "2026-09-28T12:42:17.317Z"
+  }
+},
+{
+  "model": "predictor.screeningexplanation",
+  "pk": "0cf1f8e2-a284-4fd7-a39a-62edbaa36e8b",
+  "fields": {
+    "screening_record": "a9dd0689-1efc-4d77-a49e-d584a70e4975",
+    "method": "gam_native_additive",
+    "method_version": "1.0",
+    "link_function": "logit",
+    "intercept": -0.7291468701637691,
+    "contributions_json": [
+      {
+        "feature_name": "age",
+        "display_name": "Age",
+        "raw_value": 53,
+        "formatted_value": "53 years",
+        "contribution": 0.31225581331922353,
+        "direction": "higher",
+        "abs_contribution": 0.31225581331922353
+      },
+      {
+        "feature_name": "sex",
+        "display_name": "Biological Sex",
+        "raw_value": "Male",
+        "formatted_value": "Male",
+        "contribution": -0.026593122238793697,
+        "direction": "lower",
+        "abs_contribution": 0.026593122238793697
+      },
+      {
+        "feature_name": "bmi",
+        "display_name": "Body Mass Index (BMI)",
+        "raw_value": 31.5,
+        "formatted_value": "31.50 kg/m²",
+        "contribution": 0.013937958340249992,
+        "direction": "higher",
+        "abs_contribution": 0.013937958340249992
+      },
+      {
+        "feature_name": "hypertension_history",
+        "display_name": "History of Hypertension",
+        "raw_value": "Yes",
+        "formatted_value": "Yes",
+        "contribution": 0.1033427779779264,
+        "direction": "higher",
+        "abs_contribution": 0.1033427779779264
+      },
+      {
+        "feature_name": "smoking_history",
+        "display_name": "Smoking History",
+        "raw_value": "Yes",
+        "formatted_value": "Yes (≥100 cigarettes)",
+        "contribution": 0.11761578243866919,
+        "direction": "higher",
+        "abs_contribution": 0.11761578243866919
+      },
+      {
+        "feature_name": "waist_cm",
+        "display_name": "Waist Circumference",
+        "raw_value": 103.0,
+        "formatted_value": "103.0 cm",
+        "contribution": -0.139599894713356,
+        "direction": "lower",
+        "abs_contribution": 0.139599894713356
+      },
+      {
+        "feature_name": "sedentary_minutes_day",
+        "display_name": "Sedentary Time",
+        "raw_value": 580,
+        "formatted_value": "580 min/day",
+        "contribution": -0.4463384553627772,
+        "direction": "lower",
+        "abs_contribution": 0.4463384553627772
+      }
+    ],
+    "reconstructed_linear_predictor": -0.7945260104026268,
+    "reconstructed_probability": 0.3111976743449568,
+    "reconstruction_error": 5.551115123125783e-17,
+    "model_sha256": "204a94ff072ef4f1edecebf5a643738c006bbf010f3817b4bb798d3ea6fef41d",
+    "status": "generated",
+    "failure_reason": "",
+    "created_at": "2026-09-28T12:42:17.791Z"
+  }
+},
+{
+  "model": "predictor.humanreview",
+  "pk": "a9103a3e-b78b-468f-aac4-4d8d1b1c99fb",
+  "fields": {
+    "screening_record": "d6df8d34-1a8c-4631-9170-762dd6bd2f6c",
+    "reviewer_code": "RESEARCHER-SIMULATION",
+    "review_action": "overridden",
+    "final_referral_recommended": false,
+    "override_reason_code": "bmi_overweighted",
+    "override_note": "Researcher simulation: BMI was over-weighted; clinical review suggests normal adiposity despite high BMI.",
+    "created_at": "2026-09-17T17:18:52.710Z"
+  }
+},
+{
+  "model": "predictor.humanreview",
+  "pk": "941c3482-bb83-47b0-bc3e-554ca35a442d",
+  "fields": {
+    "screening_record": "c114228d-f450-4d2a-900b-cbc6012c1999",
+    "reviewer_code": "DOC_EXP_01",
+    "review_action": "overridden",
+    "final_referral_recommended": false,
+    "override_reason_code": "clinical_judgment",
+    "override_note": null,
+    "created_at": "2026-09-27T05:17:09.022Z"
+  }
+},
+{
+  "model": "predictor.humanreview",
+  "pk": "89069e8b-bda7-4b70-a4b6-eb8fb5e42586",
+  "fields": {
+    "screening_record": "f6741e39-bc56-4d24-9b19-4628876abe7b",
+    "reviewer_code": "DOC_EXP_02",
+    "review_action": "overridden",
+    "final_referral_recommended": false,
+    "override_reason_code": "clinical_judgment",
+    "override_note": null,
+    "created_at": "2026-09-27T05:17:09.066Z"
+  }
+},
+{
+  "model": "predictor.humanreview",
+  "pk": "1659c2e8-12c7-47cd-8e0a-f7764d5bcc67",
+  "fields": {
+    "screening_record": "40690bf3-a099-4b14-ae19-650fdc9b8e39",
+    "reviewer_code": "DOC_EXP_03",
+    "review_action": "overridden",
+    "final_referral_recommended": false,
+    "override_reason_code": "clinical_judgment",
+    "override_note": null,
+    "created_at": "2026-09-27T05:17:09.089Z"
+  }
+},
+{
+  "model": "predictor.humanreview",
+  "pk": "e836c7c6-f3b9-4a5f-b22b-a7c98b8b17c5",
+  "fields": {
+    "screening_record": "c9b6d348-ca88-4ac8-8d0c-628a412ddd39",
+    "reviewer_code": "TEST-VERIF",
+    "review_action": "overridden",
+    "final_referral_recommended": false,
+    "override_reason_code": "bmi_overweighted",
+    "override_note": "Case A verification note",
+    "created_at": "2026-09-28T12:42:17.380Z"
+  }
+},
+{
+  "model": "predictor.humanreview",
+  "pk": "dbadc3b6-b65a-47b7-b814-c62844a95e43",
+  "fields": {
+    "screening_record": "3f9ee1da-ac5b-477a-aaef-dcea2b133244",
+    "reviewer_code": "R_RED",
+    "review_action": "overridden",
+    "final_referral_recommended": false,
+    "override_reason_code": null,
+    "override_note": null,
+    "created_at": "2026-09-28T12:51:24.877Z"
+  }
+},
+{
+  "model": "predictor.humanreview",
+  "pk": "bad74833-9ba5-42cb-aa92-c872f1747886",
+  "fields": {
+    "screening_record": "28dd8676-2927-492c-a7ae-5127d02fa5c6",
+    "reviewer_code": "R_INC",
+    "review_action": "overridden",
+    "final_referral_recommended": true,
+    "override_reason_code": null,
+    "override_note": null,
+    "created_at": "2026-09-28T12:51:25.127Z"
+  }
+},
+{
+  "model": "predictor.humanfeedback",
+  "pk": "66c3b7a0-22ab-4d53-9497-992d19084959",
+  "fields": {
+    "human_review": "a9103a3e-b78b-468f-aac4-4d8d1b1c99fb",
+    "structured_category": "bmi_overweighted",
+    "relevant_feature": "bmi",
+    "feedback_direction": "reduce_influence",
+    "target_feature": null,
+    "direction": null,
+    "scope": null,
+    "feedback_text": "Researcher simulation: BMI was over-weighted; clinical review suggests normal adiposity despite high BMI.",
+    "nlp_confidence": 0.22868643128087343,
+    "nlp_raw_output": {
+      "detected_category": "unmapped",
+      "relevant_feature": "bmi",
+      "direction": "no_learning",
+      "confidence": 0.2287,
+      "raw_scores": {
+        "age_overweighted": 0.0704,
+        "age_underweighted": 0.0509,
+        "bmi_overweighted": 0.2287,
+        "bmi_underweighted": 0.1149,
+        "general_risk_too_high": 0.0735,
+        "general_risk_too_low": 0.0548,
+        "hypertension_context": 0.0519,
+        "sedentary_overweighted": 0.0494,
+        "sedentary_underweighted": 0.0455,
+        "sex_context": 0.0578,
+        "smoking_context": 0.0516,
+        "unmapped": 0.0596,
+        "waist_overweighted": 0.047,
+        "waist_underweighted": 0.0442
+      },
+      "method": "tfidf_logistic_v1",
+      "is_above_threshold": false
+    },
+    "is_eligible_for_learning": true,
+    "learning_status": "included",
+    "model_version_at_feedback": "GAM-v1",
+    "taxonomy_version": "1.0",
+    "created_at": "2026-09-17T17:18:52.714Z"
+  }
+},
+{
+  "model": "predictor.humanfeedback",
+  "pk": "943668fd-ca28-4ad6-82ca-8069d78cd968",
+  "fields": {
+    "human_review": "941c3482-bb83-47b0-bc3e-554ca35a442d",
+    "structured_category": "bmi_overweighted",
+    "relevant_feature": "bmi",
+    "feedback_direction": "reduce_influence",
+    "target_feature": null,
+    "direction": null,
+    "scope": null,
+    "feedback_text": "Patient has high lean muscle mass from physical labor; BMI overestimates metabolic risk.",
+    "nlp_confidence": 0.12889064112518073,
+    "nlp_raw_output": {
+      "detected_category": "unmapped",
+      "relevant_feature": "bmi",
+      "direction": "no_learning",
+      "confidence": 0.1289,
+      "raw_scores": {
+        "age_overweighted": 0.0544,
+        "age_underweighted": 0.0634,
+        "bmi_overweighted": 0.1289,
+        "bmi_underweighted": 0.1274,
+        "general_risk_too_high": 0.1248,
+        "general_risk_too_low": 0.0835,
+        "hypertension_context": 0.0505,
+        "sedentary_overweighted": 0.0574,
+        "sedentary_underweighted": 0.0558,
+        "sex_context": 0.057,
+        "smoking_context": 0.0542,
+        "unmapped": 0.0507,
+        "waist_overweighted": 0.0468,
+        "waist_underweighted": 0.0452
+      },
+      "method": "tfidf_logistic_v1",
+      "is_above_threshold": false
+    },
+    "is_eligible_for_learning": true,
+    "learning_status": "included",
+    "model_version_at_feedback": "GAM-v1",
+    "taxonomy_version": "1.0",
+    "created_at": "2026-09-27T05:17:09.050Z"
+  }
+},
+{
+  "model": "predictor.humanfeedback",
+  "pk": "79c80cc5-9018-4b4e-a854-477d771b0198",
+  "fields": {
+    "human_review": "89069e8b-bda7-4b70-a4b6-eb8fb5e42586",
+    "structured_category": "bmi_overweighted",
+    "relevant_feature": "bmi",
+    "feedback_direction": "reduce_influence",
+    "target_feature": null,
+    "direction": null,
+    "scope": null,
+    "feedback_text": "",
+    "nlp_confidence": null,
+    "nlp_raw_output": null,
+    "is_eligible_for_learning": true,
+    "learning_status": "included",
+    "model_version_at_feedback": "GAM-v1",
+    "taxonomy_version": "1.0",
+    "created_at": "2026-09-27T05:17:09.073Z"
+  }
+},
+{
+  "model": "predictor.humanfeedback",
+  "pk": "55fb13f9-6580-4940-980a-7d5692c61479",
+  "fields": {
+    "human_review": "1659c2e8-12c7-47cd-8e0a-f7764d5bcc67",
+    "structured_category": "bmi_overweighted",
+    "relevant_feature": "bmi",
+    "feedback_direction": "reduce_influence",
+    "target_feature": null,
+    "direction": null,
+    "scope": null,
+    "feedback_text": "",
+    "nlp_confidence": null,
+    "nlp_raw_output": null,
+    "is_eligible_for_learning": true,
+    "learning_status": "included",
+    "model_version_at_feedback": "GAM-v1",
+    "taxonomy_version": "1.0",
+    "created_at": "2026-09-27T05:17:09.096Z"
+  }
+},
+{
+  "model": "predictor.humanfeedback",
+  "pk": "a10b4d23-a5a9-4d9b-867a-471967df155c",
+  "fields": {
+    "human_review": "e836c7c6-f3b9-4a5f-b22b-a7c98b8b17c5",
+    "structured_category": "bmi_overweighted",
+    "relevant_feature": "bmi",
+    "feedback_direction": "reduce_influence",
+    "target_feature": "bmi",
+    "direction": "reduce",
+    "scope": "feature_specific",
+    "feedback_text": "Case A verification note",
+    "nlp_confidence": 0.13035474752518408,
+    "nlp_raw_output": {
+      "detected_category": "unmapped",
+      "relevant_feature": null,
+      "direction": "no_learning",
+      "confidence": 0.1304,
+      "raw_scores": {
+        "age_overweighted": 0.0679,
+        "age_underweighted": 0.0645,
+        "bmi_overweighted": 0.0687,
+        "bmi_underweighted": 0.0939,
+        "general_risk_too_high": 0.1304,
+        "general_risk_too_low": 0.0969,
+        "hypertension_context": 0.0785,
+        "sedentary_overweighted": 0.0556,
+        "sedentary_underweighted": 0.0561,
+        "sex_context": 0.0577,
+        "smoking_context": 0.0591,
+        "unmapped": 0.065,
+        "waist_overweighted": 0.0515,
+        "waist_underweighted": 0.0541
+      },
+      "method": "tfidf_logistic_v1",
+      "is_above_threshold": false
+    },
+    "is_eligible_for_learning": true,
+    "learning_status": "included",
+    "model_version_at_feedback": "RA-v2",
+    "taxonomy_version": "2.0",
+    "created_at": "2026-09-28T12:42:17.384Z"
+  }
+},
+{
+  "model": "predictor.humanfeedback",
+  "pk": "02f5a315-83c9-49c6-9a57-50f3bb3e05a4",
+  "fields": {
+    "human_review": "dbadc3b6-b65a-47b7-b814-c62844a95e43",
+    "structured_category": "bmi_overweighted",
+    "relevant_feature": "bmi",
+    "feedback_direction": "reduce_influence",
+    "target_feature": "bmi",
+    "direction": "reduce",
+    "scope": "feature_specific",
+    "feedback_text": "",
+    "nlp_confidence": null,
+    "nlp_raw_output": null,
+    "is_eligible_for_learning": true,
+    "learning_status": "pending",
+    "model_version_at_feedback": "GAM-v1",
+    "taxonomy_version": "2.0",
+    "created_at": "2026-09-28T12:51:24.886Z"
+  }
+},
+{
+  "model": "predictor.humanfeedback",
+  "pk": "c671831a-5b4b-4a1d-9c45-1c2881c9f466",
+  "fields": {
+    "human_review": "bad74833-9ba5-42cb-aa92-c872f1747886",
+    "structured_category": "bmi_underweighted",
+    "relevant_feature": "bmi",
+    "feedback_direction": "increase_influence",
+    "target_feature": "bmi",
+    "direction": "increase",
+    "scope": "feature_specific",
+    "feedback_text": "",
+    "nlp_confidence": null,
+    "nlp_raw_output": null,
+    "is_eligible_for_learning": true,
+    "learning_status": "pending",
+    "model_version_at_feedback": "GAM-v1",
+    "taxonomy_version": "2.0",
+    "created_at": "2026-09-28T12:51:25.136Z"
+  }
+},
+{
+  "model": "predictor.modelversion",
+  "pk": "425e0d19-ca26-4e2c-a373-8788806b357c",
+  "fields": {
+    "version_label": "GAM-v1",
+    "version_type": "baseline",
+    "parent_version": null,
+    "description": "Original frozen Phase-5 GAM (λ=10.0, Splines=10). No adaptation layer. Threshold 0.1389. This is the immutable research baseline.",
+    "base_model_sha256": "204a94ff072ef4f1edecebf5a643738c006bbf010f3817b4bb798d3ea6fef41d",
+    "adaptation_artifact_path": "",
+    "adaptation_sha256": "",
+    "feedback_count_used": 0,
+    "training_data_description": "No adaptation training data (pure frozen GAM baseline).",
+    "validation_status": "not_applicable",
+    "validation_metrics": null,
+    "is_active": false,
+    "created_at": "2026-09-17T17:18:45.622Z",
+    "activated_at": "2026-09-17T17:18:45.622Z",
+    "deactivated_at": "2026-09-17T17:18:53.023Z",
+    "notes": ""
+  }
+},
+{
+  "model": "predictor.modelversion",
+  "pk": "a658bbbd-f8df-40e4-be6b-1a68a6b76c37",
+  "fields": {
+    "version_label": "RA-v1",
+    "version_type": "rolled_back",
+    "parent_version": "425e0d19-ca26-4e2c-a373-8788806b357c",
+    "description": "Residual Adaptation layer trained on 1 feedback records (batch: batch-001).",
+    "base_model_sha256": "204a94ff072ef4f1edecebf5a643738c006bbf010f3817b4bb798d3ea6fef41d",
+    "adaptation_artifact_path": "C:\\Users\\Felix\\Documents\\Skripsi\\models\\adaptations\\adaptation_ra_v1.pkl",
+    "adaptation_sha256": "9a69aa51aad804c490c5168315fbff47b597224536bcfae0fd08902674a5a8c6",
+    "feedback_count_used": 1,
+    "training_data_description": "Trained on 1 eligible feedback records.",
+    "validation_status": "passed",
+    "validation_metrics": {
+      "checks": [
+        {
+          "check": "artifact_exists",
+          "passed": true,
+          "path": "C:\\Users\\Felix\\Documents\\Skripsi\\models\\adaptations\\adaptation_ra_v1.pkl"
+        },
+        {
+          "check": "artifact_loads_successfully",
+          "passed": true,
+          "loaded": true
+        },
+        {
+          "check": "artifact_sha256_matches",
+          "passed": true,
+          "expected": "9a69aa51aad804c490c5168315fbff47b597224536bcfae0fd08902674a5a8c6",
+          "actual": "9a69aa51aad804c490c5168315fbff47b597224536bcfae0fd08902674a5a8c6"
+        },
+        {
+          "check": "model_input_dimensions_correct",
+          "passed": true,
+          "expected_dim": 8,
+          "actual_dim": 8
+        },
+        {
+          "check": "expected_feature_names_present",
+          "passed": true,
+          "expected": [
+            "global_bias",
+            "age",
+            "sex",
+            "bmi",
+            "waist_cm",
+            "hypertension_history",
+            "smoking_history",
+            "sedentary_minutes_day"
+          ],
+          "actual": [
+            "global_bias",
+            "age",
+            "sex",
+            "bmi",
+            "waist_cm",
+            "hypertension_history",
+            "smoking_history",
+            "sedentary_minutes_day"
+          ]
+        },
+        {
+          "check": "repeatable_deterministic_inference",
+          "passed": true
+        },
+        {
+          "check": "output_probabilities_in_range",
+          "passed": true,
+          "range": "[0.0, 1.0]"
+        },
+        {
+          "check": "actual_adaptation_deltas_bounded",
+          "passed": true,
+          "max_bound": 2.0
+        },
+        {
+          "check": "dual_outputs_produced",
+          "passed": true
+        },
+        {
+          "check": "frozen_gam_hash_unchanged",
+          "passed": true,
+          "expected": "204a94ff072ef4f1edecebf5a643738c006bbf010f3817b4bb798d3ea6fef41d",
+          "actual": "204a94ff072ef4f1edecebf5a643738c006bbf010f3817b4bb798d3ea6fef41d"
+        },
+        {
+          "check": "threshold_remains_exact",
+          "passed": true,
+          "expected": 0.1389,
+          "actual": 0.1389
+        },
+        {
+          "check": "historical_records_unmutated",
+          "passed": true,
+          "count_before": 1,
+          "count_after": 1
+        },
+        {
+          "check": "frozen_gam_artifact_unmodified",
+          "passed": true,
+          "size_before": 22215,
+          "size_after": 22215
+        }
+      ]
+    },
+    "is_active": false,
+    "created_at": "2026-09-17T17:18:52.892Z",
+    "activated_at": "2026-09-17T17:18:53.023Z",
+    "deactivated_at": "2026-09-27T05:17:09.333Z",
+    "notes": ""
+  }
+},
+{
+  "model": "predictor.modelversion",
+  "pk": "89a7fb34-f11c-4e4b-887a-40ffaf19f452",
+  "fields": {
+    "version_label": "RA-v2",
+    "version_type": "rolled_back",
+    "parent_version": "a658bbbd-f8df-40e4-be6b-1a68a6b76c37",
+    "description": "Residual Adaptation layer trained on 3 feedback records (batch: batch-002).",
+    "base_model_sha256": "204a94ff072ef4f1edecebf5a643738c006bbf010f3817b4bb798d3ea6fef41d",
+    "adaptation_artifact_path": "C:\\Users\\Felix\\Documents\\Skripsi\\models\\adaptations\\adaptation_ra_v2.pkl",
+    "adaptation_sha256": "330d533d1e06aa29ec91e38c9e0ad001af02ca176a482905bcc8d31f20612c1a",
+    "feedback_count_used": 3,
+    "training_data_description": "Trained on 3 eligible feedback records.",
+    "validation_status": "passed",
+    "validation_metrics": {
+      "checks": [
+        {
+          "check": "artifact_exists",
+          "passed": true,
+          "path": "C:\\Users\\Felix\\Documents\\Skripsi\\models\\adaptations\\adaptation_ra_v2.pkl"
+        },
+        {
+          "check": "artifact_loads_successfully",
+          "passed": true,
+          "loaded": true
+        },
+        {
+          "check": "artifact_sha256_matches",
+          "passed": true,
+          "expected": "330d533d1e06aa29ec91e38c9e0ad001af02ca176a482905bcc8d31f20612c1a",
+          "actual": "330d533d1e06aa29ec91e38c9e0ad001af02ca176a482905bcc8d31f20612c1a"
+        },
+        {
+          "check": "model_input_dimensions_correct",
+          "passed": true,
+          "expected_dim": 8,
+          "actual_dim": 8
+        },
+        {
+          "check": "expected_feature_names_present",
+          "passed": true,
+          "expected": [
+            "global_bias",
+            "age",
+            "sex",
+            "bmi",
+            "waist_cm",
+            "hypertension_history",
+            "smoking_history",
+            "sedentary_minutes_day"
+          ],
+          "actual": [
+            "global_bias",
+            "age",
+            "sex",
+            "bmi",
+            "waist_cm",
+            "hypertension_history",
+            "smoking_history",
+            "sedentary_minutes_day"
+          ]
+        },
+        {
+          "check": "repeatable_deterministic_inference",
+          "passed": true
+        },
+        {
+          "check": "output_probabilities_in_range",
+          "passed": true,
+          "range": "[0.0, 1.0]"
+        },
+        {
+          "check": "actual_adaptation_deltas_bounded",
+          "passed": true,
+          "max_bound": 2.0
+        },
+        {
+          "check": "dual_outputs_produced",
+          "passed": true
+        },
+        {
+          "check": "frozen_gam_hash_unchanged",
+          "passed": true,
+          "expected": "204a94ff072ef4f1edecebf5a643738c006bbf010f3817b4bb798d3ea6fef41d",
+          "actual": "204a94ff072ef4f1edecebf5a643738c006bbf010f3817b4bb798d3ea6fef41d"
+        },
+        {
+          "check": "threshold_remains_exact",
+          "passed": true,
+          "expected": 0.1389,
+          "actual": 0.1389
+        },
+        {
+          "check": "historical_records_unmutated",
+          "passed": true,
+          "count_before": 5,
+          "count_after": 5
+        },
+        {
+          "check": "frozen_gam_artifact_unmodified",
+          "passed": true,
+          "size_before": 22215,
+          "size_after": 22215
+        }
+      ]
+    },
+    "is_active": false,
+    "created_at": "2026-09-27T05:17:09.211Z",
+    "activated_at": "2026-09-27T05:17:09.333Z",
+    "deactivated_at": "2026-09-28T12:42:17.715Z",
+    "notes": ""
+  }
+},
+{
+  "model": "predictor.modelversion",
+  "pk": "2ad3cdb4-d870-4bbd-9659-7cec9371864d",
+  "fields": {
+    "version_label": "RA-v3",
+    "version_type": "active",
+    "parent_version": "89a7fb34-f11c-4e4b-887a-40ffaf19f452",
+    "description": "Residual Adaptation layer trained on 1 feedback records (batch: batch-003).",
+    "base_model_sha256": "204a94ff072ef4f1edecebf5a643738c006bbf010f3817b4bb798d3ea6fef41d",
+    "adaptation_artifact_path": "C:\\Users\\Felix\\Documents\\Skripsi\\models\\adaptations\\adaptation_ra_v3.pkl",
+    "adaptation_sha256": "b353499c7b0d7c70dc7d75d45f52a58a0fea2041b85356716599650e63e44e77",
+    "feedback_count_used": 1,
+    "training_data_description": "Trained on 1 eligible feedback records.",
+    "validation_status": "passed",
+    "validation_metrics": {
+      "checks": [
+        {
+          "check": "artifact_exists",
+          "passed": true,
+          "path": "C:\\Users\\Felix\\Documents\\Skripsi\\models\\adaptations\\adaptation_ra_v3.pkl"
+        },
+        {
+          "check": "artifact_loads_successfully",
+          "passed": true,
+          "loaded": true
+        },
+        {
+          "check": "artifact_sha256_matches",
+          "passed": true,
+          "expected": "b353499c7b0d7c70dc7d75d45f52a58a0fea2041b85356716599650e63e44e77",
+          "actual": "b353499c7b0d7c70dc7d75d45f52a58a0fea2041b85356716599650e63e44e77"
+        },
+        {
+          "check": "model_input_dimensions_correct",
+          "passed": true,
+          "expected_dim": 8,
+          "actual_dim": 8
+        },
+        {
+          "check": "expected_feature_names_present",
+          "passed": true,
+          "expected": [
+            "global_bias",
+            "age",
+            "sex",
+            "bmi",
+            "waist_cm",
+            "hypertension_history",
+            "smoking_history",
+            "sedentary_minutes_day"
+          ],
+          "actual": [
+            "global_bias",
+            "age",
+            "sex",
+            "bmi",
+            "waist_cm",
+            "hypertension_history",
+            "smoking_history",
+            "sedentary_minutes_day"
+          ]
+        },
+        {
+          "check": "repeatable_deterministic_inference",
+          "passed": true
+        },
+        {
+          "check": "output_probabilities_in_range",
+          "passed": true,
+          "range": "[0.0, 1.0]"
+        },
+        {
+          "check": "actual_adaptation_deltas_bounded",
+          "passed": true,
+          "max_bound": 2.0
+        },
+        {
+          "check": "dual_outputs_produced",
+          "passed": true
+        },
+        {
+          "check": "frozen_gam_hash_unchanged",
+          "passed": true,
+          "expected": "204a94ff072ef4f1edecebf5a643738c006bbf010f3817b4bb798d3ea6fef41d",
+          "actual": "204a94ff072ef4f1edecebf5a643738c006bbf010f3817b4bb798d3ea6fef41d"
+        },
+        {
+          "check": "threshold_remains_exact",
+          "passed": true,
+          "expected": 0.1389,
+          "actual": 0.1389
+        },
+        {
+          "check": "historical_records_unmutated",
+          "passed": true,
+          "count_before": 7,
+          "count_after": 7
+        },
+        {
+          "check": "frozen_gam_artifact_unmodified",
+          "passed": true,
+          "size_before": 22215,
+          "size_after": 22215
+        }
+      ]
+    },
+    "is_active": true,
+    "created_at": "2026-09-28T12:42:17.590Z",
+    "activated_at": "2026-09-28T12:42:17.715Z",
+    "deactivated_at": null,
+    "notes": ""
+  }
+},
+{
+  "model": "predictor.feedbacklearningbatch",
+  "pk": "a4512a7c-bfe6-4a8e-bbca-1978d107691a",
+  "fields": {
+    "batch_label": "batch-001",
+    "source_version": "425e0d19-ca26-4e2c-a373-8788806b357c",
+    "candidate_version": "a658bbbd-f8df-40e4-be6b-1a68a6b76c37",
+    "feedback_count": 1,
+    "status": "activated",
+    "validation_metrics": null,
+    "created_at": "2026-09-17T17:18:52.732Z",
+    "completed_at": "2026-09-17T17:18:53.033Z",
+    "error_log": "",
+    "feedback_records": [
+      "66c3b7a0-22ab-4d53-9497-992d19084959"
+    ]
+  }
+},
+{
+  "model": "predictor.feedbacklearningbatch",
+  "pk": "f13cba44-e56e-4fd9-821f-2b74c93c2ff9",
+  "fields": {
+    "batch_label": "batch-002",
+    "source_version": "a658bbbd-f8df-40e4-be6b-1a68a6b76c37",
+    "candidate_version": "89a7fb34-f11c-4e4b-887a-40ffaf19f452",
+    "feedback_count": 3,
+    "status": "activated",
+    "validation_metrics": null,
+    "created_at": "2026-09-27T05:17:09.108Z",
+    "completed_at": "2026-09-27T05:17:09.342Z",
+    "error_log": "",
+    "feedback_records": [
+      "55fb13f9-6580-4940-980a-7d5692c61479",
+      "79c80cc5-9018-4b4e-a854-477d771b0198",
+      "943668fd-ca28-4ad6-82ca-8069d78cd968"
+    ]
+  }
+},
+{
+  "model": "predictor.feedbacklearningbatch",
+  "pk": "78b87a54-0dec-4156-a7c4-656c53fc2745",
+  "fields": {
+    "batch_label": "batch-003",
+    "source_version": "89a7fb34-f11c-4e4b-887a-40ffaf19f452",
+    "candidate_version": "2ad3cdb4-d870-4bbd-9659-7cec9371864d",
+    "feedback_count": 1,
+    "status": "activated",
+    "validation_metrics": null,
+    "created_at": "2026-09-28T12:42:17.404Z",
+    "completed_at": "2026-09-28T12:42:17.726Z",
+    "error_log": "",
+    "feedback_records": [
+      "a10b4d23-a5a9-4d9b-867a-471967df155c"
+    ]
+  }
+},
+{
+  "model": "predictor.controlledfeedbackexperiment",
+  "pk": "2e617518-98d0-4708-83eb-48940c907562",
+  "fields": {
+    "experiment_label": "EXP-CONTROLLED-20260917171852",
+    "state": "COMPARISON_COMPLETE",
+    "case_a": "d6df8d34-1a8c-4631-9170-762dd6bd2f6c",
+    "case_b": "b23d65b4-1c12-4454-b437-b34e939d85bb",
+    "human_review": "a9103a3e-b78b-468f-aac4-4d8d1b1c99fb",
+    "override_factor": "bmi_overweighted",
+    "override_rationale": "Researcher simulation: BMI was over-weighted; clinical review suggests normal adiposity despite high BMI.",
+    "learning_signal": "66c3b7a0-22ab-4d53-9497-992d19084959",
+    "learning_batch": "a4512a7c-bfe6-4a8e-bbca-1978d107691a",
+    "candidate_adaptation": "a658bbbd-f8df-40e4-be6b-1a68a6b76c37",
+    "validation_id": "a4512a7c-bfe6-4a8e-bbca-1978d107691a",
+    "active_adaptation": "a658bbbd-f8df-40e4-be6b-1a68a6b76c37",
+    "case_b_similarity": 0.9846,
+    "case_b_baseline_probability": 0.311198,
+    "case_b_adapted_probability": 0.270523,
+    "case_b_probability_delta": -0.040675,
+    "case_b_log_odds_delta": -0.197445,
+    "notes": "Demonstration completed successfully. Case B baseline=0.311198, adapted=0.270523, delta=-0.040675, similarity=0.9846.",
+    "created_at": "2026-09-17T17:18:52.656Z",
+    "updated_at": "2026-09-17T17:18:53.116Z",
+    "completed_at": "2026-09-17T17:18:53.116Z"
+  }
+},
+{
+  "model": "predictor.controlledfeedbackexperiment",
+  "pk": "a78b4171-297f-4052-b773-7c3af67bf4ce",
+  "fields": {
+    "experiment_label": "EXP-CONTROLLED-20260928124217",
+    "state": "COMPARISON_COMPLETE",
+    "case_a": "c9b6d348-ca88-4ac8-8d0c-628a412ddd39",
+    "case_b": "a9dd0689-1efc-4d77-a49e-d584a70e4975",
+    "human_review": "e836c7c6-f3b9-4a5f-b22b-a7c98b8b17c5",
+    "override_factor": "bmi_overweighted",
+    "override_rationale": "Case A verification note",
+    "learning_signal": "a10b4d23-a5a9-4d9b-867a-471967df155c",
+    "learning_batch": "78b87a54-0dec-4156-a7c4-656c53fc2745",
+    "candidate_adaptation": "2ad3cdb4-d870-4bbd-9659-7cec9371864d",
+    "validation_id": "78b87a54-0dec-4156-a7c4-656c53fc2745",
+    "active_adaptation": "2ad3cdb4-d870-4bbd-9659-7cec9371864d",
+    "case_b_similarity": 0.9846,
+    "case_b_baseline_probability": 0.311198,
+    "case_b_adapted_probability": 0.270523,
+    "case_b_probability_delta": -0.040675,
+    "case_b_log_odds_delta": -0.197445,
+    "notes": "Demonstration completed successfully. Case B baseline=0.311198, adapted=0.270523, delta=-0.040675, similarity=0.9846.",
+    "created_at": "2026-09-28T12:42:17.325Z",
+    "updated_at": "2026-09-28T12:42:17.810Z",
+    "completed_at": "2026-09-28T12:42:17.810Z"
+  }
+},
+{
+  "model": "predictor.similarcasecomparison",
+  "pk": "372fabe7-72bc-4835-aeb8-74e2bff0303c",
+  "fields": {
+    "source_case": "d6df8d34-1a8c-4631-9170-762dd6bd2f6c",
+    "target_case": "b23d65b4-1c12-4454-b437-b34e939d85bb",
+    "similarity_score": 0.9845520029866497,
+    "similarity_method": "normalized_euclidean_7feat",
+    "similarity_features_used": [
+      "age",
+      "sex",
+      "bmi",
+      "hypertension_history",
+      "smoking_history",
+      "waist_cm",
+      "sedentary_minutes_day"
+    ],
+    "similarity_normalization_version": "1.0",
+    "baseline_version": "425e0d19-ca26-4e2c-a373-8788806b357c",
+    "baseline_probability": 0.3111976743449569,
+    "baseline_recommendation": true,
+    "updated_version": "a658bbbd-f8df-40e4-be6b-1a68a6b76c37",
+    "updated_probability": 0.2705229752593582,
+    "updated_recommendation": true,
+    "probability_delta": -0.040674699085598676,
+    "recommendation_changed": false,
+    "feedback_category": "bmi_overweighted",
+    "learning_batch": "a4512a7c-bfe6-4a8e-bbca-1978d107691a",
+    "created_at": "2026-09-17T17:18:53.109Z"
+  }
+},
+{
+  "model": "predictor.similarcasecomparison",
+  "pk": "dec8337a-b524-4afb-a473-655ad2ec8e72",
+  "fields": {
+    "source_case": "c114228d-f450-4d2a-900b-cbc6012c1999",
+    "target_case": "aff32ad8-3b04-4bdb-b1a2-2e0822b37759",
+    "similarity_score": 0.9845520029866497,
+    "similarity_method": "normalized_euclidean_7feat",
+    "similarity_features_used": [
+      "age",
+      "sex",
+      "bmi",
+      "hypertension_history",
+      "smoking_history",
+      "waist_cm",
+      "sedentary_minutes_day"
+    ],
+    "similarity_normalization_version": "1.0",
+    "baseline_version": "425e0d19-ca26-4e2c-a373-8788806b357c",
+    "baseline_probability": 0.3111976743449569,
+    "baseline_recommendation": true,
+    "updated_version": "89a7fb34-f11c-4e4b-887a-40ffaf19f452",
+    "updated_probability": 0.22859845726039402,
+    "updated_recommendation": true,
+    "probability_delta": -0.08259921708456286,
+    "recommendation_changed": false,
+    "feedback_category": "bmi_overweighted",
+    "learning_batch": "f13cba44-e56e-4fd9-821f-2b74c93c2ff9",
+    "created_at": "2026-09-27T05:17:09.369Z"
+  }
+},
+{
+  "model": "predictor.similarcasecomparison",
+  "pk": "613ea12f-d90c-409d-b11c-1d0bf1eac0b1",
+  "fields": {
+    "source_case": "c9b6d348-ca88-4ac8-8d0c-628a412ddd39",
+    "target_case": "a9dd0689-1efc-4d77-a49e-d584a70e4975",
+    "similarity_score": 0.9845520029866497,
+    "similarity_method": "normalized_euclidean_7feat",
+    "similarity_features_used": [
+      "age",
+      "sex",
+      "bmi",
+      "hypertension_history",
+      "smoking_history",
+      "waist_cm",
+      "sedentary_minutes_day"
+    ],
+    "similarity_normalization_version": "1.0",
+    "baseline_version": "425e0d19-ca26-4e2c-a373-8788806b357c",
+    "baseline_probability": 0.3111976743449569,
+    "baseline_recommendation": true,
+    "updated_version": "2ad3cdb4-d870-4bbd-9659-7cec9371864d",
+    "updated_probability": 0.2705229752593582,
+    "updated_recommendation": true,
+    "probability_delta": -0.040674699085598676,
+    "recommendation_changed": false,
+    "feedback_category": "bmi_overweighted",
+    "learning_batch": "78b87a54-0dec-4156-a7c4-656c53fc2745",
+    "created_at": "2026-09-28T12:42:17.802Z"
+  }
+}
+]

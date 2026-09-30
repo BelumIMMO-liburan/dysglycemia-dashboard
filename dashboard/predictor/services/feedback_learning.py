@@ -55,6 +55,10 @@ from .feedback_taxonomy import (
     DIR_INCREASE_GLOBAL,
     DIR_NO_LEARNING,
     STAGE1_FEATURES,
+    parse_canonical_signal,
+    canonical_signal_to_learning_fields,
+    CanonicalLearningSignal,
+    NULL_SIGNAL,
 )
 from .similarity import (
     NORMALIZATION_BOUNDS,
@@ -291,9 +295,10 @@ def _normalize_features_to_vector(record_or_dict) -> np.ndarray:
 def _build_training_row(
     screening_record,
     structured_category: str,
-    relevant_feature: Optional[str],
-    feedback_direction: str,
-    ai_referral_recommended: bool,
+    relevant_feature: Optional[str] = None,
+    feedback_direction: Optional[str] = None,
+    ai_referral_recommended: bool = True,
+    canonical_signal: Optional[CanonicalLearningSignal] = None,
 ) -> Tuple[np.ndarray, float]:
     """
     Construct a training sample (x_row, y_target) for the adaptation linear model.
@@ -306,7 +311,17 @@ def _build_training_row(
     - Contextual feedback: Attributed across global bias and patient features.
     - No-learning feedback: Target is 0.0.
     """
-    y_target = _direction_to_target(feedback_direction, ai_referral_recommended)
+    # 1. Consume canonical structured signal if provided
+    if canonical_signal is not None and canonical_signal != NULL_SIGNAL:
+        fields = canonical_signal_to_learning_fields(canonical_signal)
+        if not relevant_feature:
+            relevant_feature = fields["relevant_feature"]
+        if not feedback_direction or feedback_direction == DIR_NO_LEARNING:
+            feedback_direction = fields["feedback_direction"]
+    elif canonical_signal == NULL_SIGNAL and not feedback_direction:
+        return np.zeros(len(ADAPTATION_FEATURE_NAMES), dtype=np.float64), 0.0
+
+    y_target = _direction_to_target(feedback_direction or DIR_NO_LEARNING, ai_referral_recommended)
     x_row = np.zeros(len(ADAPTATION_FEATURE_NAMES), dtype=np.float64)
 
     if y_target == 0.0 or feedback_direction == DIR_NO_LEARNING:
@@ -404,12 +419,21 @@ def train_adaptation_layer(
             review = fb.human_review
             screening = review.screening_record
 
+            # Parse canonical structured signal (Taxonomy v2.0)
+            canonical = parse_canonical_signal(
+                category_id=fb.structured_category,
+                target_feature=getattr(fb, 'target_feature', None),
+                direction=getattr(fb, 'direction', None),
+                scope=getattr(fb, 'scope', None),
+            )
+
             x_row, target = _build_training_row(
                 screening_record=screening,
                 structured_category=fb.structured_category,
                 relevant_feature=fb.relevant_feature,
                 feedback_direction=fb.feedback_direction,
                 ai_referral_recommended=screening.ai_referral_recommended,
+                canonical_signal=canonical,
             )
 
             X_train.append(x_row)
@@ -504,9 +528,20 @@ def train_adaptation_layer(
 
 
 def load_adaptation_model(artifact_path: str) -> Optional[dict]:
-    """Load a serialized adaptation model from disk."""
+    """Load a serialized adaptation model from disk with portable path resolution fallback."""
     try:
-        with open(artifact_path, "rb") as f:
+        resolved_path = Path(artifact_path)
+        if not resolved_path.is_file():
+            # Portable fallback: resolve by basename in models/adaptations relative to repo root
+            from django.conf import settings
+            repo_root = Path(settings.BASE_DIR).parent
+            candidate = repo_root / "models" / "adaptations" / resolved_path.name
+            if candidate.is_file():
+                resolved_path = candidate
+            else:
+                logger.error(f"Failed to locate adaptation artifact at '{artifact_path}' or '{candidate}'")
+                return None
+        with open(resolved_path, "rb") as f:
             return pickle.load(f)
     except Exception as e:
         logger.error(f"Failed to load adaptation model from {artifact_path}: {e}")
@@ -703,6 +738,9 @@ def record_review_with_learning_signal(
     human_decision: str,  # 'accept' or 'override'
     override_factor: Optional[str] = None,
     rationale: str = "",
+    target_feature: Optional[str] = None,
+    signal_direction: Optional[str] = None,
+    signal_scope: Optional[str] = None,
 ) -> Tuple[Any, Optional[Any]]:
     """
     Unified entry point for recording human review and capturing its structured learning signal.
@@ -809,16 +847,34 @@ def record_review_with_learning_signal(
 
         feedback = None
         if review_action == "overridden":
-            cat = get_category(reason_code)
-            direction = cat.learning_direction if cat else DIR_NO_LEARNING
-            rel_feature = cat.relevant_features[0] if (cat and cat.relevant_features) else None
+            # Parse canonical structured signal (Taxonomy v2.0)
+            canonical = parse_canonical_signal(
+                category_id=reason_code,
+                target_feature=target_feature,
+                direction=signal_direction,
+                scope=signal_scope,
+            )
+
+            # Map canonical signal to learning fields
+            fields = canonical_signal_to_learning_fields(canonical)
+            rel_feature = fields["relevant_feature"]
+            direction = fields["feedback_direction"]
+
+            # Fallback to category metadata if direction is no_learning but category exists
+            if (not direction or direction == DIR_NO_LEARNING) and not target_feature:
+                cat = get_category(reason_code)
+                if cat:
+                    direction = cat.learning_direction
+                    if not rel_feature and cat.relevant_features:
+                        rel_feature = cat.relevant_features[0]
 
             # Mode guard and eligibility
-            is_corrective = is_corrective_learning_factor(reason_code)
+            is_corrective = is_corrective_learning_factor(reason_code) or canonical.is_actionable
             is_eligible = (
                 current_mode == "feedback_lab"
                 and not is_practice
                 and is_corrective
+                and canonical.is_actionable
                 and direction != DIR_NO_LEARNING
             )
 
@@ -827,6 +883,10 @@ def record_review_with_learning_signal(
                 structured_category=reason_code,
                 relevant_feature=rel_feature,
                 feedback_direction=direction,
+                # Direction-aware canonical signal (Taxonomy v2.0)
+                target_feature=canonical.target_feature,
+                direction=canonical.direction,
+                scope=canonical.scope,
                 feedback_text=cleaned_note or "",
                 nlp_confidence=nlp_confidence,
                 nlp_raw_output=nlp_raw_output,
@@ -842,6 +902,10 @@ def record_review_with_learning_signal(
                 structured_category="no_learning_signal",
                 relevant_feature=None,
                 feedback_direction=DIR_NO_LEARNING,
+                # Direction-aware canonical signal: null signal for accepted reviews
+                target_feature="none",
+                direction="none",
+                scope="none",
                 feedback_text=cleaned_note,
                 nlp_confidence=nlp_confidence,
                 nlp_raw_output=nlp_raw_output,

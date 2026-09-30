@@ -407,3 +407,34 @@ class DatabaseIsolationGuardTests(TestCase):
                 runpy.run_module('dashboard.settings', run_name='__main__')
             self.assertIn("cannot use development database 'db.sqlite3'", str(ctx.exception))
 
+    def test_feedback_lab_with_dedicated_database_url_configures_postgresql(self):
+        """5. APP_MODE=feedback_lab + FEEDBACK_LAB_DATABASE_URL -> Dedicated Feedback Lab PostgreSQL works."""
+        import os, runpy
+        from unittest import mock
+
+        env = os.environ.copy()
+        env['APP_MODE'] = 'feedback_lab'
+        env['FEEDBACK_LAB_DATABASE_URL'] = 'postgresql://postgres:secret@roundhouse.proxy.rlwy.net:5432/feedback_lab_db'
+        env.pop('DATABASE_URL', None)
+        with mock.patch.dict(os.environ, env, clear=True):
+            settings_dict = runpy.run_module('dashboard.settings', run_name='__main__')
+            default_db = settings_dict['DATABASES']['default']
+            self.assertEqual(default_db['ENGINE'], 'django.db.backends.postgresql')
+            self.assertEqual(default_db['NAME'], 'feedback_lab_db')
+
+    def test_cross_database_url_collision_raises_improperly_configured(self):
+        """6. Setting DATABASE_URL == FEEDBACK_LAB_DATABASE_URL raises ImproperlyConfigured."""
+        import os, runpy
+        from unittest import mock
+        from django.core.exceptions import ImproperlyConfigured
+
+        env = os.environ.copy()
+        env['APP_MODE'] = 'feedback_lab'
+        shared_url = 'postgresql://postgres:secret@roundhouse.proxy.rlwy.net:5432/shared_db'
+        env['DATABASE_URL'] = shared_url
+        env['FEEDBACK_LAB_DATABASE_URL'] = shared_url
+        with mock.patch.dict(os.environ, env, clear=True):
+            with self.assertRaises(ImproperlyConfigured) as ctx:
+                runpy.run_module('dashboard.settings', run_name='__main__')
+            self.assertIn("cannot point to the same production database URL", str(ctx.exception))
+
