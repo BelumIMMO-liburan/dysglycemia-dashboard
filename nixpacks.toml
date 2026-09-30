@@ -5,3 +5,6 @@ NIXPACKS_PYTHON_VERSION = "3.10"
 [phases.build]
 cmds = ["python dashboard/manage.py collectstatic --noinput"]
 
+[start]
+cmd = "python dashboard/manage.py migrate && python dashboard/manage.py seed_feedback_lab_production --skip-if-wrong-mode && gunicorn --chdir dashboard dashboard.wsgi:application --bind 0.0.0.0:$PORT"
+
