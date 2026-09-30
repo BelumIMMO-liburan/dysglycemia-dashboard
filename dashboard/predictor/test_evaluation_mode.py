@@ -423,13 +423,14 @@ class DatabaseIsolationGuardTests(TestCase):
             self.assertEqual(default_db['NAME'], 'feedback_lab_db')
 
     def test_cross_database_url_collision_raises_improperly_configured(self):
-        """6. Setting DATABASE_URL == FEEDBACK_LAB_DATABASE_URL raises ImproperlyConfigured."""
+        """6. Setting identical URLs between Evaluation and Feedback Lab raises ImproperlyConfigured."""
         import os, runpy
         from unittest import mock
         from django.core.exceptions import ImproperlyConfigured
 
+        # Case A: Evaluation mode configured with FEEDBACK_LAB_DATABASE_URL identical to DATABASE_URL
         env = os.environ.copy()
-        env['APP_MODE'] = 'feedback_lab'
+        env['APP_MODE'] = 'evaluation'
         shared_url = 'postgresql://postgres:secret@roundhouse.proxy.rlwy.net:5432/shared_db'
         env['DATABASE_URL'] = shared_url
         env['FEEDBACK_LAB_DATABASE_URL'] = shared_url
@@ -437,4 +438,14 @@ class DatabaseIsolationGuardTests(TestCase):
             with self.assertRaises(ImproperlyConfigured) as ctx:
                 runpy.run_module('dashboard.settings', run_name='__main__')
             self.assertIn("cannot point to the same production database URL", str(ctx.exception))
+
+        # Case B: Feedback Lab mode configured with FEEDBACK_LAB_DATABASE_URL matching EVALUATION_DATABASE_URL
+        env_fl = os.environ.copy()
+        env_fl['APP_MODE'] = 'feedback_lab'
+        env_fl['FEEDBACK_LAB_DATABASE_URL'] = shared_url
+        env_fl['EVALUATION_DATABASE_URL'] = shared_url
+        with mock.patch.dict(os.environ, env_fl, clear=True):
+            with self.assertRaises(ImproperlyConfigured) as ctx:
+                runpy.run_module('dashboard.settings', run_name='__main__')
+            self.assertIn("Feedback Lab cannot connect to the Evaluation database URL", str(ctx.exception))
 

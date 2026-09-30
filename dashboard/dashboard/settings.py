@@ -92,33 +92,37 @@ WSGI_APPLICATION = 'dashboard.wsgi.application'
 # - Feedback Lab mode uses FEEDBACK_LAB_DATABASE_URL (Railway Feedback Lab PostgreSQL) or db.sqlite3
 eval_database_url = os.environ.get('DATABASE_URL')
 feedback_lab_database_url = os.environ.get('FEEDBACK_LAB_DATABASE_URL')
-
-# Fail-Closed Cross-Database Isolation Guards:
-# 1. Strictly prohibit both services from sharing the same production database URL.
-if eval_database_url and feedback_lab_database_url and eval_database_url == feedback_lab_database_url:
-    from django.core.exceptions import ImproperlyConfigured
-    raise ImproperlyConfigured(
-        "Database isolation violation: Evaluation and Feedback Lab cannot point to the same "
-        "production database URL. Separate databases are strictly required."
-    )
+evaluation_database_url = os.environ.get('EVALUATION_DATABASE_URL')
 
 if APP_MODE == 'feedback_lab':
-    # 2. Feedback Lab must NEVER connect via Evaluation's DATABASE_URL if FEEDBACK_LAB_DATABASE_URL is absent.
+    # Fail-closed guard: Feedback Lab requires explicit FEEDBACK_LAB_DATABASE_URL when using PostgreSQL.
+    # Reject raw/unconfirmed DATABASE_URL to prevent accidental use of Evaluation DB.
     if eval_database_url and not feedback_lab_database_url:
         from django.core.exceptions import ImproperlyConfigured
         raise ImproperlyConfigured(
             "Database isolation violation: APP_MODE='feedback_lab' must not be configured "
             "with a production/evaluation DATABASE_URL. Feedback Lab requires local research storage or dedicated FEEDBACK_LAB_DATABASE_URL."
         )
+
     active_database_url = feedback_lab_database_url
-elif APP_MODE == 'evaluation':
-    # 3. Evaluation mode must NEVER use Feedback Lab's database URL.
-    if feedback_lab_database_url and not eval_database_url:
+
+    # Guard: Fail-closed if Feedback Lab is configured to use the known Evaluation PostgreSQL database
+    if evaluation_database_url and active_database_url and active_database_url == evaluation_database_url:
         from django.core.exceptions import ImproperlyConfigured
         raise ImproperlyConfigured(
-            "Database isolation violation: APP_MODE='evaluation' cannot use FEEDBACK_LAB_DATABASE_URL."
+            "Database isolation violation: Feedback Lab cannot connect to the Evaluation database URL."
         )
+
+elif APP_MODE == 'evaluation':
     active_database_url = eval_database_url
+
+    # Guard: Fail-closed if Evaluation mode is configured to share the dedicated Feedback Lab database URL
+    if feedback_lab_database_url and active_database_url and active_database_url == feedback_lab_database_url:
+        from django.core.exceptions import ImproperlyConfigured
+        raise ImproperlyConfigured(
+            "Database isolation violation: Evaluation and Feedback Lab cannot point to the same "
+            "production database URL. Separate databases are strictly required."
+        )
 else:
     active_database_url = feedback_lab_database_url or eval_database_url
 
