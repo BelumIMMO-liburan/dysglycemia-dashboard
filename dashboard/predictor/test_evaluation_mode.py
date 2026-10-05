@@ -449,3 +449,49 @@ class DatabaseIsolationGuardTests(TestCase):
                 runpy.run_module('dashboard.settings', run_name='__main__')
             self.assertIn("Feedback Lab cannot connect to the Evaluation database URL", str(ctx.exception))
 
+
+class LegacyRouteBlockingTests(TestCase):
+    """Verifies that legacy single-stage endpoints return 404 in evaluation mode for participants."""
+
+    @override_settings(APP_MODE='evaluation')
+    def test_legacy_routes_blocked_in_evaluation_mode_for_participants(self):
+        # 1. Dashboard legacy index form
+        res = self.client.get(reverse('predictor:index'))
+        self.assertEqual(res.status_code, 404)
+
+        # 2. Components demo view
+        res = self.client.get(reverse('predictor:components_demo'))
+        self.assertEqual(res.status_code, 404)
+
+        # 3. Model evaluation benchmark view
+        res = self.client.get(reverse('predictor:evaluation'))
+        self.assertEqual(res.status_code, 404)
+
+        # 4. Predict POST endpoint
+        res = self.client.post(reverse('predictor:predict'), {})
+        self.assertEqual(res.status_code, 404)
+
+        # 5. Override POST endpoint
+        res = self.client.post(reverse('predictor:override'), {})
+        self.assertEqual(res.status_code, 404)
+
+    @override_settings(APP_MODE='evaluation')
+    def test_legacy_routes_accessible_for_staff_in_evaluation_mode(self):
+        from django.contrib.auth.models import User
+        staff_user = User.objects.create_user(username='staff_test', password='password', is_staff=True)
+        self.client.force_login(staff_user)
+
+        res = self.client.get(reverse('predictor:components_demo'))
+        self.assertEqual(res.status_code, 200)
+
+        res = self.client.get(reverse('predictor:index'))
+        self.assertEqual(res.status_code, 200)
+
+    @override_settings(APP_MODE='feedback_lab')
+    def test_legacy_routes_accessible_in_feedback_lab_mode(self):
+        res = self.client.get(reverse('predictor:components_demo'))
+        self.assertEqual(res.status_code, 200)
+
+        res = self.client.get(reverse('predictor:index'))
+        self.assertEqual(res.status_code, 200)
+

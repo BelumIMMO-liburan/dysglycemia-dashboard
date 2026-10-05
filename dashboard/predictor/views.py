@@ -1,7 +1,7 @@
 import logging
 from django.conf import settings
 from django.shortcuts import render, redirect, get_object_or_404
-from django.http import JsonResponse, HttpResponseForbidden, HttpResponse
+from django.http import JsonResponse, HttpResponseForbidden, HttpResponse, Http404
 from django.contrib import messages
 from django.db.models import Count, Q, Avg
 from django.db import transaction
@@ -88,6 +88,19 @@ def check_evaluation_onboarding(request):
         return redirect('predictor:evaluation_practice')
     if session.questionnaire_completed:
         return redirect('predictor:evaluation_complete')
+    return None
+
+
+def _block_in_evaluation_mode(request):
+    """
+    Helper to enforce strict route scoping in evaluation mode.
+    Raises Http404 for participants accessing legacy routes in evaluation mode.
+    Staff and feedback_lab are exempt.
+    """
+    app_mode = getattr(settings, 'APP_MODE', 'feedback_lab').lower()
+    if app_mode == 'evaluation':
+        if not (request.user.is_authenticated and request.user.is_staff):
+            raise Http404("This endpoint is disabled in Evaluation Mode.")
     return None
 
 
@@ -943,11 +956,13 @@ def about_model_view(request):
 
 def components_demo_view(request):
     """Interactive design system component inventory for visual QA."""
+    _block_in_evaluation_mode(request)
     return render(request, 'predictor/components_demo.html')
 
 
 def index(request):
     """Dashboard home — patient data input form."""
+    _block_in_evaluation_mode(request)
     available_models = model_loader.get_available_models() if model_loader else []
     
     # Get recent predictions for the sidebar
@@ -970,6 +985,7 @@ def index(request):
 
 def predict_view(request):
     """Run prediction, generate SHAP explanation, show result page."""
+    _block_in_evaluation_mode(request)
     if request.method != 'POST':
         return redirect('predictor:index')
     
@@ -1033,6 +1049,7 @@ def prediction_detail_view(request, pk):
     View a single prediction with SHAP explanation and override form.
     This allows pending predictions to be re-opened for review.
     """
+    _block_in_evaluation_mode(request)
     prediction_obj = get_object_or_404(Prediction, pk=pk)
     
     # Build SHAP data from stored values
@@ -1105,6 +1122,7 @@ def prediction_detail_view(request, pk):
 
 def override_view(request):
     """Submit reviewer's override decision."""
+    _block_in_evaluation_mode(request)
     if request.method != 'POST':
         return redirect('predictor:index')
     
@@ -1275,6 +1293,7 @@ def history_view(request):
 
 def evaluation_view(request):
     """Model evaluation page — displays all model metrics from results.csv."""
+    _block_in_evaluation_mode(request)
     results_path = Path(__file__).resolve().parent.parent.parent / 'models' / 'results.csv'
     
     models_data = []
@@ -1478,6 +1497,8 @@ def feedback_experiment_view(request):
     Displays feedback accumulation, model versions, learning batches,
     controlled mechanism experiment, and before/after comparison results.
 
+    Note: In evaluation mode, this endpoint is already protected and returns
+    HTTP 403 Forbidden via @require_app_mode('feedback_lab').
     Read-only surface: 0 writes, 0 ML execution.
     """
     from .services.model_versioning import get_model_status_summary
@@ -1724,6 +1745,8 @@ def run_comparison_view(request, screening_id):
     Run a before/after comparison for a specific screening case (Case B)
     against all source cases that have feedback.
 
+    Note: In evaluation mode, this endpoint is already protected and returns
+    HTTP 403 Forbidden via @require_app_mode('feedback_lab').
     Finds similar source cases, computes baseline vs adapted predictions,
     and persists SimilarCaseComparison records.
     """
