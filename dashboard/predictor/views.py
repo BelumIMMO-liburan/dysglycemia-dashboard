@@ -413,7 +413,7 @@ def screening_result_view(request, screening_id):
     review_form = HumanReviewAcceptForm()
     override_form = HumanReviewOverrideForm(ai_referral_recommended=record.ai_referral_recommended)
     from .forms import UnifiedHumanReviewForm
-    unified_form = UnifiedHumanReviewForm()
+    unified_form = UnifiedHumanReviewForm(is_evaluation_mode=(getattr(settings, 'APP_MODE', 'feedback_lab').lower() == 'evaluation'))
 
     # Branch-specific reason taxonomy & opposite decision for UI presentation
     if record.ai_referral_recommended:
@@ -514,7 +514,8 @@ def unified_review_view(request, screening_id):
 
     # 3. Validate Unified Form
     from .forms import UnifiedHumanReviewForm
-    form = UnifiedHumanReviewForm(request.POST)
+    is_eval_mode = (getattr(settings, 'APP_MODE', 'feedback_lab').lower() == 'evaluation')
+    form = UnifiedHumanReviewForm(request.POST, is_evaluation_mode=is_eval_mode)
     if not form.is_valid():
         first_err = None
         for field, errs in form.errors.items():
@@ -524,7 +525,17 @@ def unified_review_view(request, screening_id):
         request.session['review_error'] = first_err or "Invalid review submission."
         return redirect('predictor:screening_result', screening_id=screening_record.id)
 
-    reviewer_code = form.cleaned_data['reviewer_code']
+    reviewer_code = form.cleaned_data.get('reviewer_code', '').strip()
+    if is_eval_mode and not reviewer_code:
+        respondent_code = request.session.get('respondent_code')
+        if not respondent_code:
+            eval_token = request.session.get('evaluation_session_token')
+            if eval_token:
+                from .models import EvaluationSession
+                eval_sess = EvaluationSession.objects.filter(session_token=eval_token).select_related('respondent').first()
+                if eval_sess and eval_sess.respondent:
+                    respondent_code = eval_sess.respondent.respondent_code
+        reviewer_code = respondent_code or "ANON-EVAL"
     human_decision = form.cleaned_data['human_decision']
     override_factor = form.cleaned_data.get('override_factor')
     rationale = form.cleaned_data.get('rationale', '')

@@ -192,7 +192,7 @@
         <div style="margin-bottom: 1.5rem; padding: 1rem 1.25rem; background: hsl(var(--card)); border-radius: var(--radius); border: 1px solid hsl(var(--border));">
             <h3 style="font-size: 0.875rem; font-weight: 600; color: hsl(var(--foreground)); margin: 0 0 0.35rem 0; display: flex; align-items: center; gap: 0.4rem;">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-                Clinical Interpretation
+                Result Interpretation
             </h3>
             <p style="font-size: 0.875rem; color: hsl(var(--foreground)/0.9); margin: 0 0 0.5rem 0; line-height: 1.5;" id="result-interpretation-display">
                 {{ record.interpretation_text }}
@@ -434,7 +434,7 @@ function toggleAllFactors() {
             </div>
             {% if human_review.review_action == 'overridden' %}
             <div class="ui-review-item" style="grid-column: 1 / -1;">
-                <span class="ui-review-item-label">Override Rationale</span>
+                <span class="ui-review-item-label">{% if IS_FEEDBACK_LAB_MODE %}Override Reason / Learning Signal{% else %}Override Reason{% endif %}</span>
                 <span class="ui-review-item-value" id="override-reason-display" style="font-weight: 500;">
                     {{ override_factor_display|default:human_review.override_reason_display }}
                 </span>
@@ -447,7 +447,7 @@ function toggleAllFactors() {
                 </div>
             </div>
             {% endif %}
-            {% if active_exp and active_exp.case_a.id == record.id and active_exp.state == 'LEARNING_SIGNAL_CREATED' %}
+            {% if IS_FEEDBACK_LAB_MODE and active_exp and active_exp.case_a.id == record.id and active_exp.state == 'LEARNING_SIGNAL_CREATED' %}
             <div class="ui-review-item" style="grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem; background: hsl(var(--primary)/0.08); padding: 0.75rem 1rem; border-radius: var(--radius); border: 1px solid hsl(var(--primary)/0.25); margin-top: 0.5rem;">
                 <div>
                     <strong style="display: block; font-size: 0.8125rem;">Controlled Mechanism Demonstration: Real Human Override Captured</strong>
@@ -476,7 +476,7 @@ function toggleAllFactors() {
             {% endif %}
             {% endif %}
             <div class="ui-review-item">
-                <span class="ui-review-item-label">Reviewer Code</span>
+                <span class="ui-review-item-label">{% if IS_EVALUATION_MODE %}Reviewer ID{% else %}Reviewer Code{% endif %}</span>
                 <span class="ui-review-item-value tabular-nums" id="reviewed-reviewer-code" style="font-family: monospace; font-weight: 600;">
                     {{ human_review.reviewer_code }}
                 </span>
@@ -553,7 +553,7 @@ function toggleAllFactors() {
 </div>
 {% endif %}
 
-{% if human_feedback %}
+{% if IS_FEEDBACK_LAB_MODE and human_feedback %}
 <!-- FEEDBACK RECORDED (READ-ONLY) -->
 <div class="ui-card" style="margin-bottom: 1.5rem;" id="feedback-recorded-card">
     <div class="ui-card-header with-actions">
@@ -614,7 +614,7 @@ function toggleAllFactors() {
             <p style="font-size: 0.84375rem; color: hsl(var(--foreground)); margin: 0; font-style: italic;">
                 &ldquo;{{ human_feedback.feedback_text }}&rdquo;
             </p>
-            {% if human_feedback.nlp_confidence is not None %}
+            {% if IS_FEEDBACK_LAB_MODE and human_feedback.nlp_confidence is not None %}
             <div style="margin-top: 0.5rem; font-size: 0.75rem; color: hsl(var(--muted-foreground)); display: flex; align-items: center; gap: 0.75rem;">
                 <span>NLP Interpretation Confidence: <strong>{{ human_feedback.nlp_confidence|floatformat:2 }}</strong></span>
                 <span>(Audited supplementary signal)</span>
@@ -749,7 +749,7 @@ function toggleAllFactors() {
                 Human Review
             </h2>
             <p class="ui-card-description">
-                Evaluate the AI screening assessment and record your clinical review decision.
+                Evaluate the AI screening assessment and record your review decision.
             </p>
         </div>
         <div>
@@ -769,7 +769,7 @@ function toggleAllFactors() {
         {% endif %}
 
         <!-- AI Recommendation Summary Banner -->
-        {% if active_exp and active_exp.case_a.id == record.id and active_exp.state == 'HUMAN_REVIEW_PENDING' %}
+        {% if IS_FEEDBACK_LAB_MODE and active_exp and active_exp.case_a.id == record.id and active_exp.state == 'HUMAN_REVIEW_PENDING' %}
         <div class="ui-alert ui-alert-info" style="margin-bottom: 1.25rem;">
             <svg class="ui-alert-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
@@ -809,7 +809,8 @@ function toggleAllFactors() {
         <form action="{% url 'predictor:unified_review' record.id %}" method="post" id="unified-review-form" novalidate>
             {% csrf_token %}
             
-            <!-- Reviewer Code Input -->
+            {% if IS_FEEDBACK_LAB_MODE %}
+            <!-- Reviewer Code Input (Feedback Lab mode only) -->
             <div style="max-width: 480px; margin-bottom: 1.5rem;">
                 <label for="unified-reviewer-code-input" class="ui-label" style="display: block; font-size: 0.875rem; font-weight: 600; margin-bottom: 0.35rem; color: hsl(var(--foreground));">
                     Reviewer Code <span style="color: hsl(var(--destructive));">*</span>
@@ -828,6 +829,7 @@ function toggleAllFactors() {
                     Pseudonymous reviewer code assigned for this study. Do not enter identifying personal information.
                 </span>
             </div>
+            {% endif %}
 
             <!-- Human Decision Radio Group -->
             <div style="margin-bottom: 1.5rem;">
@@ -1016,7 +1018,7 @@ function toggleAllFactors() {
                               oninput="updateRationaleCounter(this)"></textarea>
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.25rem;">
                         <span style="font-size: 0.75rem; color: hsl(var(--muted-foreground));">
-                            Preserved for auditability; analyzed via NLP for supplementary evaluation.
+                            {% if IS_FEEDBACK_LAB_MODE %}Preserved for auditability; analyzed via NLP for supplementary evaluation.{% else %}Stored for audit only; it does not change the model.{% endif %}
                         </span>
                         <span id="rationale-counter" style="font-size: 0.75rem; color: hsl(var(--muted-foreground)); font-family: monospace;">
                             0 / 500 chars

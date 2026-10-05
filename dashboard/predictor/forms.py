@@ -570,8 +570,14 @@ class UnifiedHumanReviewForm(forms.Form):
         }
     )
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, is_evaluation_mode=None, **kwargs):
         super().__init__(*args, **kwargs)
+        from django.conf import settings
+        if is_evaluation_mode is None:
+            is_evaluation_mode = (getattr(settings, 'APP_MODE', 'feedback_lab').lower() == 'evaluation')
+        if is_evaluation_mode:
+            self.fields['reviewer_code'].required = False
+            self.fields['reviewer_code'].widget = forms.HiddenInput()
         from .services.feedback_taxonomy import OVERRIDE_FACTOR_CHOICES
         self.fields['override_factor'].choices = [
             ('', '-- Select Override Factor / Learning Signal --')
@@ -579,6 +585,8 @@ class UnifiedHumanReviewForm(forms.Form):
 
     def clean_reviewer_code(self):
         code = self.cleaned_data.get('reviewer_code', '').strip()
+        if not self.fields['reviewer_code'].required and not code:
+            return ''
         if not code:
             raise forms.ValidationError('Enter your reviewer code before submitting this review.')
         if not re.match(r'^[a-zA-Z0-9_-]+$', code):

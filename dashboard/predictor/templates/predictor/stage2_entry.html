@@ -1,6 +1,6 @@
 {% extends 'predictor/base.html' %}
 
-{% block title %}Stage 2 · HbA1c Laboratory Assessment — Dysglycemia Screening Dashboard{% endblock %}
+{% block title %}{% if IS_EVALUATION_MODE %}Stage 2 – HbA1c Range Assessment — Dysglycemia Screening Dashboard{% else %}Stage 2 · HbA1c Laboratory Assessment — Dysglycemia Screening Dashboard{% endif %}{% endblock %}
 {% block breadcrumb %}
 <a href="{% url 'predictor:screening_result' record.id %}" style="color: hsl(var(--muted-foreground)); text-decoration: none;">Screening Result</a>
 <span style="margin: 0 0.5rem; color: hsl(var(--muted-foreground));">/</span>
@@ -11,9 +11,9 @@
 <div class="ui-page-header">
     <div class="ui-page-header-row">
         <div>
-            <h1 class="ui-page-title">Stage 2 · HbA1c Laboratory Assessment</h1>
+            <h1 class="ui-page-title">{% if IS_EVALUATION_MODE %}Stage 2 – HbA1c Range Assessment{% else %}Stage 2 · HbA1c Laboratory Assessment{% endif %}</h1>
             <p class="ui-page-description">
-                Enter confirmatory laboratory measurement to determine ADA 2026 reference range.
+                {% if IS_EVALUATION_MODE %}Enter an HbA1c value for this exercise (hypothetical; not a laboratory result) to see its ADA 2026 range category.{% else %}Enter confirmatory laboratory measurement to determine ADA 2026 reference range.{% endif %}
             </p>
         </div>
         <div style="display: flex; align-items: center; gap: 0.5rem;">
@@ -64,7 +64,7 @@
                 ●
             </div>
             <div>
-                <span style="font-size: 0.8125rem; font-weight: 600; color: hsl(var(--foreground)); display: block;">Stage 2: HbA1c Lab Assessment</span>
+                <span style="font-size: 0.8125rem; font-weight: 600; color: hsl(var(--foreground)); display: block;">{% if IS_EVALUATION_MODE %}Stage 2: HbA1c Range Assessment{% else %}Stage 2: HbA1c Lab Assessment{% endif %}</span>
                 <span style="font-size: 0.6875rem; color: hsl(var(--primary)); font-weight: 600;">Data Entry In Progress</span>
             </div>
         </div>
@@ -116,7 +116,7 @@
                 </span>
             </div>
             <div class="ui-review-item">
-                <span class="ui-review-item-label">Reviewer Code</span>
+                <span class="ui-review-item-label">{% if IS_EVALUATION_MODE %}Reviewer ID{% else %}Reviewer Code{% endif %}</span>
                 <span class="ui-review-item-value tabular-nums" style="font-family: monospace;">
                     {{ human_review.reviewer_code }}
                 </span>
@@ -132,7 +132,7 @@
             Enter HbA1c Measurement
         </h2>
         <p class="ui-card-description">
-            Laboratory measurement in percent (%). Values are categorized according to ADA Standards of Care (2026).
+            {% if IS_EVALUATION_MODE %}HbA1c value in percent (%). Values are categorized according to ADA Standards of Care (2026).{% else %}Laboratory measurement in percent (%). Values are categorized according to ADA Standards of Care (2026).{% endif %}
         </p>
     </div>
     <div class="ui-card-content">
@@ -159,7 +159,7 @@
                     <span style="position: absolute; right: 1rem; color: hsl(var(--muted-foreground)); font-weight: 600; font-size: 0.9375rem; pointer-events: none;" aria-hidden="true">%</span>
                 </div>
                 <span id="hba1c-help" style="font-size: 0.75rem; color: hsl(var(--muted-foreground)); display: block; margin-top: 0.35rem;">
-                    Enter numeric percentage (e.g. 5.70, 6.10, 6.50). Valid bounds: 2.00% &ndash; 25.00%.
+                    {% if IS_EVALUATION_MODE %}HbA1c value in percent (%). Enter numeric percentage (e.g. 5.70, 6.10, 6.50). Valid bounds: 2.00% &ndash; 25.00%.{% else %}Enter numeric percentage (e.g. 5.70, 6.10, 6.50). Valid bounds: 2.00% &ndash; 25.00%.{% endif %}
                 </span>
             </div>
 

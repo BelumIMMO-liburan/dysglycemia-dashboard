@@ -34,7 +34,7 @@
     <div class="ui-metric-card">
         <span class="ui-metric-label">Pending Human Reviews</span>
         <div class="ui-metric-value tabular-nums" style="color: hsl(var(--warning));">{{ pending_reviews|default:"0" }}</div>
-        <div class="ui-metric-helper">Awaiting clinician guided review</div>
+        <div class="ui-metric-helper">Awaiting human review</div>
     </div>
 
     <div class="ui-metric-card">
@@ -62,7 +62,7 @@
                     </svg>
                     <span>Actionable Review Queue</span>
                 </h2>
-                <p class="ui-card-description">Screenings requiring clinician verification or Stage-2 laboratory assessment.</p>
+                <p class="ui-card-description">Screenings requiring human review or Stage-2 HbA1c entry.</p>
             </div>
             <a href="{% url 'predictor:review_queue' %}" class="ui-btn ui-btn-outline ui-btn-sm" id="open-queue-btn">Open Review Queue</a>
         </div>
