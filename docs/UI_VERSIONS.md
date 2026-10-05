@@ -17,8 +17,8 @@ To provide empirical proof for manuscript reporting and resolve UI discrepancies
 1. An annotated Git tag `evaluation-study-ui` was created at commit `54f5cdbd6a73f08a5a853896987bb4e8db1ecb56` (tagged by `Daymbroo`).
 2. High-resolution Playwright captures (1440×1080 @ 2× DPR, 24 captures documented in `capture_report_v2.json`) were generated directly from commit `54f5cdbd` and branch `ui-wording-alignment` running in `APP_MODE=evaluation` on a clean, verified SQLite database.
 3. A dedicated alignment branch `ui-wording-alignment` was created from `main`, implementing mode-conditional copy alignments, gating researcher feedback mechanisms behind `feedback_lab` mode, auto-filling the pseudonymous reviewer code, blocking legacy endpoints with 404 for participants, and enforcing strict session scoping.
-4. An expanded test suite was developed (`test_evaluation_mode.py`, `test_evaluation_wording.py`), raising total test coverage from 263 to 284 tests with 100% passing rate.
-5. All old strings were mechanically verified against `git show 54f5cdbd:<path>` with zero unverified strings.
+4. An expanded test suite was developed (`test_evaluation_mode.py`, `test_evaluation_wording.py`), raising total test coverage from 263 to 286 tests; 286 tests passed on 2026-10-05 (Python 3.10.11, Django 5.2.17; 0 failures, 0 errors, 0 skips).
+5. All old strings were compared with `git show 54f5cdbd:<path>` on 2026-10-05 across all 20 identified alignment items, with each discrepancy resolved against the verbatim commit source.
 6. A `.gitattributes` file was added with `*.pkl binary` to safeguard serialized model weights.
 
 ### Version Mapping Table
@@ -31,7 +31,7 @@ To provide empirical proof for manuscript reporting and resolve UI discrepancies
 
 > [!IMPORTANT]
 > **Data Collection Provenance:**  
-> All 42 completers and all 41 formal human reviews analyzed in the manuscript were collected strictly on the deployment corresponding to commit `54f5cdbd` (tagged as `evaluation-study-ui`). No participant ever interacted with the modified copy on branch `ui-wording-alignment`. The branch exists to align future deployments and provide exact documentation of the visual delta.
+> All 42 completers and all 41 formal human reviews analyzed in the manuscript were collected strictly on the deployment corresponding to commit `54f5cdbd` (tagged as `evaluation-study-ui`) between 2026-09-23 and 2026-10-01. The modified copy on branch `ui-wording-alignment` was authored after study conclusion (commits beginning 2026-10-04) and was not present on the production deployment during data collection. The branch exists to align future deployments and provide exact documentation of the visual delta.
 
 ---
 
@@ -44,7 +44,7 @@ Between the evaluation deployment (`54f5cdbd`) and `main` (`6644bb48`), work foc
 1. **Templates Modified:** `screening_result.html` was modified in `main` to introduce Feedback Lab controls (two-step signal selection, direction-aware feedback taxonomy, similar prior cases accordion, and candidate adaptation preview), and `components_demo.html` received design system demonstration updates.
 2. **Forms & Views Extended:** `forms.py` was extended to include Feedback Lab forms (`UnifiedHumanReviewForm`, `HumanFeedbackForm`, `ControlledExperimentForm`), and `views.py` added endpoints for the Feedback Lab experiment, controlled adaptation, and similar case comparison (`feedback_experiment_view`, `run_comparison_view`, etc.).
 3. **Backend Models & Services:** Added `0012_humanfeedback_direction_aware_signal.py`, `feedback_taxonomy.py`, `feedback_learning.py`, and test suites for direction-aware signals (`test_direction_aware_taxonomy.py`, `test_feedback_mechanism_validation.py`).
-4. **Other Templates Unchanged:** Templates `about.html`, `analytics.html`, `evaluation_practice.html`, `overview.html`, `review_queue.html`, `stage2_entry.html`, `stage2_result.html`, `stage2_review.html`, and `base.html` were **100% identical** between `54f5cdbd` and `main` (`git diff` returned 0 changes across these files).
+4. **Other Templates Unchanged:** Templates `about.html`, `analytics.html`, `evaluation_practice.html`, `overview.html`, `review_queue.html`, `stage2_entry.html`, `stage2_result.html`, `stage2_review.html`, and `base.html` showed 0 diff lines when compared between `54f5cdbd` and `main` via `git diff 54f5cdbd..main -- <path>` on 2026-10-05.
 
 ### Phase B: What changed between `main` (`6644bb48`) and `ui-wording-alignment` (`9b5a8e2`)
 Branch `ui-wording-alignment` addressed reviewer concerns regarding layperson evaluation framing:
@@ -56,6 +56,7 @@ Branch `ui-wording-alignment` addressed reviewer concerns regarding layperson ev
 6. **About Page Notice Alignment:** Replaced the prototype notice sentence in `about.html` (in evaluation mode only) with the approved 3-sentence non-diagnostic and simulated volunteer evaluation disclaimer.
 7. **Legacy Endpoint Blocking:** Added 404 blocking in evaluation mode for legacy single-stage endpoints (`/index/`, `/predict/`, `/evaluation/`, `/components/`) with staff exemption.
 8. **Participant Session Scoping:** Added `_is_eval_participant`, `_scoped`, and `_require_own_record` helpers to restrict evaluation participants strictly to records belonging to their own session across overview, review queue, analytics, screening result, human reviews, Stage-2 entry, review, and confirm routes.
+9. **Staff Onboarding Gate Bypass:** In `check_evaluation_onboarding` (`views.py`), an authenticated staff check (`if request.user.is_authenticated and request.user.is_staff: return None`) was added. This behavior change is outside the original UI wording task list; it exists to enable researchers and administrative staff to inspect the evaluation overview and dashboard pages without requiring a participant session or undergoing the participant consent and practice onboarding sequence.
 
 ---
 
@@ -179,9 +180,10 @@ A dedicated unit test suite, `EvaluationModeWordingTests`, and comprehensive mod
 - **Presence Checks:** Explicitly tests presence of required finalized review summary items (`"Recommendation Overridden"`, `"No referral recommended..."`, `"Override Reason"`, `"Reviewer ID"`, rationale/note text).
 - **Legacy Endpoint Blocking:** Asserts 404 for unauthenticated participants accessing legacy single-stage endpoints in evaluation mode; 200 for staff; 200 in feedback_lab mode.
 - **Participant Scoping:** With `Client(enforce_csrf_checks=True)`, session A cannot GET session B's results, cannot POST reviews or Stage-2 assessments for B (asserting 404 and zero row mutations), and sees only own counts in overview, review queue, and analytics.
+- **Staff Onboarding Bypass & Participant Redirect:** Asserts authenticated staff can open overview `/` in evaluation mode without an evaluation session (200 OK); asserts unauthenticated and non-staff authenticated participants without a session are redirected to `/evaluation/consent/` (302 Found).
 
 ```
-Test Run (predictor):  Ran 284 tests in 11.840s -> OK (0 failures, 0 errors)
+Test Run (predictor):  Ran 286 tests on 2026-10-05 (Python 3.10.11, Django 5.2.17) -> OK (0 failures, 0 errors, 0 skips)
 ```
 
 ---

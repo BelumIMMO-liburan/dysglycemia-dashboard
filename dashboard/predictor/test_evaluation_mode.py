@@ -740,3 +740,43 @@ class EvaluationSessionScopingTests(TestCase):
             self.assertEqual(ov.context['total'], 2)
 
 
+class EvaluationOnboardingGateTests(TestCase):
+    """
+    Verifies that check_evaluation_onboarding enforces protocol prerequisite gates
+    for participants while allowing authenticated staff to inspect overview directly.
+    """
+
+    def setUp(self):
+        from django.contrib.auth.models import User
+        self.staff_user = User.objects.create_user(
+            username='staff_gate_inspector', password='password', is_staff=True
+        )
+        self.regular_user = User.objects.create_user(
+            username='regular_participant_user', password='password', is_staff=False
+        )
+
+    @override_settings(APP_MODE='evaluation')
+    def test_staff_user_can_open_overview_without_session(self):
+        """Staff user bypasses onboarding gate and can open overview in evaluation mode without a participant session."""
+        client = Client()
+        client.force_login(self.staff_user)
+        response = client.get(reverse('predictor:overview'))
+        self.assertEqual(response.status_code, 200)
+
+    @override_settings(APP_MODE='evaluation')
+    def test_non_staff_user_without_session_redirected_to_onboarding(self):
+        """Non-staff user (anonymous or non-staff authenticated) without a session is redirected to onboarding consent."""
+        client = Client()
+        # 1. Anonymous participant without session
+        response_anon = client.get(reverse('predictor:overview'))
+        self.assertEqual(response_anon.status_code, 302)
+        self.assertRedirects(response_anon, reverse('predictor:evaluation_consent'))
+
+        # 2. Authenticated non-staff user without session
+        client.force_login(self.regular_user)
+        response_auth = client.get(reverse('predictor:overview'))
+        self.assertEqual(response_auth.status_code, 302)
+        self.assertRedirects(response_auth, reverse('predictor:evaluation_consent'))
+
+
+
