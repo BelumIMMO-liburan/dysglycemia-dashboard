@@ -80,6 +80,8 @@ def check_evaluation_onboarding(request):
     """
     if getattr(settings, 'APP_MODE', 'feedback_lab').lower() != 'evaluation':
         return None
+    if request.user.is_authenticated and request.user.is_staff:
+        return None
     token = request.session.get('evaluation_session_token')
     session = EvaluationSession.objects.filter(session_token=token).first() if token else None
     if not session:
@@ -104,6 +106,41 @@ def _block_in_evaluation_mode(request):
     return None
 
 
+def _is_eval_participant(request) -> bool:
+    """Return True if the current request is from an evaluation study participant."""
+    app_mode = getattr(settings, 'APP_MODE', 'feedback_lab').lower()
+    if app_mode != 'evaluation':
+        return False
+    is_staff = request.user.is_authenticated and request.user.is_staff
+    return not is_staff
+
+
+def _scoped(qs, request):
+    """Scope a queryset to the participant's active evaluation session if in evaluation mode."""
+    if _is_eval_participant(request):
+        eval_token = request.session.get('evaluation_session_token')
+        if not eval_token:
+            return qs.none()
+        return qs.filter(evaluation_session__session_token=eval_token)
+    return qs
+
+
+def _require_own_record(request, record):
+    """
+    Ensure the requested screening record belongs to the active evaluation participant.
+    In evaluation mode, raises Http404 when record.evaluation_session is None OR its token differs.
+    Staff and feedback_lab are exempt.
+    """
+    if _is_eval_participant(request):
+        eval_token = request.session.get('evaluation_session_token')
+        if (
+            record.evaluation_session is None
+            or not eval_token
+            or str(record.evaluation_session.session_token) != str(eval_token)
+        ):
+            raise Http404("Screening record not found or inaccessible in this session.")
+
+
 def overview_view(request):
     """
     Research screening overview — primary orientation page (Phase D2.9).
@@ -115,7 +152,8 @@ def overview_view(request):
         return gate_redirect
 
     records = list(
-        ScreeningRecord.objects.select_related('explanation', 'human_review__stage2_assessment')
+        _scoped(ScreeningRecord.objects.all(), request)
+        .select_related('explanation', 'human_review__stage2_assessment')
         .order_by('-created_at')
     )
     total_screenings = len(records)
@@ -373,6 +411,7 @@ def screening_result_view(request, screening_id):
     NEVER re-executes machine learning inference or explanation computation.
     """
     record = get_object_or_404(ScreeningRecord, id=screening_id)
+    _require_own_record(request, record)
 
     input_summary = [
         {'label': 'Age', 'value': f"{record.age} years"},
@@ -512,6 +551,7 @@ def unified_review_view(request, screening_id):
         return redirect('predictor:screening_result', screening_id=screening_id)
 
     screening_record = get_object_or_404(ScreeningRecord, id=screening_id)
+    _require_own_record(request, screening_record)
 
     # 1. Duplicate Review Protection
     if hasattr(screening_record, 'human_review') and screening_record.human_review is not None:
@@ -609,6 +649,7 @@ def accept_review_view(request, screening_id):
         return redirect('predictor:screening_result', screening_id=screening_id)
 
     screening_record = get_object_or_404(ScreeningRecord, id=screening_id)
+    _require_own_record(request, screening_record)
 
     # 1. Duplicate Review Protection (Idempotent: redirect if already reviewed)
     if hasattr(screening_record, 'human_review'):
@@ -669,6 +710,7 @@ def override_review_view(request, screening_id):
         return redirect('predictor:screening_result', screening_id=screening_id)
 
     screening_record = get_object_or_404(ScreeningRecord, id=screening_id)
+    _require_own_record(request, screening_record)
 
     # 1. Duplicate Review Protection (Idempotent: redirect if already reviewed)
     if hasattr(screening_record, 'human_review'):
@@ -745,6 +787,7 @@ def stage2_view(request, screening_id):
     8. Executes 0 GAM calls, 0 XAI calls, and does not mutate ScreeningRecord or HumanReview.
     """
     screening_record = get_object_or_404(ScreeningRecord, id=screening_id)
+    _require_own_record(request, screening_record)
 
     # 1. Explanation Prerequisite Enforcement
     explanation = getattr(screening_record, 'explanation', None)
@@ -829,6 +872,7 @@ def stage2_confirm_view(request, screening_id):
         return redirect('predictor:stage2', screening_id=screening_id)
 
     screening_record = get_object_or_404(ScreeningRecord, id=screening_id)
+    _require_own_record(request, screening_record)
 
     # 1. Explanation Prerequisite Enforcement
     explanation = getattr(screening_record, 'explanation', None)
@@ -908,7 +952,8 @@ def review_queue_view(request):
     Read-only surface: 0 writes, 0 ML, 0 XAI.
     """
     records = list(
-        ScreeningRecord.objects.select_related('explanation', 'human_review__stage2_assessment')
+        _scoped(ScreeningRecord.objects.all(), request)
+        .select_related('explanation', 'human_review__stage2_assessment')
         .order_by('-created_at')
     )
 
@@ -1175,10 +1220,7 @@ def history_view(request):
         qs = qs.filter(is_practice=False)
 
     # In evaluation mode, restrict participants to their own evaluation session records
-    app_mode = getattr(settings, 'APP_MODE', 'feedback_lab')
-    eval_token = request.session.get('evaluation_session_token')
-    if app_mode == 'evaluation' and eval_token and not (request.user.is_authenticated and request.user.is_staff):
-        qs = qs.filter(evaluation_session__session_token=eval_token)
+    qs = _scoped(qs, request)
 
     # 1. Search by Screening UUID (full or prefix/substring)
     search_query = request.GET.get('search', '').strip()
@@ -1352,7 +1394,10 @@ def analytics_view(request):
             date_to = None
             date_to_str = ''
 
+    base_qs = _scoped(ScreeningRecord.objects.all(), request)
+
     analytics = compute_research_analytics(
+        queryset=base_qs,
         date_from=date_from,
         date_to=date_to,
     )
@@ -1393,6 +1438,7 @@ def submit_feedback_view(request, screening_id):
         return redirect('predictor:screening_result', screening_id=screening_id)
 
     screening_record = get_object_or_404(ScreeningRecord, id=screening_id)
+    _require_own_record(request, screening_record)
 
     # 1. Human Review Prerequisite
     human_review = getattr(screening_record, 'human_review', None)

@@ -75,6 +75,7 @@ class EvaluationModeWordingTests(TestCase):
             preprocessor_sha256="test_sha",
             input_schema_version="1.0",
             is_practice=False,
+            evaluation_session=self.session,
         )
         ScreeningExplanation.objects.create(
             screening_record=self.rec_pending,
@@ -108,6 +109,7 @@ class EvaluationModeWordingTests(TestCase):
             preprocessor_sha256="test_sha",
             input_schema_version="1.0",
             is_practice=False,
+            evaluation_session=self.session,
         )
         ScreeningExplanation.objects.create(
             screening_record=self.rec_overridden,
@@ -149,6 +151,7 @@ class EvaluationModeWordingTests(TestCase):
             preprocessor_sha256="test_sha",
             input_schema_version="1.0",
             is_practice=False,
+            evaluation_session=self.session,
         )
         ScreeningExplanation.objects.create(
             screening_record=self.rec_stage2_pending,
@@ -188,6 +191,7 @@ class EvaluationModeWordingTests(TestCase):
             preprocessor_sha256="test_sha",
             input_schema_version="1.0",
             is_practice=False,
+            evaluation_session=self.session,
         )
         ScreeningExplanation.objects.create(
             screening_record=self.rec_stage2_completed,
