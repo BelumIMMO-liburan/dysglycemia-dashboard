@@ -27,7 +27,11 @@
     <div class="ui-alert-content">
         <p class="ui-alert-title">Research Prototype Notice</p>
         <p class="ui-alert-body">
-            This dashboard is an academic research prototype and is <strong>not a medical diagnostic tool</strong>. It is designed to assist healthcare providers by prioritizing non-laboratory community screening cases for Stage-2 laboratory confirmatory evaluation.{% if IS_EVALUATION_MODE %} In the participant evaluation the review task was a simulated exercise performed by volunteers, mostly laypersons.{% endif %}
+            {% if IS_EVALUATION_MODE %}
+            This dashboard is an academic research prototype and is not a medical diagnostic tool. It is designed to prioritize non-laboratory community screening cases for possible Stage-2 laboratory evaluation, and to study how non-expert users understand the model's output and explanations. In the participant evaluation, the review task was a simulated exercise performed by volunteers, mostly laypersons.
+            {% else %}
+            This dashboard is an academic research prototype and is <strong>not a medical diagnostic tool</strong>. It is designed to assist healthcare providers by prioritizing non-laboratory community screening cases for Stage-2 laboratory confirmatory evaluation.
+            {% endif %}
         </p>
     </div>
 </div>

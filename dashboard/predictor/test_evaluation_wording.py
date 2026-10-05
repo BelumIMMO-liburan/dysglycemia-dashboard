@@ -281,6 +281,18 @@ class EvaluationModeWordingTests(TestCase):
         self.assertNotContains(res, "Reviewer Code")
         self.assertNotContains(res, "Override Reason / Learning Signal")
 
+        # ABSENCE checks for learning loop and adaptation in evaluation mode
+        self.assertNotContains(res, "learning loop")
+        self.assertNotContains(res, "adaptation layers")
+        self.assertNotContains(res, "Check Similar Prior Cases")
+        self.assertNotContains(res, "Eligible for Adaptation")
+
+        # PRESENCE checks that finalized review summary still shows participant's decision
+        self.assertContains(res, "Recommendation Overridden")
+        self.assertContains(res, "No referral recommended at current operating point")
+        self.assertContains(res, "Override Reason")
+        self.assertContains(res, "Athlete with high muscularity.")
+
     @override_settings(APP_MODE='evaluation')
     def test_review_queue_route_wording(self):
         """GET /review/ in evaluation mode must not contain prohibited terms."""
@@ -325,14 +337,22 @@ class EvaluationModeWordingTests(TestCase):
 
     @override_settings(APP_MODE='evaluation')
     def test_about_route_wording(self):
-        """GET /about/ in evaluation mode keeps healthcare providers and adds simulated task notice."""
+        """GET /about/ in evaluation mode uses prototype study text without healthcare providers."""
         res = self.client.get(reverse('predictor:about'))
         self.assertEqual(res.status_code, 200)
         self._assert_absence_of_prohibited_strings(res, "about")
-        self.assertContains(res, "assist healthcare providers")
+        self.assertNotContains(res, "assist healthcare providers")
         self.assertContains(
             res,
-            "In the participant evaluation the review task was a simulated exercise performed by volunteers, mostly laypersons."
+            "This dashboard is an academic research prototype and is not a medical diagnostic tool."
+        )
+        self.assertContains(
+            res,
+            "It is designed to prioritize non-laboratory community screening cases for possible Stage-2 laboratory evaluation, and to study how non-expert users understand the model's output and explanations."
+        )
+        self.assertContains(
+            res,
+            "In the participant evaluation, the review task was a simulated exercise performed by volunteers, mostly laypersons."
         )
 
     @override_settings(APP_MODE='evaluation')
@@ -347,11 +367,12 @@ class EvaluationModeWordingTests(TestCase):
 
     @override_settings(APP_MODE='evaluation')
     def test_evaluation_mode_badge_wording(self):
-        """Top bar badge in evaluation mode must display Mode Evaluasi with frozen model notice."""
+        """Top bar badge in evaluation mode must display Mode Evaluasi without Model Beku."""
         res = self.client.get(reverse('predictor:overview'))
         self.assertEqual(res.status_code, 200)
         self.assertContains(res, "Mode Evaluasi")
-        self.assertContains(res, "Model Beku")
+        self.assertContains(res, "Protocol v1.0.3")
+        self.assertNotContains(res, "Model Beku")
         self.assertNotContains(res, "Feedback Lab · Localhost Mode")
 
     @override_settings(APP_MODE='evaluation')
