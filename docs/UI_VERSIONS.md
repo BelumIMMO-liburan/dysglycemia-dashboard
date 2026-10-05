@@ -5,7 +5,7 @@
 **Protocol:** Two-Stage Non-Laboratory Screening Evaluation Protocol E1 (v1.0.3) / E2  
 **Governing Branch:** `ui-wording-alignment`  
 **Evaluation Study Tag:** `evaluation-study-ui` (`54f5cdbd6a73f08a5a853896987bb4e8db1ecb56`)  
-**Tagger Identity:** `Daymbroo <felikjavier123@gmail.com>` (1791139775 +0700)
+**Tagger Identity:** `Daymbroo` (1791139775 +0700)
 
 ---
 
@@ -14,10 +14,10 @@
 Between 23 September 2026 and 1 October 2026, an empirical participant evaluation study was conducted on the Railway cloud deployment of this repository. A reviewer noted discrepancies between the manuscript framing (which describes layperson/volunteer participants conducting a simulated workflow evaluation of a frozen model without online learning) and visual artifacts displaying clinician-centric wording, online learning signals, and an unpopulated reviewer code input.
 
 To provide empirical proof for manuscript reporting and resolve UI discrepancies:
-1. An annotated Git tag `evaluation-study-ui` was created at commit `54f5cdbd6a73f08a5a853896987bb4e8db1ecb56` (signed by `Daymbroo <felikjavier123@gmail.com>`).
-2. High-resolution Playwright captures (1440×1080 @ 2× DPR) were generated directly from commit `54f5cdbd` running in `APP_MODE=evaluation` on a clean, verified SQLite database.
-3. A dedicated alignment branch `ui-wording-alignment` was created from `main`, implementing mode-conditional copy alignments, gating researcher feedback mechanisms behind `feedback_lab` mode, and auto-filling the pseudonymous reviewer code.
-4. An expanded test suite was developed (`test_evaluation_wording.py`), raising total test coverage from 263 to 276 tests with 100% passing rate.
+1. An annotated Git tag `evaluation-study-ui` was created at commit `54f5cdbd6a73f08a5a853896987bb4e8db1ecb56` (tagged by `Daymbroo`).
+2. High-resolution Playwright captures (1440×1080 @ 2× DPR, 24 captures documented in `capture_report_v2.json`) were generated directly from commit `54f5cdbd` and branch `ui-wording-alignment` running in `APP_MODE=evaluation` on a clean, verified SQLite database.
+3. A dedicated alignment branch `ui-wording-alignment` was created from `main`, implementing mode-conditional copy alignments, gating researcher feedback mechanisms behind `feedback_lab` mode, auto-filling the pseudonymous reviewer code, blocking legacy endpoints with 404 for participants, and enforcing strict session scoping.
+4. An expanded test suite was developed (`test_evaluation_mode.py`, `test_evaluation_wording.py`), raising total test coverage from 263 to 284 tests with 100% passing rate.
 5. All old strings were mechanically verified against `git show 54f5cdbd:<path>` with zero unverified strings.
 6. A `.gitattributes` file was added with `*.pkl binary` to safeguard serialized model weights.
 
@@ -27,7 +27,7 @@ To provide empirical proof for manuscript reporting and resolve UI discrepancies
 | :--- | :--- | :--- | :--- | :--- |
 | **`evaluation-study-ui`** *(Locked Tag)* | `54f5cdbd6a73f08a5a853896987bb4e8db1ecb56` | 2026-09-23 to 2026-10-01 | Railway Production (`APP_MODE=evaluation`). Participants (N=42 completers, 41 formal reviews). | Interface actually used by study participants. Retained internal developer phrasing ("clinical review decision", "Structured Learning Signal", editable Reviewer Code). Middle-dot `·` in Stage-2 titles. |
 | **`main` baseline** | `6644bb48` / `e56f4d94` | 2026-10-01 to 2026-10-04 | Local Development / Feedback Lab refactor. | Added Feedback Lab direction-aware taxonomy, similar prior cases, and candidate adaptation preview in `screening_result.html`. |
-| **`ui-wording-alignment`** *(Active Branch)* | `b0c1b6f` (from `e56f4d`) | Current Working Tree | Post-study aligned evaluation mode + researcher Feedback Lab mode. | Mode-conditional copy: non-clinical framing, Reviewer Code hidden & auto-filled in evaluation mode; Feedback Lab mode retains full researcher features; `(Model Beku)` badge suffix reverted; About page updated with simulated non-expert notice. |
+| **`ui-wording-alignment`** *(Active Branch)* | `9b5a8e2` (from `e56f4d`) | Current Working Tree | Post-study aligned evaluation mode + researcher Feedback Lab mode. | Mode-conditional copy: non-clinical framing, Reviewer Code hidden & auto-filled in evaluation mode; Feedback Lab mode retains full researcher features; `(Model Beku)` badge suffix reverted; About page updated with simulated non-expert notice; legacy endpoints return 404; active participant session scoping enforced. |
 
 > [!IMPORTANT]
 > **Data Collection Provenance:**  
@@ -41,11 +41,12 @@ To maintain complete transparency for peer review, changes in this repository fo
 
 ### Phase A: What changed between `54f5cdbd` and `main` (`6644bb48`)
 Between the evaluation deployment (`54f5cdbd`) and `main` (`6644bb48`), work focused entirely on developing the researcher-facing **Feedback Lab** mechanism:
-1. **Single Template Modified:** Only `dashboard/predictor/templates/predictor/screening_result.html` was modified in `main` to introduce Feedback Lab controls (two-step signal selection, direction-aware feedback taxonomy, similar prior cases accordion, and candidate adaptation preview).
-2. **Zero Template Changes Elsewhere:** Templates `about.html`, `analytics.html`, `evaluation_practice.html`, `overview.html`, `review_queue.html`, `stage2_entry.html`, `stage2_result.html`, `stage2_review.html`, and `base.html` were **100% identical** between `54f5cdbd` and `main` (`git diff` returned 0 changes).
-3. **Backend Models & Services:** Added `0012_humanfeedback_direction_aware_signal.py`, `feedback_taxonomy.py`, `feedback_learning.py`, and test suites for direction-aware signals (`test_direction_aware_taxonomy.py`).
+1. **Templates Modified:** `screening_result.html` was modified in `main` to introduce Feedback Lab controls (two-step signal selection, direction-aware feedback taxonomy, similar prior cases accordion, and candidate adaptation preview), and `components_demo.html` received design system demonstration updates.
+2. **Forms & Views Extended:** `forms.py` was extended to include Feedback Lab forms (`UnifiedHumanReviewForm`, `HumanFeedbackForm`, `ControlledExperimentForm`), and `views.py` added endpoints for the Feedback Lab experiment, controlled adaptation, and similar case comparison (`feedback_experiment_view`, `run_comparison_view`, etc.).
+3. **Backend Models & Services:** Added `0012_humanfeedback_direction_aware_signal.py`, `feedback_taxonomy.py`, `feedback_learning.py`, and test suites for direction-aware signals (`test_direction_aware_taxonomy.py`, `test_feedback_mechanism_validation.py`).
+4. **Other Templates Unchanged:** Templates `about.html`, `analytics.html`, `evaluation_practice.html`, `overview.html`, `review_queue.html`, `stage2_entry.html`, `stage2_result.html`, `stage2_review.html`, and `base.html` were **100% identical** between `54f5cdbd` and `main` (`git diff` returned 0 changes across these files).
 
-### Phase B: What changed between `main` (`6644bb48`) and `ui-wording-alignment` (`b0c1b6f`)
+### Phase B: What changed between `main` (`6644bb48`) and `ui-wording-alignment` (`9b5a8e2`)
 Branch `ui-wording-alignment` addressed reviewer concerns regarding layperson evaluation framing:
 1. **Mode-Conditional Gating:** Added `{% if IS_EVALUATION_MODE %}` / `{% if IS_FEEDBACK_LAB_MODE %}` guards. The entire Feedback Lab learning signal and adaptation card in `screening_result.html` is strictly gated behind `{% if IS_FEEDBACK_LAB_MODE and human_feedback %}`, completely hiding learning loops from evaluation participants.
 2. **Non-Clinical Copy:** Replaced clinician wording with neutral "human review" across overview, review queue, screening result, and analytics.
@@ -53,6 +54,8 @@ Branch `ui-wording-alignment` addressed reviewer concerns regarding layperson ev
 4. **Stage-2 Non-Diagnostic Framing:** Clarified Stage-2 as a hypothetical data-entry exercise to test ADA 2026 range categorization, rather than a diagnostic laboratory confirmatory claim.
 5. **Badge Suffix Reversion:** Reverted `(Model Beku)` badge suffix in `base.html` so the evaluation badge reads `Mode Evaluasi · Protocol {{ EVALUATION_PROTOCOL_VERSION }}` verbatim.
 6. **About Page Notice Alignment:** Replaced the prototype notice sentence in `about.html` (in evaluation mode only) with the approved 3-sentence non-diagnostic and simulated volunteer evaluation disclaimer.
+7. **Legacy Endpoint Blocking:** Added 404 blocking in evaluation mode for legacy single-stage endpoints (`/index/`, `/predict/`, `/evaluation/`, `/components/`) with staff exemption.
+8. **Participant Session Scoping:** Added `_is_eval_participant`, `_scoped`, and `_require_own_record` helpers to restrict evaluation participants strictly to records belonging to their own session across overview, review queue, analytics, screening result, human reviews, Stage-2 entry, review, and confirm routes.
 
 ---
 
@@ -60,13 +63,26 @@ Branch `ui-wording-alignment` addressed reviewer concerns regarding layperson ev
 
 Visual captures were captured using Playwright (`chromium`, viewport `1440x1080`, `deviceScaleFactor: 2`, full-page and element clips) from a clean, seeded evaluation database containing 11 formal records and zero practice or corrupted records.
 
-| Artifact Filename | Relative Path | Resolution (Physical Pixels) | Commit Source | Content & State |
-| :--- | :--- | :--- | :--- | :--- |
-| `fig_eval_study_overview_54f5cdbd.png` | `reports_manuscript/figures_evaluation/` | 2880 × 2160 | `54f5cdbd` | Evaluation Overview dashboard with 11 formal records, zero practice records, status badges, and workflow actions. |
-| `fig_eval_study_human_review_54f5cdbd.png` | `reports_manuscript/figures_evaluation/` | 2880 × 1720 | `54f5cdbd` | Human Review panel at commit `54f5cdbd` with Override selected, revealing reviewer code input, structured learning signal, and NLP disclaimer. |
-| `fig_eval_study_full_page_54f5cdbd.png` | `reports_manuscript/figures_evaluation/` | 2880 × 5320 | `54f5cdbd` | Full Stage-1 screening result page showing Primary Result, GAM Additive Factor Decomposition, and Human Review. |
-| `fig_eval_comparison_human_review_latest.png` | `reports_manuscript/figures_evaluation/` | 2880 × 1720 | `e56f4d94` | Human Review panel comparison capture at `HEAD` prior to final branch copy alignment. |
-| `fig_eval_comparison_full_page_latest.png` | `reports_manuscript/figures_evaluation/` | 2880 × 5320 | `e56f4d94` | Full Stage-1 screening result page comparison capture at `HEAD`. |
+A comprehensive set of **24 new captures** across both lineages is maintained in `reports_manuscript/figures_evaluation/` and mechanically indexed in `reports_manuscript/figures_evaluation/capture_report_v2.json`:
+
+### 12 Captures from Study Version Commit `54f5cdbd`:
+1. `fig_p3_e_consent_54f5cdbd.png`: Informed Consent and participant demographic intake.
+2. `fig_p3_d_practice_54f5cdbd.png`: Practice Case P0 onboarding workflow.
+3. `fig_p3_f_new_screening_54f5cdbd.png`: Stage-1 Non-Laboratory Screening input form.
+4. `fig_p3_g_review_queue_54f5cdbd.png`: Actionable review queue with pending cases.
+5. `fig_p3_a_finalized_review_54f5cdbd.png`: Finalized Review Result showing Feedback Loop card and NLP confidence score.
+6. `fig_p3_c_override_panel_54f5cdbd.png`: Human Override Dialog showing Reviewer Code input and Structured Learning Signal.
+7. `fig_p3_b_stage2_54f5cdbd.png`: Stage-2 HbA1c Laboratory Assessment entry form.
+8. `fig_p3_h_about_54f5cdbd.png`: About the Model methodology page.
+9. `fig_p3_i_analytics_54f5cdbd.png`: Research Analytics & Human-AI Decision Flow metrics.
+10. `fig_p3_j_history_54f5cdbd.png`: Screening History Ledger.
+11. `fig_p3_k_questionnaire_54f5cdbd.png`: Evaluation Questionnaire (4-part psychometric instrument).
+12. `fig_p3_l_overview_54f5cdbd.png`: Primary Overview dashboard with 11 formal records.
+
+### 12 Parallel Captures from Branch `ui-wording-alignment`:
+13–24. Corresponding pages (`fig_p4_e_consent_aligned.png` through `fig_p4_l_overview_aligned.png`) demonstrating mode-conditional copy alignment, hidden reviewer code, hidden learning loops, and non-clinical framing.
+
+Full DOM extracts and per-page keyword audits are documented in `capture_report_v2.json`.
 
 ---
 
@@ -100,7 +116,7 @@ A codebase-wide audit was conducted across all templates, forms, static JavaScri
 
 | Term | File Occurrences | Mode Context | Current Status & Disposition |
 | :--- | :--- | :--- | :--- |
-| **`patient`** | `index.html:4,7,16,19`, `result.html:79,82,84,86,87`, `evaluation.html:49`, `components_demo.html:200` | Legacy & UI demo views only (`/index/`, `/predict/`, `/evaluation/`, `/components/`). | **Zero occurrences in primary two-stage screening templates.** Proposed disposition: Block legacy routes with 404 in evaluation mode. |
+| **`patient`** | `index.html:4,7,16,19`, `result.html:79,82,84,86,87`, `evaluation.html:49`, `components_demo.html:200` | Legacy & UI demo views only (`/index/`, `/predict/`, `/evaluation/`, `/components/`). | **Zero occurrences in primary two-stage screening templates.** Blocked with 404 in evaluation mode. |
 | **`pasien`** | `services/questionnaire.py:287` (`P0_SPEC`) | Practice Case P0 definition title: `"Bukan Data Pasien Nyata"`. | Explicit negative disclaimer ("Not real patient data"). Retain. |
 | **`diagnos`** | `screening_result.html:186,201,211,212`, `stage2_result.html:117,122`, `evaluation_consent.html:39`, `evaluation_practice.html:73` | Mandatory safety disclaimers ("not a diagnostic tool", "bukan alat medis diagnostik"). | Essential governance text required by thesis ethics. Preserved intact. |
 | **`treatment`**| `screening_result.html:212` | Regulatory disclaimer ("does not provide medical diagnosis, clinical treatment orders, or disease confirmation"). | Standard protective medical legal disclaimer. Preserved. |
@@ -118,14 +134,10 @@ The URL router (`predictor/urls.py`) exposes several legacy endpoints originally
 - `/components/` (`views.components_demo_view`): Design system UI component catalog.
 
 **Audit Finding:**  
-None of these four views invoke `check_evaluation_onboarding(request)`, and none check `settings.APP_MODE`. In `base.html`, navigation links to `/components/` are hidden when `IS_EVALUATION_MODE=True`, and legacy routes are not present in the sidebar. However, a participant who manually enters the URL path `/index/` or `/predict/` can access the legacy single-stage interface without completing the onboarding gate.
+In `commit 54f5cdbd`, none of these four views checked `settings.APP_MODE`. In `base.html`, navigation links were hidden in the sidebar, but manual URL navigation could access them.
 
-**Recommended Disposition (Proposed Patch):**  
-In `predictor/views.py`, introduce an evaluation mode check at the entry of `index`, `predict_view`, `evaluation_view`, and `components_demo_view`:
-```python
-if getattr(settings, 'APP_MODE', 'feedback_lab').lower() == 'evaluation':
-    raise Http404("This legacy endpoint is not available in participant evaluation mode.")
-```
+**Resolution Implemented:**  
+In `predictor/views.py`, helper `_block_in_evaluation_mode(request)` was introduced at the entry of `index`, `predict_view`, `evaluation_view`, and `components_demo_view`, raising `Http404` for evaluation participants while exempting authenticated staff.
 
 ### Audit (c): Sidebar Navigation Item Comparison
 
@@ -137,42 +149,46 @@ if getattr(settings, 'APP_MODE', 'feedback_lab').lower() == 'evaluation':
 | **Research Evaluation** | Informed Consent (`/evaluation/consent/`), Practice Case P0 (`/evaluation/practice/`), Questionnaire (`/evaluation/questionnaire/`) | Informed Consent (`/evaluation/consent/`), Practice Case P0 (`/evaluation/practice/`), Questionnaire (`/evaluation/questionnaire/`) | Identical layout and links. |
 | **Top-Right Mode Pill** | `Mode Evaluasi · Protocol v1.0.3` | `Mode Evaluasi · Protocol v1.0.3` | Identical text. Suffix `(Model Beku)` reverted to maintain exact visual parity. |
 
-### Audit (d): Informed Consent & Questionnaire Exact Wording
+### Audit (d): Informed Consent, Practice Flow, and Stage-2 Verbatim Wording Comparison
 
-To evaluate whether participants were instructed to enter personal health data versus hypothetical vignettes:
+To rigorously evaluate what text study participants actually read during the 23 September – 1 October 2026 evaluation versus post-study alignments on branch `ui-wording-alignment`:
 
-1. **Informed Consent (`evaluation_consent.html` lines 37–41):**
-   - *"Anonimitas & Kerahasiaan: Tidak ada data identitas pribadi (nama, kontak, institusi) yang disimpan. Setiap partisipan diidentifikasi melalui kode acak anonim (contoh: `R-A1B2C3D4`)."*
-   - *"Bukan Alat Diagnostik Klinis: Sistem ini merupakan prototype riset akademik sistem informasi dan bukan alat medis diagnostik. Hasil penilaian risiko adalah perkiraan statistik model machine learning."*
-   - *"Alur Kegiatan: Anda akan (1) membaca pengenalan alur pada Kasus Latihan P0, (2) mencoba proses screening risiko, (3) meninjau penjelasan AI dan mencoba fitur peninjauan manusia, dan (4) mengisi kuesioner evaluasi singkat (pemahaman, SUS, dan umpan balik)."*
-2. **Practice Case Specification (`services/questionnaire.py` line 287):**
-   - Title: *"Kasus Latihan P0 — Orientasi Alur Kerja (Bukan Data Pasien Nyata)"*
-   - Description: *"Kasus latihan ini dirancang untuk memperkenalkan alur screening: melihat hasil AI, memeriksa penjelasan feature contribution, mencoba keputusan peninjauan manusia (Setuju / Override), dan memberikan umpan balik terstruktur. Kasus ini dikecualikan dari data analisis riset."*
-3. **Stage-2 Lab Entry Notice (`evaluation_practice.html` line 73):**
-   - *"Pada Stage 2 Anda memasukkan satu nilai HbA1c hipotetik untuk menguji alur kerja. Ini bukan hasil laboratorium dan bukan diagnosis."*
-4. **Input Guidance Finding:**
-   - Neither the consent form nor the questionnaire mandated that participants enter their own personal medical information. Participants completed onboarding using predefined Case P0 and were instructed that Stage 2 was a hypothetical workflow exercise.
+| Workflow Phase & Artifact | Study Version Text (`54f5cdbd` — What 42 Participants Saw) | Branch Only (`ui-wording-alignment`) |
+| :--- | :--- | :--- |
+| **Informed Consent**<br>`evaluation_consent.html:37–41` | • *"Anonimitas & Kerahasiaan: Tidak ada data identitas pribadi (nama, kontak, institusi) yang disimpan. Setiap partisipan diidentifikasi melalui kode acak anonim (contoh: `R-A1B2C3D4`)."*<br>• *"Bukan Alat Diagnostik Klinis: Sistem ini merupakan prototype riset akademik sistem informasi dan bukan alat medis diagnostik. Hasil penilaian risiko adalah perkiraan statistik model machine learning."*<br>• *"Alur Kegiatan: Anda akan (1) membaca pengenalan alur pada Kasus Latihan P0, (2) mencoba proses screening risiko, (3) meninjau penjelasan AI dan mencoba fitur peninjauan manusia, dan (4) mengisi kuesioner evaluasi singkat (pemahaman, SUS, dan umpan balik)."* | *(Identical — locked ethical instrument, 0 changes)* |
+| **Practice Case P0 Specification**<br>`services/questionnaire.py:287` | • Title: *"Kasus Latihan P0 — Orientasi Alur Kerja (Bukan Data Pasien Nyata)"*<br>• Description: *"Kasus latihan ini dirancang untuk memperkenalkan alur screening: melihat hasil AI, memeriksa penjelasan feature contribution, mencoba keputusan peninjauan manusia (Setuju / Override), dan memberikan umpan balik terstruktur. Kasus ini dikecualikan dari data analisis riset."* | *(Identical — locked psychometric instrument, 0 changes)* |
+| **Practice Step 3 (Human Review)**<br>`evaluation_practice.html:65` | *"Tenaga kesehatan memegang kendali penuh: menerima rekomendasi atau melakukan Override dengan alasan klinis terstruktur."* | *"Peninjau manusia memegang keputusan akhir: menerima rekomendasi atau melakukan Override dengan alasan terstruktur."* |
+| **Practice Step 4 (Stage 2)**<br>`evaluation_practice.html:73` | *"Kasus terindikasi dirujuk untuk pemeriksaan biomarker HbA1c standar guna konfirmasi klinis diagnostik."* | *"Pada Stage 2 Anda memasukkan satu nilai HbA1c hipotetik untuk menguji alur kerja. Ini bukan hasil laboratorium dan bukan diagnosis."* |
+| **Stage-2 Page Title & Breadcrumb**<br>`stage2_entry.html:3, 14`<br>`stage2_result.html:3, 14` | `Stage 2 · HbA1c Laboratory Assessment` | `Stage 2 – HbA1c Range Assessment` |
+| **Stage-2 Entry Card Heading & Subtitle**<br>`stage2_entry.html:187, 190` | • Heading: `Enter HbA1c Measurement`<br>• Subtitle: `Laboratory measurement in percent (%). Values are categorized according to ADA Standards of Care (2026).` | • Heading: `Enter HbA1c Range Value`<br>• Subtitle: `Enter numeric HbA1c value to test range categorization according to ADA Standards of Care (2026).` |
+| **Stage-2 Review Page Heading**<br>`stage2_review.html:16` | `<h1 class="ui-page-title">Review Stage-2 Laboratory Measurement</h1>` | `<h1 class="ui-page-title">{% if IS_EVALUATION_MODE %}Review Stage-2 HbA1c Entry{% else %}Review Stage-2 Laboratory Measurement{% endif %}</h1>` |
+| **Stage-2 Result Card Heading**<br>`stage2_result.html:76` | `Stage-2 Laboratory Assessment Result` | `Stage-2 Range Categorization Result` |
+
+**Input Guidance & Evidence Finding:**  
+Neither the consent form nor the questionnaire mandated that participants enter their own personal medical information. Participants completed onboarding using predefined Case P0 and non-laboratory screening inputs. In the study version (`54f5cdbd`), Stage 2 was framed in the practice onboarding text using standard referral language (`"Kasus terindikasi dirujuk untuk pemeriksaan biomarker HbA1c standar guna konfirmasi klinis diagnostik"`) and on the Stage-2 pages as `"Laboratory Assessment"` / `"Laboratory measurement"`. Explicit disclaimers characterizing Stage 2 as hypothetical data entry (`"memasukkan satu nilai HbA1c hipotetik"`, `"Range Assessment"`) are present in branch `ui-wording-alignment` only.
 
 ---
 
 ## 6. Verification Test Suite Execution
 
-A dedicated unit test suite, `EvaluationModeWordingTests`, was implemented in `dashboard/predictor/test_evaluation_wording.py` (13 tests) verifying:
+A dedicated unit test suite, `EvaluationModeWordingTests`, and comprehensive mode tests (`test_evaluation_mode.py`, `test_direction_aware_taxonomy.py`) verify:
 - Non-clinical wording appears across overview, review queue, screening result, and Stage 2 in evaluation mode.
 - Reviewer code is hidden and auto-filled from session in evaluation mode.
 - Feedback Lab mode retains full researcher wording ("Structured Learning Signal", editable Reviewer Code).
 - **Absence Checks:** Explicitly tests absence of prohibited terms: `"learning loop"`, `"adaptation layers"`, `"Check Similar Prior Cases"`, `"Eligible for Adaptation"` in evaluation mode.
-- **Presence Checks:** Explicitly tests presence of required finalized review summary items (`"Recommendation Overridden"`, `"No referral recommended..."`, `"Override Reason"`, `"Reviewer ID"`, rationale text).
+- **Presence Checks:** Explicitly tests presence of required finalized review summary items (`"Recommendation Overridden"`, `"No referral recommended..."`, `"Override Reason"`, `"Reviewer ID"`, rationale/note text).
+- **Legacy Endpoint Blocking:** Asserts 404 for unauthenticated participants accessing legacy single-stage endpoints in evaluation mode; 200 for staff; 200 in feedback_lab mode.
+- **Participant Scoping:** With `Client(enforce_csrf_checks=True)`, session A cannot GET session B's results, cannot POST reviews or Stage-2 assessments for B (asserting 404 and zero row mutations), and sees only own counts in overview, review queue, and analytics.
 
 ```
-Test Run (predictor):  Ran 276 tests in 10.312s -> OK (0 failures, 0 errors)
+Test Run (predictor):  Ran 284 tests in 11.840s -> OK (0 failures, 0 errors)
 ```
 
 ---
 
 ## 7. Commitments & Governance Conformance
 
-1. **Tag Status:** Tag `evaluation-study-ui` exists locally at commit `54f5cdbd6a73f08a5a853896987bb4e8db1ecb56`. Tagger: `Daymbroo <felikjavier123@gmail.com>`. No tag has been pushed to remote.
+1. **Tag Status:** Tag `evaluation-study-ui` exists locally at commit `54f5cdbd6a73f08a5a853896987bb4e8db1ecb56`. Tagger: `Daymbroo`. No tag has been pushed to remote.
 2. **Branch Status:** All changes reside on local branch `ui-wording-alignment`. No remote push or pull request has been issued.
 3. **Ethics / Instrument Lock:** Zero modifications were made to `evaluation_consent.html` or `services/questionnaire.py`, preserving the exact ethical consent text and validated psychometric items.
 4. **Model Architecture:** The Phase-5 GAM model (`lambda=10.0`, threshold `0.1389`) remains strictly frozen and untampered.
