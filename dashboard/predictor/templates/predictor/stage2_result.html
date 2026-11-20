@@ -1,6 +1,6 @@
 {% extends 'predictor/base.html' %}
 
-{% block title %}Stage 2 · HbA1c Laboratory Assessment Result — Dysglycemia Screening Dashboard{% endblock %}
+{% block title %}{% if IS_EVALUATION_MODE %}Stage 2 – HbA1c Range Assessment — Dysglycemia Screening Dashboard{% else %}Stage 2 · HbA1c Laboratory Assessment Result — Dysglycemia Screening Dashboard{% endif %}{% endblock %}
 {% block breadcrumb %}
 <a href="{% url 'predictor:screening_result' record.id %}" style="color: hsl(var(--muted-foreground)); text-decoration: none;">Screening Result</a>
 <span style="margin: 0 0.5rem; color: hsl(var(--muted-foreground));">/</span>
@@ -11,9 +11,9 @@
 <div class="ui-page-header">
     <div class="ui-page-header-row">
         <div>
-            <h1 class="ui-page-title">Stage 2 · HbA1c Laboratory Assessment</h1>
+            <h1 class="ui-page-title">{% if IS_EVALUATION_MODE %}Stage 2 – HbA1c Range Assessment{% else %}Stage 2 · HbA1c Laboratory Assessment{% endif %}</h1>
             <p class="ui-page-description">
-                Persisted laboratory assessment categorized against ADA Standards of Care (2026).
+                {% if IS_EVALUATION_MODE %}Enter an HbA1c value for this exercise (hypothetical; not a laboratory result) to see its ADA 2026 range category.{% else %}Persisted laboratory assessment categorized against ADA Standards of Care (2026).{% endif %}
             </p>
         </div>
         <div style="display: flex; align-items: center; gap: 0.5rem;">
@@ -62,7 +62,7 @@
                 ✓
             </div>
             <div>
-                <span style="font-size: 0.8125rem; font-weight: 600; color: hsl(var(--foreground)); display: block;">Stage 2: HbA1c Lab Assessment</span>
+                <span style="font-size: 0.8125rem; font-weight: 600; color: hsl(var(--foreground)); display: block;">{% if IS_EVALUATION_MODE %}Stage 2: HbA1c Range Assessment{% else %}Stage 2: HbA1c Lab Assessment{% endif %}</span>
                 <span style="font-size: 0.6875rem; color: hsl(var(--success)); font-weight: 600;">Persisted ({{ stage2.range_display }})</span>
             </div>
         </div>
@@ -77,7 +77,7 @@
                 Laboratory Range Assessment
             </h2>
             <p class="ui-card-description">
-                Standardized categorization of entered HbA1c against ADA 2026 clinical criteria.
+                {% if IS_EVALUATION_MODE %}Standardized categorization of entered HbA1c against ADA 2026 range categories.{% else %}Standardized categorization of entered HbA1c against ADA 2026 clinical criteria.{% endif %}
             </p>
         </div>
         <div>

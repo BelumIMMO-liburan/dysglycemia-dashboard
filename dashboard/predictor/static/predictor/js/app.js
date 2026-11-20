@@ -1,5 +1,5 @@
 /**
- * Dysglycemia Screening Clinical Decision Support (CDSS)
+ * Dysglycemia Screening Research Decision Support
  * Application Shell & Accessible Interaction Engine (Phase D2.1)
  */
 

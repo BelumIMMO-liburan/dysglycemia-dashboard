@@ -19,7 +19,8 @@ Tests:
 
 from decimal import Decimal
 import uuid
-from django.test import TestCase, override_settings
+from django.middleware.csrf import get_token
+from django.test import TestCase, Client, RequestFactory, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
@@ -27,6 +28,7 @@ from predictor.models import (
     ScreeningRecord,
     ScreeningExplanation,
     HumanReview,
+    Stage2Assessment,
     HumanFeedback,
     ModelVersion,
     EvaluationRespondent,
@@ -448,4 +450,333 @@ class DatabaseIsolationGuardTests(TestCase):
             with self.assertRaises(ImproperlyConfigured) as ctx:
                 runpy.run_module('dashboard.settings', run_name='__main__')
             self.assertIn("Feedback Lab cannot connect to the Evaluation database URL", str(ctx.exception))
+
+
+class LegacyRouteBlockingTests(TestCase):
+    """Verifies that legacy single-stage endpoints return 404 in evaluation mode for participants."""
+
+    @override_settings(APP_MODE='evaluation')
+    def test_legacy_routes_blocked_in_evaluation_mode_for_participants(self):
+        # 1. Dashboard legacy index form
+        res = self.client.get(reverse('predictor:index'))
+        self.assertEqual(res.status_code, 404)
+
+        # 2. Components demo view
+        res = self.client.get(reverse('predictor:components_demo'))
+        self.assertEqual(res.status_code, 404)
+
+        # 3. Model evaluation benchmark view
+        res = self.client.get(reverse('predictor:evaluation'))
+        self.assertEqual(res.status_code, 404)
+
+        # 4. Predict POST endpoint
+        res = self.client.post(reverse('predictor:predict'), {})
+        self.assertEqual(res.status_code, 404)
+
+        # 5. Override POST endpoint
+        res = self.client.post(reverse('predictor:override'), {})
+        self.assertEqual(res.status_code, 404)
+
+    @override_settings(APP_MODE='evaluation')
+    def test_legacy_routes_accessible_for_staff_in_evaluation_mode(self):
+        from django.contrib.auth.models import User
+        staff_user = User.objects.create_user(username='staff_test', password='password', is_staff=True)
+        self.client.force_login(staff_user)
+
+        res = self.client.get(reverse('predictor:components_demo'))
+        self.assertEqual(res.status_code, 200)
+
+        res = self.client.get(reverse('predictor:index'))
+        self.assertEqual(res.status_code, 200)
+
+    @override_settings(APP_MODE='feedback_lab')
+    def test_legacy_routes_accessible_in_feedback_lab_mode(self):
+        res = self.client.get(reverse('predictor:components_demo'))
+        self.assertEqual(res.status_code, 200)
+
+        res = self.client.get(reverse('predictor:index'))
+        self.assertEqual(res.status_code, 200)
+
+
+class EvaluationSessionScopingTests(TestCase):
+    """
+    Verifies participant scoping across evaluation sessions (Protocol E1 v1.0.3).
+    Ensures session A cannot view, review, or assess cases belonging to session B,
+    verifies count isolation, and confirms staff and feedback_lab are exempt.
+    """
+
+    def setUp(self):
+        self.resp_a = EvaluationRespondent.objects.create(
+            respondent_code="RESP-AAA",
+            age_group="26-35",
+            education_level="bachelor",
+            technical_background="medium",
+            health_background="none",
+            consent_given=True,
+            consent_timestamp=timezone.now(),
+        )
+        self.resp_b = EvaluationRespondent.objects.create(
+            respondent_code="RESP-BBB",
+            age_group="36-45",
+            education_level="bachelor",
+            technical_background="medium",
+            health_background="none",
+            consent_given=True,
+            consent_timestamp=timezone.now(),
+        )
+
+        self.sess_a = EvaluationSession.objects.create(
+            respondent=self.resp_a,
+            session_token=str(uuid.uuid4()),
+            status="in_progress",
+            practice_completed=True,
+        )
+        self.sess_b = EvaluationSession.objects.create(
+            respondent=self.resp_b,
+            session_token=str(uuid.uuid4()),
+            status="in_progress",
+            practice_completed=True,
+        )
+
+        self.rec_a = ScreeningRecord.objects.create(
+            age=45,
+            sex="male",
+            bmi=27.0,
+            waist_cm=90.0,
+            hypertension_history="no",
+            smoking_history="no",
+            sedentary_minutes_day=300,
+            screening_probability=0.25,
+            ai_referral_recommended=True,
+            decision_threshold=Decimal("0.1389"),
+            model_name="EBM_GAM_Stage1",
+            evaluation_session=self.sess_a,
+            is_practice=False,
+        )
+        ScreeningExplanation.objects.create(
+            screening_record=self.rec_a,
+            method="gam_native_additive",
+            method_version="1.0",
+            link_function="logit",
+            intercept=0.0,
+            contributions_json=[],
+            reconstructed_linear_predictor=0.0,
+            reconstructed_probability=0.25,
+            reconstruction_error=0.0,
+            model_sha256="fake_sha_a",
+            status="generated",
+        )
+
+        self.rec_b = ScreeningRecord.objects.create(
+            age=52,
+            sex="female",
+            bmi=31.0,
+            waist_cm=96.0,
+            hypertension_history="yes",
+            smoking_history="no",
+            sedentary_minutes_day=480,
+            screening_probability=0.45,
+            ai_referral_recommended=True,
+            decision_threshold=Decimal("0.1389"),
+            model_name="EBM_GAM_Stage1",
+            evaluation_session=self.sess_b,
+            is_practice=False,
+        )
+        ScreeningExplanation.objects.create(
+            screening_record=self.rec_b,
+            method="gam_native_additive",
+            method_version="1.0",
+            link_function="logit",
+            intercept=0.0,
+            contributions_json=[],
+            reconstructed_linear_predictor=0.0,
+            reconstructed_probability=0.45,
+            reconstruction_error=0.0,
+            model_sha256="fake_sha_b",
+            status="generated",
+        )
+
+        self.client_a = Client(enforce_csrf_checks=True)
+        s_a = self.client_a.session
+        s_a['evaluation_session_token'] = str(self.sess_a.session_token)
+        s_a['respondent_code'] = self.resp_a.respondent_code
+        s_a.save()
+
+        self.client_b = Client(enforce_csrf_checks=True)
+        s_b = self.client_b.session
+        s_b['evaluation_session_token'] = str(self.sess_b.session_token)
+        s_b['respondent_code'] = self.resp_b.respondent_code
+        s_b.save()
+
+    def _get_csrf_token(self, client):
+        req = RequestFactory().get('/')
+        token = get_token(req)
+        client.cookies['csrftoken'] = token
+        return token
+
+    @override_settings(APP_MODE='evaluation')
+    def test_participant_a_cannot_get_participant_b_result(self):
+        res_b = self.client_a.get(reverse('predictor:screening_result', args=[self.rec_b.id]))
+        self.assertEqual(res_b.status_code, 404)
+
+        res_a = self.client_a.get(reverse('predictor:screening_result', args=[self.rec_a.id]))
+        self.assertEqual(res_a.status_code, 200)
+
+    @override_settings(APP_MODE='evaluation')
+    def test_participant_a_cannot_post_review_for_participant_b(self):
+        csrf = self._get_csrf_token(self.client_a)
+        initial_reviews = HumanReview.objects.count()
+
+        # Attempt POST to unified review
+        res_unified = self.client_a.post(
+            reverse('predictor:unified_review', args=[self.rec_b.id]),
+            {'csrfmiddlewaretoken': csrf, 'human_decision': 'accept'}
+        )
+        self.assertEqual(res_unified.status_code, 404)
+        self.assertEqual(HumanReview.objects.count(), initial_reviews)
+
+        # Attempt POST to accept review
+        res_accept = self.client_a.post(
+            reverse('predictor:accept_review', args=[self.rec_b.id]),
+            {'csrfmiddlewaretoken': csrf, 'reviewer_code': self.resp_a.respondent_code}
+        )
+        self.assertEqual(res_accept.status_code, 404)
+        self.assertEqual(HumanReview.objects.count(), initial_reviews)
+
+        # Attempt POST to override review
+        res_override = self.client_a.post(
+            reverse('predictor:override_review', args=[self.rec_b.id]),
+            {
+                'csrfmiddlewaretoken': csrf,
+                'reviewer_code': self.resp_a.respondent_code,
+                'override_reason_code': 'clinical_judgement',
+            }
+        )
+        self.assertEqual(res_override.status_code, 404)
+        self.assertEqual(HumanReview.objects.count(), initial_reviews)
+
+        self.rec_b.refresh_from_db()
+        self.assertFalse(hasattr(self.rec_b, 'human_review') and self.rec_b.human_review is not None)
+
+    @override_settings(APP_MODE='evaluation')
+    def test_participant_a_cannot_post_stage2_for_participant_b(self):
+        # Finalize a review on rec_b by B so stage 2 is otherwise eligible
+        HumanReview.objects.create(
+            screening_record=self.rec_b,
+            reviewer_code=self.resp_b.respondent_code,
+            review_action='accept',
+            final_referral_recommended=True,
+        )
+
+        csrf = self._get_csrf_token(self.client_a)
+        initial_stage2 = Stage2Assessment.objects.count()
+
+        # GET Stage 2
+        res_get = self.client_a.get(reverse('predictor:stage2', args=[self.rec_b.id]))
+        self.assertEqual(res_get.status_code, 404)
+
+        # POST Stage 2 entry (step 1)
+        res_entry = self.client_a.post(
+            reverse('predictor:stage2', args=[self.rec_b.id]),
+            {'csrfmiddlewaretoken': csrf, 'hba1c_percent': '7.2'}
+        )
+        self.assertEqual(res_entry.status_code, 404)
+        self.assertEqual(Stage2Assessment.objects.count(), initial_stage2)
+
+        # POST Stage 2 confirm (step 2)
+        res_confirm = self.client_a.post(
+            reverse('predictor:stage2_confirm', args=[self.rec_b.id]),
+            {'csrfmiddlewaretoken': csrf, 'hba1c_percent': '7.2'}
+        )
+        self.assertEqual(res_confirm.status_code, 404)
+        self.assertEqual(Stage2Assessment.objects.count(), initial_stage2)
+
+    @override_settings(APP_MODE='evaluation')
+    def test_participant_sees_only_own_counts(self):
+        # Overview view scoping
+        res_a = self.client_a.get(reverse('predictor:overview'))
+        self.assertEqual(res_a.context['total'], 1)
+        self.assertEqual(res_a.context['recent_cases'][0]['record'].id, self.rec_a.id)
+
+        res_b = self.client_b.get(reverse('predictor:overview'))
+        self.assertEqual(res_b.context['total'], 1)
+        self.assertEqual(res_b.context['recent_cases'][0]['record'].id, self.rec_b.id)
+
+        # Review queue scoping
+        rq_a = self.client_a.get(reverse('predictor:review_queue'))
+        self.assertEqual(len(rq_a.context['pending_review_cases']), 1)
+        self.assertEqual(rq_a.context['pending_review_cases'][0]['record'].id, self.rec_a.id)
+
+        rq_b = self.client_b.get(reverse('predictor:review_queue'))
+        self.assertEqual(len(rq_b.context['pending_review_cases']), 1)
+        self.assertEqual(rq_b.context['pending_review_cases'][0]['record'].id, self.rec_b.id)
+
+        # Analytics view scoping
+        ana_a = self.client_a.get(reverse('predictor:analytics'))
+        self.assertEqual(ana_a.context['analytics'].total_screenings, 1)
+
+        ana_b = self.client_b.get(reverse('predictor:analytics'))
+        self.assertEqual(ana_b.context['analytics'].total_screenings, 1)
+
+    def test_staff_and_feedback_lab_unaffected(self):
+        from django.contrib.auth.models import User
+        staff_user = User.objects.create_user(username='staff_scope_test', password='password', is_staff=True)
+        staff_client = Client()
+        staff_client.force_login(staff_user)
+
+        with override_settings(APP_MODE='evaluation'):
+            res = staff_client.get(reverse('predictor:screening_result', args=[self.rec_b.id]))
+            self.assertEqual(res.status_code, 200)
+
+            ov = staff_client.get(reverse('predictor:overview'))
+            self.assertEqual(ov.context['total'], 2)
+
+        fb_client = Client()
+        with override_settings(APP_MODE='feedback_lab'):
+            res = fb_client.get(reverse('predictor:screening_result', args=[self.rec_b.id]))
+            self.assertEqual(res.status_code, 200)
+
+            ov = fb_client.get(reverse('predictor:overview'))
+            self.assertEqual(ov.context['total'], 2)
+
+
+class EvaluationOnboardingGateTests(TestCase):
+    """
+    Verifies that check_evaluation_onboarding enforces protocol prerequisite gates
+    for participants while allowing authenticated staff to inspect overview directly.
+    """
+
+    def setUp(self):
+        from django.contrib.auth.models import User
+        self.staff_user = User.objects.create_user(
+            username='staff_gate_inspector', password='password', is_staff=True
+        )
+        self.regular_user = User.objects.create_user(
+            username='regular_participant_user', password='password', is_staff=False
+        )
+
+    @override_settings(APP_MODE='evaluation')
+    def test_staff_user_can_open_overview_without_session(self):
+        """Staff user bypasses onboarding gate and can open overview in evaluation mode without a participant session."""
+        client = Client()
+        client.force_login(self.staff_user)
+        response = client.get(reverse('predictor:overview'))
+        self.assertEqual(response.status_code, 200)
+
+    @override_settings(APP_MODE='evaluation')
+    def test_non_staff_user_without_session_redirected_to_onboarding(self):
+        """Non-staff user (anonymous or non-staff authenticated) without a session is redirected to onboarding consent."""
+        client = Client()
+        # 1. Anonymous participant without session
+        response_anon = client.get(reverse('predictor:overview'))
+        self.assertEqual(response_anon.status_code, 302)
+        self.assertRedirects(response_anon, reverse('predictor:evaluation_consent'))
+
+        # 2. Authenticated non-staff user without session
+        client.force_login(self.regular_user)
+        response_auth = client.get(reverse('predictor:overview'))
+        self.assertEqual(response_auth.status_code, 302)
+        self.assertRedirects(response_auth, reverse('predictor:evaluation_consent'))
+
+
 

@@ -13,6 +13,7 @@ import hashlib
 from decimal import Decimal
 from pathlib import Path
 
+import uuid
 from django.conf import settings
 from django.test import TestCase
 from django.urls import reverse
@@ -22,6 +23,8 @@ from predictor.models import (
     ScreeningExplanation,
     HumanReview,
     HumanFeedback,
+    EvaluationRespondent,
+    EvaluationSession,
 )
 from predictor.services.feedback_taxonomy import (
     TAXONOMY_VERSION,
@@ -59,6 +62,23 @@ class EvaluationTaxonomyGovernanceTests(TestCase):
     """Part 7A: Evaluation Mode Taxonomy & UI Governance (Tests 1-5)."""
 
     def setUp(self):
+        self.session = EvaluationSession.objects.create(
+            respondent=EvaluationRespondent.objects.create(
+                respondent_code="R-TAX-01",
+                age_group="25-34",
+                education_level="bachelor",
+                technical_background="medium",
+                health_background="none",
+                consent_given=True,
+            ),
+            session_token=uuid.uuid4().hex,
+            status="in_progress",
+            practice_completed=True,
+        )
+        s = self.client.session
+        s['evaluation_session_token'] = self.session.session_token
+        s.save()
+
         self.record = ScreeningRecord.objects.create(
             age=55,
             sex='male',
@@ -73,6 +93,7 @@ class EvaluationTaxonomyGovernanceTests(TestCase):
             model_name="Phase-5 GAM",
             model_sha256=EXPECTED_GAM_SHA256,
             preprocessor_sha256="preprocessor_sha",
+            evaluation_session=self.session,
         )
         self.explanation = ScreeningExplanation.objects.create(
             screening_record=self.record,
@@ -546,11 +567,29 @@ class SafetyAndIsolationTests(TestCase):
         """23. Evaluation Mode footer renders frozen-model notice and not live-learning notice."""
         original_mode = getattr(settings, 'APP_MODE', 'feedback_lab')
         try:
+            session = EvaluationSession.objects.create(
+                respondent=EvaluationRespondent.objects.create(
+                    respondent_code="R-TAX-23",
+                    age_group="25-34",
+                    education_level="bachelor",
+                    technical_background="medium",
+                    health_background="none",
+                    consent_given=True,
+                ),
+                session_token=uuid.uuid4().hex,
+                status="in_progress",
+                practice_completed=True,
+            )
+            s = self.client.session
+            s['evaluation_session_token'] = session.session_token
+            s.save()
+
             rec = ScreeningRecord.objects.create(
                 age=50, sex='female', bmi=Decimal('28.5'), waist_cm=Decimal('90.0'),
                 hypertension_history='no', smoking_history='no', sedentary_minutes_day=300,
                 screening_probability=0.20, ai_referral_recommended=True,
                 model_name="GAM", model_sha256="test", preprocessor_sha256="test",
+                evaluation_session=session,
             )
             ScreeningExplanation.objects.create(
                 screening_record=rec, status='generated', intercept=-2.0,

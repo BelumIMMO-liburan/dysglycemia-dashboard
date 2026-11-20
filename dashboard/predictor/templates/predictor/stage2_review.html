@@ -13,9 +13,9 @@
 <div class="ui-page-header">
     <div class="ui-page-header-row">
         <div>
-            <h1 class="ui-page-title">Review Stage-2 Laboratory Measurement</h1>
+            <h1 class="ui-page-title">{% if IS_EVALUATION_MODE %}Review Stage-2 HbA1c Entry{% else %}Review Stage-2 Laboratory Measurement{% endif %}</h1>
             <p class="ui-page-description">
-                Verify the entered laboratory value before recording permanent audit evidence.
+                {% if IS_EVALUATION_MODE %}Verify the entered HbA1c value before recording.{% else %}Verify the entered laboratory value before recording permanent audit evidence.{% endif %}
             </p>
         </div>
         <div style="display: flex; align-items: center; gap: 0.5rem;">

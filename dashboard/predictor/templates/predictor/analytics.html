@@ -593,19 +593,19 @@
                         <th scope="row" style="font-weight: 600;">Human–AI Agreement Rate</th>
                         <td><code>review_action == 'accepted'</code></td>
                         <td>Reviewed Screenings (<span class="tabular-nums">N_reviewed</span>)</td>
-                        <td>Concordance between AI recommendation and clinician disposition. <strong>Never called AI accuracy.</strong></td>
+                        <td>Concordance between AI recommendation and human reviewer disposition. <strong>Never called AI accuracy.</strong></td>
                     </tr>
                     <tr>
                         <th scope="row" style="font-weight: 600;">Human Override Rate</th>
                         <td><code>review_action == 'overridden'</code></td>
                         <td>Reviewed Screenings (<span class="tabular-nums">N_reviewed</span>)</td>
-                        <td>Frequency of clinician decision override. <strong>Never called AI error rate or mistake.</strong></td>
+                        <td>Frequency of human reviewer decision override. <strong>Never called AI error rate or mistake.</strong></td>
                     </tr>
                     <tr>
                         <th scope="row" style="font-weight: 600;">Final Referral Rate</th>
                         <td><code>final_referral_recommended == True</code></td>
                         <td>Reviewed Screenings (<span class="tabular-nums">N_reviewed</span>)</td>
-                        <td>Proportion of reviewed cases ultimately authorized by human clinical judgment for Stage 2.</td>
+                        <td>Proportion of reviewed cases ultimately authorized by human reviewer decision for Stage 2.</td>
                     </tr>
                     <tr>
                         <th scope="row" style="font-weight: 600;">Stage-2 Completion Rate</th>
